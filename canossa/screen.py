@@ -25,7 +25,7 @@ try:
 except:
     from StringIO import StringIO
 import sys
-import logger
+#import logger
 
 import sys, os, termios, select
 
@@ -161,7 +161,8 @@ class Attribute():
             elif 100 <= n and n < 108:
                 self.__value = self.__value & ~(0x1ff << _ATTR_BG) | (n - 100 + 8) << _ATTR_BG
             else:
-               logger.writeLine("SGR %d is ignored." % n)
+               pass
+               #logger.writeLine("SGR %d is ignored." % n)
             i += 1
 
 class Cell():

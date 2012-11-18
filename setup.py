@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup, find_packages
-from canossa import __version__, __license__, __author__
+#from canossa import __version__, __license__, __author__
+__author__  = "Hayaki Saito (user@zuse.jp)"
+__version__ = "0.0.4"
+__license__ = "GPL v3"
+
 
 setup(name                  = 'canossa',
       version               = __version__,
