@@ -12,7 +12,7 @@ setup(name                  = 'canossa',
       classifiers           = ['Development Status :: 4 - Beta',
                                'Topic :: Terminals',
                                'Environment :: Console',
-                               'Intended Audience :: Developper',
+                               'Intended Audience :: Developers',
                                'License :: OSI Approved :: GNU General Public License (GPL)',
                                'Programming Language :: Python'
                                ],
