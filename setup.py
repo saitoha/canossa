@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 #from canossa import __version__, __license__, __author__
 __author__  = "Hayaki Saito (user@zuse.jp)"
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 __license__ = "GPL v3"
 
 
@@ -23,12 +23,12 @@ setup(name                  = 'canossa',
       keywords              = 'terminal',
       author                = __author__,
       author_email          = 'user@zuse.jp',
-      url                   = 'https://github.com/saitoha/canossa-screen',
+      url                   = 'https://github.com/saitoha/canossa',
       license               = __license__,
       packages              = find_packages(exclude=[]),
       zip_safe              = True,
       include_package_data  = False,
-      install_requires      = ['tff ==0.0.8'],
+      install_requires      = ['tff ==0.0.9'],
       entry_points          = """
                               [console_scripts]
                               canossa = canossa:main

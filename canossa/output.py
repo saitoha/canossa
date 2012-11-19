@@ -295,6 +295,9 @@ class OutputHandler(tff.DefaultHandler):
             elif final == 0x6e: # n
                 return not self.__visibility
 
+            elif final == 0x70: # p
+                return not self.__visibility
+
             elif final == 0x72: # r
                 mnemonic = 'DECSTBM'
                 if len(parameter) > 0:
@@ -308,11 +311,13 @@ class OutputHandler(tff.DefaultHandler):
                 return not self.__visibility
 
             else:
-                mnemonic = '[' + chr(final) + ']'
-                raise Exception(mnemonic)
+                pass
+                #mnemonic = '[' + chr(final) + ']'
+                #raise Exception(mnemonic)
         else:
-            mnemonic = '[' + str(intermediate) + ':' + chr(final) + ']'
-            raise Exception(mnemonic)
+            pass
+            #mnemonic = '[' + str(intermediate) + ':' + chr(final) + ']'
+            #raise Exception(mnemonic)
 
         return True 
 

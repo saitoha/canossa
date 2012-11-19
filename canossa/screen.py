@@ -43,6 +43,9 @@ def _get_pos():
     try:
         stdout.write("\x1b[6n")
         stdout.flush()
+    except:
+        pass
+    def get_report():
         
         rfd, wfd, xfd = select.select([stdin_fileno], [], [], 2)
         if rfd:
@@ -51,6 +54,12 @@ def _get_pos():
             assert data[-1] == 'R'
             y, x = [int(n) - 1 for n in  data[2:-1].split(';')]
             return y, x
+    try:
+        return get_report()
+    except:
+        import time
+        time.sleep(0.1)
+        return get_report()
     finally:
         termios.tcsetattr(stdin_fileno, termios.TCSANOW, backup)
 
@@ -106,6 +115,8 @@ class Attribute():
 
     def set(self, pm):
         i = 0
+        if len(pm) == 0:
+            pm.append(0)
         while i < len(pm):
             n = pm[i]
             if n == 0:
@@ -222,6 +233,7 @@ class Line():
         self.dirty = False
         attr = -1
         cells = self.cells
+        c = None
         if left > 0:
             c = cells[left - 1].get()
             if c is None:
@@ -321,6 +333,11 @@ class Screen():
             self.scroll_bottom = row 
         self.height = row
         self.width = col
+
+        try:
+            self.cursor.row, self.cursor.col = _get_pos()
+        except:
+            pass
         self.__reset_tab()
 
     def drawrect(self, col, row, width, height):
@@ -328,12 +345,9 @@ class Screen():
         width =  min(width, self.width)
         s = StringIO()
         #y, x = _get_pos() 
-        #s.write("\x1b7")
-        s.write("\x1b[m")
         for i in xrange(row, row + height):
             s.write("\x1b[%d;%dH" % (i + 1, col + 1))
             self.lines[i].draw(s, col, col + width)
-        #s.write("\x1b8")
         self.cursor.attr.draw(s) 
         #s.write("\x1b[%d;%dH" % (y + 1, x + 1))
         try:
@@ -388,6 +402,7 @@ class Screen():
     def write(self, c):
         row, col = self.cursor.row, self.cursor.col
         line = self.lines[row] 
+
 
         if col >= self.width:
             self.__wrap()
@@ -522,6 +537,10 @@ class Screen():
         self.cursor.dirty = True
 
     def ed(self, ps):
+        if self.cursor.row >= self.height:
+            self.cursor.row = self.height
+        if self.cursor.col >= self.width:
+            self.cursor.col = self.width
         if ps == 0:
             line = self.lines[self.cursor.row] 
             line.dirty = True
