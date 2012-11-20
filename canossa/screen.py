@@ -572,6 +572,79 @@ class Screen():
     def si(self):
         pass
 
+    def decset(self, params):
+        for param in params:
+            if param == 1:
+                pass # DECCKM
+            elif param == 3:
+                self.resize(self.width, 132)
+                self.ris()
+            elif param == 4:
+                pass
+            elif param == 6:
+                self.decom = True
+            elif param == 7:
+                self.decawm = True
+            elif param == 12:
+                pass # cursor blink
+            elif param == 25:
+                self.tcem = True
+            elif param == 1000:
+                pass
+            elif param == 1047:
+                self.switch_altbuf()
+                return True
+            elif param == 1048:
+                self.save_pos()
+                return True
+            elif param == 1049:
+                self.save_pos()
+                self.switch_altbuf()
+                return True
+            elif param == 2004:
+                pass # bracketed paste mode
+            else:
+                pass
+                #raise tff.NotHandledException("DECSET %d" % param)
+
+    def decrst(self, params):
+        for param in params:
+            if param == 1:
+                pass # DECCKM
+            elif param == 3:
+                self.resize(self.width, 80)
+                self.ris()
+            elif param == 4:
+                pass
+            elif param == 6:
+                self.decom = False
+            elif param == 7:
+                self.decawm = False
+            elif param == 12:
+                pass # cursor blink
+            elif param == 25:
+                self.tcem = False
+            elif param == 1000:
+                pass
+            elif param == 1047:
+                self.switch_mainbuf()
+                return True
+            elif param == 1048:
+                self.restore_pos()
+                return True
+            elif param == 1049:
+                self.switch_mainbuf()
+                self.restore_pos()
+                return True
+            elif param == 2004:
+                pass # bracketed paste mode
+
+    def xt_save(self, params):
+        pass
+
+    def xt_rest(self, params):
+        pass
+
     def __reset_tab(self):
         self.__tabstop = [n for n in xrange(0, self.width + 1, 8)] 
 

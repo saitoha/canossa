@@ -204,87 +204,23 @@ class OutputHandler(tff.DefaultHandler):
                 self.__screen.tbc(ps)
 
             elif final == 0x68: # h
-                if parameter[0] == 0x3f: #
-                    mnemonic = 'DECSET'
-                    params = _parse_params(parameter[1:])
-                    for param in params:
-                        if param == 1:
-                            pass # DECCKM
-                        elif param == 3:
-                            self.__screen.resize(self.__screen.width, 132)
-                            self.__screen.ris()
-                        elif param == 4:
-                            pass
-                        elif param == 6:
-                            self.__screen.decom = True
-                        elif param == 7:
-                            self.__screen.decawm = True
-                        elif param == 12:
-                            pass # cursor blink
-                        elif param == 25:
-                            self.__screen.tcem = True
-                        elif param == 1000:
-                            pass
-                        elif param == 1047:
-                            self.__screen.switch_altbuf()
-                            return True
-                        elif param == 1048:
-                            self.__screen.save_pos()
-                            return True
-                        elif param == 1049:
-                            self.__screen.save_pos()
-                            self.__screen.switch_altbuf()
-                            return True
-                        elif param == 2004:
-                            pass # bracketed paste mode
-                        else:
-                            pass
-                            #raise tff.NotHandledException("DECSET %d" % param)
-                        pass
-                else:
-                    mnemonic = 'SM'
+                if len(parameter) > 0:
+                    if parameter[0] == 0x3f: #
+                        mnemonic = 'DECSET'
+                        params = _parse_params(parameter[1:])
+                        self.__screen.decset(params)
+                    else:
+                        mnemonic = 'SM'
                 return not self.__visibility
 
             elif final == 0x6c: # l
-                if parameter[0] == 0x3f: #
-                    mnemonic = 'DECRST'
-                    params = _parse_params(parameter[1:])
-                    for param in params:
-                        if param == 1:
-                            pass # DECCKM
-                        elif param == 3:
-                            self.__screen.resize(self.__screen.width, 80)
-                            self.__screen.ris()
-                        elif param == 4:
-                            pass
-                        elif param == 6:
-                            self.__screen.decom = False
-                        elif param == 7:
-                            self.__screen.decawm = False
-                        elif param == 12:
-                            pass # cursor blink
-                        elif param == 25:
-                            self.__screen.tcem = False
-                        elif param == 1000:
-                            pass
-                        elif param == 1047:
-                            self.__screen.switch_mainbuf()
-                            return True
-                        elif param == 1048:
-                            self.__screen.restore_pos()
-                            return True
-                        elif param == 1049:
-                            self.__screen.switch_mainbuf()
-                            self.__screen.restore_pos()
-                            return True
-                        elif param == 2004:
-                            pass # bracketed paste mode
-                        else:
-                            pass
-                            #raise tff.NotHandledException("DECRST %d" % param)
-                        pass
-                else:
-                    mnemonic = 'RM'
+                if len(parameter) > 0:
+                    if parameter[0] == 0x3f: #
+                        mnemonic = 'DECRST'
+                        params = _parse_params(parameter[1:])
+                        self.__screen.decrst(params)
+                    else:
+                        mnemonic = 'RM'
                 return not self.__visibility
 
             elif final == 0x6d: # m
@@ -299,13 +235,25 @@ class OutputHandler(tff.DefaultHandler):
                 return not self.__visibility
 
             elif final == 0x72: # r
-                mnemonic = 'DECSTBM'
                 if len(parameter) > 0:
-                    param = ''.join([chr(c) for c in parameter])
-                    top, bottom = [max(0, int(p) - 1) for p in param.split(';')]
+                    if parameter[0] == 0x3f: # ?
+                        param = ''.join([chr(c) for c in parameter])[1:]
+                        params = [max(0, int(p)) for p in param.split(';')]
+                        self.__screen.xt_rest(params)
+                    else:
+                        param = ''.join([chr(c) for c in parameter])
+                        top, bottom = [max(0, int(p) - 1) for p in param.split(';')]
+                        self.__screen.decstbm(top, bottom)
                 else:
                     top, bottom = 0, self.__screen.height - 1
-                self.__screen.decstbm(top, bottom)
+                    self.__screen.decstbm(top, bottom)
+
+            elif final == 0x73: # s
+                if len(parameter) > 0:
+                    if parameter[0] == 0x3f: # ?
+                        param = ''.join([chr(c) for c in parameter])[1:]
+                        params = [max(0, int(p)) for p in param.split(';')]
+                        self.__screen.xt_save(params)
 
             elif final == 0x78: # x
                 return not self.__visibility
