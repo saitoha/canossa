@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 #from canossa import __version__, __license__, __author__
 __author__  = "Hayaki Saito (user@zuse.jp)"
-__version__ = "0.0.6"
+__version__ = "0.0.7"
 __license__ = "GPL v3"
 
 
