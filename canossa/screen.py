@@ -37,8 +37,8 @@ def _get_pos():
     backup = termios.tcgetattr(stdin_fileno)
     new = termios.tcgetattr(stdin_fileno)
     new[3] &= ~(termios.ECHO | termios.ICANON)
-    new[6][termios.VMIN] = 1
-    new[6][termios.VTIME] = 0
+    new[6][termios.VMIN] = 10
+    new[6][termios.VTIME] = 1
     termios.tcsetattr(stdin_fileno, termios.TCSANOW, new)
     try:
         stdout.write("\x1b[6n")
@@ -47,7 +47,7 @@ def _get_pos():
         pass
     def get_report():
         
-        rfd, wfd, xfd = select.select([stdin_fileno], [], [], 2)
+        rfd, wfd, xfd = select.select([stdin_fileno], [], [], 0.5)
         if rfd:
             data = os.read(stdin_fileno, 32)
             assert data[:2] == '\x1b['
@@ -78,7 +78,7 @@ class Attribute():
         self.__value = value
 
     def draw(self, s):
-        params = []
+        params = [0]
         value, charset = self.__value 
         for i in xrange(0, 8):
             if value & (2 << i):
@@ -103,7 +103,7 @@ class Attribute():
             params.append(49)
         else:
             params += [48, 5, bg]
-        s.write(u'\x1b(%c\x1b[0;%sm' % (charset, ';'.join([str(p) for p in params])))
+        s.write(u'\x1b(%c\x1b[%sm' % (charset, ';'.join([str(p) for p in params])))
 
     def clear(self):
         self.__value = (0x100 << _ATTR_FG | 0x100 << _ATTR_BG, 0x42)
@@ -767,7 +767,7 @@ class Screen():
             self.cursor.col = self.width - 1
         cells = self.lines[row].cells
 
-        if col > 0 and cells[col - 1].__value == '\x00':
+        if col > 0 and cells[col - 1].get() == '\x00':
             col -= 1
 
         for i in xrange(0, ps):
