@@ -72,14 +72,14 @@ _ATTR_FG         = 14
 _ATTR_BG         = 23 
 class Attribute():
 
-    __value = 0x100 << _ATTR_FG | 0x100 << _ATTR_BG
+    __value = (0x100 << _ATTR_FG | 0x100 << _ATTR_BG, 0x42)
 
-    def __init__(self, value = 0x100 << _ATTR_FG | 0x100 << _ATTR_BG):
+    def __init__(self, value = (0x100 << _ATTR_FG | 0x100 << _ATTR_BG, 0x42)):
         self.__value = value
 
     def draw(self, s):
         params = []
-        value = self.__value 
+        value, charset = self.__value 
         for i in xrange(0, 8):
             if value & (2 << i):
                 params.append(i) 
@@ -103,48 +103,51 @@ class Attribute():
             params.append(49)
         else:
             params += [48, 5, bg]
-        s.write(u'\x1b[0;')
-        s.write(';'.join([str(p) for p in params]))
-        s.write('m')
+        s.write(u'\x1b(%c\x1b[0;%sm' % (charset, ';'.join([str(p) for p in params])))
 
     def clear(self):
-        self.__value = value = 0x100 << _ATTR_FG | 0x100 << _ATTR_BG
+        self.__value = (0x100 << _ATTR_FG | 0x100 << _ATTR_BG, 0x42)
 
     def get(self):
         return self.__value
+
+    def set_charset(self, charset):
+        value, old = self.__value
+        self.__value = (value, charset)
 
     def set(self, pm):
         i = 0
         if len(pm) == 0:
             pm.append(0)
+        value, charset = self.__value
         while i < len(pm):
             n = pm[i]
             if n == 0:
-                self.__value = 0x100 << _ATTR_FG | 0x100 << _ATTR_BG
+                value = 0x100 << _ATTR_FG | 0x100 << _ATTR_BG
             elif n == 1:
-                self.__value |= 2 << _ATTR_BOLD 
+                value |= 2 << _ATTR_BOLD 
             elif n == 4:
-                self.__value |= 2 << _ATTR_UNDERLINED 
+                value |= 2 << _ATTR_UNDERLINED 
             elif n == 5:
-                self.__value |= 2 << _ATTR_BLINK 
+                value |= 2 << _ATTR_BLINK 
             elif n == 7:
-                self.__value |= 2 << _ATTR_INVERSE 
+                value |= 2 << _ATTR_INVERSE 
             elif n == 8:
-                self.__value |= 2 << _ATTR_INVISIBLE 
+                value |= 2 << _ATTR_INVISIBLE 
             elif n == 21:
-                self.__value &= ~(2 << _ATTR_BOLD)
+                value &= ~(2 << _ATTR_BOLD)
             elif n == 22:
-                self.__value &= ~(2 << _ATTR_BOLD | 2 << _ATTR_UNDERLINED)
+                value &= ~(2 << _ATTR_BOLD | 2 << _ATTR_UNDERLINED)
             elif n == 24:
-                self.__value &= ~(2 << _ATTR_UNDERLINED)
+                value &= ~(2 << _ATTR_UNDERLINED)
             elif n == 25:
-                self.__value &= ~(2 << _ATTR_BLINK)
+                value &= ~(2 << _ATTR_BLINK)
             elif n == 27:
-                self.__value &= ~(2 << _ATTR_INVERSE)
+                value &= ~(2 << _ATTR_INVERSE)
             elif n == 28:
-                self.__value &= ~(2 << _ATTR_VISIBLE)
+                value &= ~(2 << _ATTR_VISIBLE)
             elif 30 <= n and n < 38:
-                self.__value = self.__value & ~(0x1ff << _ATTR_FG) | (n - 30) << _ATTR_FG
+                value = value & ~(0x1ff << _ATTR_FG) | (n - 30) << _ATTR_FG
 
             elif n == 38:
                 i += 1
@@ -152,11 +155,11 @@ class Attribute():
                 i += 1
                 n2 = pm[i]
                 if n1 == 5:
-                    self.__value = self.__value & ~(0x1ff << _ATTR_FG) | (n2 << _ATTR_FG)
+                    value = value & ~(0x1ff << _ATTR_FG) | (n2 << _ATTR_FG)
             elif n == 39:
-                self.__value = self.__value & ~(0x1ff << _ATTR_FG) | (0x100 << _ATTR_FG)
+                value = value & ~(0x1ff << _ATTR_FG) | (0x100 << _ATTR_FG)
             elif 40 <= n and n < 48:
-                self.__value = self.__value & ~(0x1ff << _ATTR_BG) | (n - 40) << _ATTR_BG
+                value = value & ~(0x1ff << _ATTR_BG) | (n - 40) << _ATTR_BG
 
             elif n == 48:
                 i += 1
@@ -164,22 +167,23 @@ class Attribute():
                 i += 1
                 n2 = pm[i]
                 if n1 == 5:
-                    self.__value = self.__value & ~(0x1ff << _ATTR_BG) | (n2 << _ATTR_BG)
+                    value = value & ~(0x1ff << _ATTR_BG) | (n2 << _ATTR_BG)
             elif n == 49:
-                self.__value = self.__value & ~(0x1ff << _ATTR_BG) | (0x100 << _ATTR_BG)
+                value = value & ~(0x1ff << _ATTR_BG) | (0x100 << _ATTR_BG)
             elif 90 <= n and n < 98:
-                self.__value = self.__value & ~(0x1ff << _ATTR_FG) | (n - 90 + 8) << _ATTR_FG
+                value = value & ~(0x1ff << _ATTR_FG) | (n - 90 + 8) << _ATTR_FG
             elif 100 <= n and n < 108:
-                self.__value = self.__value & ~(0x1ff << _ATTR_BG) | (n - 100 + 8) << _ATTR_BG
+                value = value & ~(0x1ff << _ATTR_BG) | (n - 100 + 8) << _ATTR_BG
             else:
                pass
                #logger.writeLine("SGR %d is ignored." % n)
             i += 1
+        self.__value = (value, charset)
 
 class Cell():
 
     __value = None
-    attr = 0
+    attr = (0, 0x42)
 
     def __init__(self):
         self.__value = u' '
@@ -201,7 +205,13 @@ class Cell():
         self.__value = u' '
         self.attr = attr.get()
 
+_LINE_TYPE_DHLT = 3
+_LINE_TYPE_DHLB = 4
+_LINE_TYPE_SWL  = 5
+_LINE_TYPE_DWL  = 6
 class Line():
+
+    _type = _LINE_TYPE_SWL
 
     def __init__(self, width):
         self.cells = [Cell() for cell in xrange(0, width)]
@@ -215,8 +225,28 @@ class Line():
             self.cells += [Cell() for cell in xrange(0, col - width)]
         self.dirty = True
 
+    def type(self):
+        return self._type
+
+    def set_swl(self):
+        self._type = _LINE_TYPE_SWL
+        self.dirty = True
+
+    def set_dwl(self):
+        self._type = _LINE_TYPE_DWL
+        self.dirty = True
+
+    def set_dhlt(self):
+        self._type = _LINE_TYPE_DHLT
+        self.dirty = True
+
+    def set_dhlb(self):
+        self._type = _LINE_TYPE_DHLB
+        self.dirty = True
+
     def clear(self, attr):
         self.dirty = True
+        self._type = _LINE_TYPE_SWL
         for cell in self.cells:
             cell.clear(attr)
 
@@ -231,9 +261,10 @@ class Line():
 
     def draw(self, s, left, right):
         self.dirty = False
-        attr = -1
+        attr = None 
         cells = self.cells
         c = None
+        s.write("\x1b#%d" % self._type)
         if left > 0:
             c = cells[left - 1].get()
             if c is None:
@@ -298,8 +329,10 @@ class Screen():
     height = 24
 
     _saved_pos = None
+    __g = None 
+    __gl = None
 
-    def __init__(self, row=24, col=80, y=0, x=0):
+    def __init__(self, row=24, col=80, y=0, x=0, is_cjk=False):
         self.height = row
         self.width = col
         self._mainbuf = [Line(col) for line in xrange(0, row)]
@@ -308,7 +341,14 @@ class Screen():
         self.cursor = Cursor(y, x)
         self.scroll_top = 0 
         self.scroll_bottom = self.height 
+        if is_cjk:
+            self._mk_wcwidth = wcwidth.mk_wcwidth
+        else:
+            self._mk_wcwidth = wcwidth.mk_wcwidth_cjk
+        self.is_cjk = is_cjk
         self.__reset_tab()
+        self.__g = [0x42, 0x30, 0x42, 0x42]
+        self.__gl = self.__g[0]
 
     def resize(self, row, col):
         lines = self.lines
@@ -375,6 +415,30 @@ class Screen():
             except:
                 pass
 
+    def set_g0(self, c):
+        self.__g[0] = c
+        self.cursor.attr.set_charset(c)
+
+    def set_g1(self, c):
+        self.__g[1] = c
+        self.cursor.attr.set_charset(c)
+
+    def decdhlt(self):
+        line = self.lines[self.cursor.row] 
+        line.set_dhlt()
+
+    def decdhlb(self):
+        line = self.lines[self.cursor.row] 
+        line.set_dhlb()
+
+    def decswl(self):
+        line = self.lines[self.cursor.row] 
+        line.set_swl()
+
+    def decdwl(self):
+        line = self.lines[self.cursor.row] 
+        line.set_dwl()
+
     def save_pos(self):
         self._saved_pos = (self.cursor.row, self.cursor.col)
 
@@ -403,7 +467,6 @@ class Screen():
         row, col = self.cursor.row, self.cursor.col
         line = self.lines[row] 
 
-
         if col >= self.width:
             self.__wrap()
             row, col = self.cursor.row, self.cursor.col
@@ -411,7 +474,7 @@ class Screen():
 
         line.dirty = True
 
-        width = wcwidth.mk_wcwidth(c)
+        width = self._mk_wcwidth(c)
 
         if width == 1: # normal (narrow) character
             if self.cursor.col >= self.width:
@@ -435,7 +498,6 @@ class Screen():
         elif width == 0: # combining character
             line.combine(c, col)
 
-        
     def bs(self):
         if self.cursor.col >= self.width:
             self.cursor.col = self.width - 1
@@ -538,9 +600,9 @@ class Screen():
 
     def ed(self, ps):
         if self.cursor.row >= self.height:
-            self.cursor.row = self.height
+            self.cursor.row = self.height - 1
         if self.cursor.col >= self.width:
-            self.cursor.col = self.width
+            self.cursor.col = self.width - 1
         if ps == 0:
             line = self.lines[self.cursor.row] 
             line.dirty = True
@@ -567,10 +629,12 @@ class Screen():
             raise
 
     def so(self):
-        pass
+        self.__gl = self.__g[1]
+        self.cursor.attr.set_charset(self.__gl)
 
     def si(self):
-        pass
+        self.__gl = self.__g[0]
+        self.cursor.attr.set_charset(self.__gl)
 
     def decset(self, params):
         for param in params:
@@ -688,7 +752,31 @@ class Screen():
     def sgr(self, pm):
         self.cursor.attr.set(pm)
 
+    def _getline():
+        return self.lines[self.cursor.row] 
+
+    def ich(self, ps):
+        ''' insert blank character(s) '''    
+        row = self.cursor.row
+        col = self.cursor.col
+        if row >= self.scroll_bottom:
+            self.cursor.row = self.scroll_bottom - 1
+        elif row < self.scroll_top:
+            self.cursor.row = self.scroll_top
+        if col >= self.width:
+            self.cursor.col = self.width - 1
+        cells = self.lines[row].cells
+
+        if col > 0 and cells[col - 1].__value == '\x00':
+            col -= 1
+
+        for i in xrange(0, ps):
+            cell = cells.pop()
+            cell.clear(self.cursor.attr)
+            cells.insert(col, cell)
+
     def cuu(self, ps):
+        ''' cursor up '''
         if self.cursor.row >= self.scroll_top + ps:
             self.cursor.row -= ps 
         else:
