@@ -18,20 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # ***** END LICENSE BLOCK *****
 
-
-def main():
-    import sys, os, optparse, select
-    # parse options and arguments
-    usage = 'usage: %prog [options] command'
-    parser = optparse.OptionParser(usage=usage)
-
-    parser.add_option('--version', dest='version',
-                      action="store_true", default=False,
-                      help='show version')
-
-    (options, args) = parser.parse_args()
-
-    if options.version:
+def _printver():
         import __init__
         print '''
 canossa %s
@@ -50,6 +37,28 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see http://www.gnu.org/licenses/.
         ''' % __init__.__version__
+        return
+
+
+def main():
+    import sys, os, optparse, select
+    # parse options and arguments
+    usage = 'usage: %prog [options] command'
+    parser = optparse.OptionParser(usage=usage)
+
+    parser.add_option('-v', '--visible', dest='visibility',
+                      action="store_true", default=False,
+                      help='bring up the front of terminal (visible mode)')
+
+    parser.add_option('--version', dest='version',
+                      action="store_true", default=False,
+                      help='show version')
+
+    (options, args) = parser.parse_args()
+
+    # print version
+    if options.version:
+        _printver()
         return
 
     # retrive starting command
@@ -88,7 +97,11 @@ along with this program. If not, see http://www.gnu.org/licenses/.
     tty.fitsize()
 
     # make screen
-    outputhandler = output.OutputHandler(visibility=True)
+    if options.visibility:
+        outputhandler = output.OutputHandler(visibility=True)
+    else:
+        canossahandler = output.OutputHandler(visibility=False)
+        outputhandler = tff.FilterMultiplexer(canossahandler, tff.DefaultHandler())
 
     # create TFF session
     session = tff.Session(tty)
