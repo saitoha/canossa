@@ -355,7 +355,7 @@ class ICanossaScreenImpl(ICanossaScreen):
         line = self.lines[row] 
 
         if col >= self.width:
-            self.__wrap()
+            self._wrap()
             row, col = self.cursor.row, self.cursor.col
             line = self.lines[row] 
 
@@ -436,7 +436,7 @@ class Screen(ICanossaScreenImpl,
         self._setup_tab()
         self._setup_charset()
 
-    def __wrap(self):
+    def _wrap(self):
         self.cursor.col = 0 
         if self.decawm:
             self.lf()
@@ -453,7 +453,7 @@ class Screen(ICanossaScreenImpl,
 
     def lf(self):
         if self.cursor.col >= self.width:
-            self.__wrap() 
+            self._wrap() 
         self.cursor.row += 1
         if self.cursor.row >= self.scroll_bottom:
             for line in self.lines:
