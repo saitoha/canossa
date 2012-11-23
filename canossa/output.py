@@ -217,7 +217,7 @@ class OutputHandler(tff.DefaultHandler):
             elif final == 0x72: # r
                 if len(parameter) > 0:
                     if parameter[0] == 0x3f: # ?
-                        params = _parse_params(parameter[:1])
+                        params = _parse_params(parameter[1:])
                         self.screen.xt_rest(params)
                     else:
                         top, bottom = _parse_params(parameter, offset=-1, minarg=2)
@@ -229,7 +229,7 @@ class OutputHandler(tff.DefaultHandler):
             elif final == 0x73: # s
                 if len(parameter) > 0:
                     if parameter[0] == 0x3f: # ?
-                        params = _parse_params(parameter[:1])
+                        params = _parse_params(parameter[1:])
                         self.screen.xt_save(params)
 
             elif final == 0x78: # x
