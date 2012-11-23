@@ -221,12 +221,10 @@ class OutputHandler(tff.DefaultHandler):
             elif final == 0x72: # r
                 if len(parameter) > 0:
                     if parameter[0] == 0x3f: # ?
-                        param = ''.join([chr(c) for c in parameter])[1:]
-                        params = [max(0, int(p)) for p in param.split(';')]
+                        params = _parse_params(parameter[:1])
                         self.__screen.xt_rest(params)
                     else:
-                        param = ''.join([chr(c) for c in parameter])
-                        top, bottom = [max(0, int(p) - 1) for p in param.split(';')]
+                        top, bottom = _parse_params(parameter, offset=-1, minarg=2)
                         self.__screen.decstbm(top, bottom)
                 else:
                     top, bottom = 0, self.__screen.height - 1
@@ -235,8 +233,7 @@ class OutputHandler(tff.DefaultHandler):
             elif final == 0x73: # s
                 if len(parameter) > 0:
                     if parameter[0] == 0x3f: # ?
-                        param = ''.join([chr(c) for c in parameter])[1:]
-                        params = [max(0, int(p)) for p in param.split(';')]
+                        params = _parse_params(parameter[:1])
                         self.__screen.xt_save(params)
 
             elif final == 0x78: # x

@@ -110,7 +110,8 @@ def main():
     session.start(termenc=termenc,
                   stdin=sys.stdin,
                   stdout=sys.stdout,
-                  outputhandler=outputhandler)
+                  outputhandler=outputhandler,
+                  buffering=False)
         
 
 ''' main '''

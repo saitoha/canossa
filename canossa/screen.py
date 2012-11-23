@@ -29,6 +29,9 @@ import sys
 
 import sys, os, termios, select
 
+#
+# CSI ... ; ... R
+#
 def _get_pos():
     stdin = sys.stdin 
     stdout = sys.stdout
@@ -37,8 +40,6 @@ def _get_pos():
     backup = termios.tcgetattr(stdin_fileno)
     new = termios.tcgetattr(stdin_fileno)
     new[3] &= ~(termios.ECHO | termios.ICANON)
-    new[6][termios.VMIN] = 10
-    new[6][termios.VTIME] = 1
     termios.tcsetattr(stdin_fileno, termios.TCSANOW, new)
     try:
         stdout.write("\x1b[6n")
@@ -49,7 +50,7 @@ def _get_pos():
         
         rfd, wfd, xfd = select.select([stdin_fileno], [], [], 0.5)
         if rfd:
-            data = os.read(stdin_fileno, 32)
+            data = os.read(stdin_fileno, 1024)
             assert data[:2] == '\x1b['
             assert data[-1] == 'R'
             y, x = [int(n) - 1 for n in  data[2:-1].split(';')]
@@ -367,34 +368,32 @@ class Screen():
             for line in lines:
                 line.resize(col)
         assert row == len(lines)
-        assert col == len(lines[0].cells)
+        for line in lines:
+            assert col == len(line.cells)
         if self.scroll_top == 0 and self.scroll_bottom == self.height:
             self.scroll_top = 0
             self.scroll_bottom = row 
         self.height = row
         self.width = col
-
         try:
+        #    sys.stdout.write("\x1b]2;%d-%d\x1b\\" % (row, col))
+        #try:
             self.cursor.row, self.cursor.col = _get_pos()
         except:
             pass
+        if self.cursor.row >= self.height:
+            self.cursor.row = self.height - 1
+        if self.cursor.col >= self.width:
+            self.cursor.col = self.width - 1
         self.__reset_tab()
 
-    def drawrect(self, col, row, width, height):
+    def drawrect(self, s, col, row, width, height):
         height = min(height, self.height)
         width =  min(width, self.width)
-        s = StringIO()
-        #y, x = _get_pos() 
         for i in xrange(row, row + height):
             s.write("\x1b[%d;%dH" % (i + 1, col + 1))
             self.lines[i].draw(s, col, col + width)
         self.cursor.attr.draw(s) 
-        #s.write("\x1b[%d;%dH" % (y + 1, x + 1))
-        try:
-            sys.stdout.write(s.getvalue())
-            sys.stdout.flush()
-        except:
-            pass
 
     def draw(self):
         cursor = self.cursor
@@ -402,9 +401,11 @@ class Screen():
         dirty = False
         for i, line in enumerate(self.lines):
             if line.dirty:
+                line.dirty = False
                 dirty = True
                 s.write("\x1b[%d;1H" % (i + 1))
                 line.draw(s, 0, self.width)
+                s.write("\x1b[1;1H")
         if self.tcem:
             dirty = True
             cursor.draw(s)
@@ -451,12 +452,29 @@ class Screen():
             line.clear(self.cursor.attr)
         self.lines = self._mainbuf
         for line in self.lines:
-            line.dirty = True
+            line.resize(self.width)
 
     def switch_altbuf(self):
         self.lines = self._altbuf
         for line in self.lines:
             line.clear(self.cursor.attr)
+        lines = self.lines
+        if len(lines) > self.height:
+            while len(lines) != self.height:
+                lines.pop()
+            for line in lines:
+                line.resize(self.width)
+        elif len(lines) < self.height:
+            for line in lines:
+                line.resize(self.width)
+            while len(lines) != self.height:
+                lines.insert(0, Line(self.width))
+        else:
+            for line in lines:
+                line.resize(self.width)
+        assert len(lines) == self.height
+        for line in lines:
+            assert self.width == len(line.cells)
 
     def __wrap(self):
         self.cursor.col = 0 
@@ -511,14 +529,13 @@ class Screen():
     def lf(self):
         if self.cursor.col >= self.width:
             self.__wrap() 
-        if self.cursor.row >= self.scroll_bottom - 1:
+        self.cursor.row += 1
+        if self.cursor.row >= self.scroll_bottom:
             for line in self.lines:
                 line.dirty = True
+            self.lines.insert(self.scroll_bottom, Line(self.width))
             self.lines.pop(self.scroll_top)
-            self.lines.insert(self.scroll_bottom - 1, Line(self.width))
             self.cursor.row = self.scroll_bottom - 1 
-        else:
-            self.cursor.row += 1
         self.cursor.dirty = True
 
     def ht(self):
@@ -589,10 +606,15 @@ class Screen():
     def cup(self, row, col):
         if self.decom:
             row += self.scroll_top
-        if row >= self.scroll_bottom:
-            self.cursor.row = self.scroll_bottom - 1
-        elif row < self.scroll_top:
-            self.cursor.row = self.scroll_top
+            top = self.scroll_top
+            bottom = self.scroll_bottom
+        else:
+            top = 0
+            bottom = self.height
+        if row >= bottom:
+            self.cursor.row = bottom - 1
+        elif row < top:
+            self.cursor.row = top
         else:
             self.cursor.row = row
         self.cursor.col = col
@@ -653,8 +675,6 @@ class Screen():
                 pass # cursor blink
             elif param == 25:
                 self.tcem = True
-            elif param == 1000:
-                pass
             elif param == 1047:
                 self.switch_altbuf()
                 return True
@@ -665,9 +685,15 @@ class Screen():
                 self.save_pos()
                 self.switch_altbuf()
                 return True
-            elif param == 2004:
-                pass # bracketed paste mode
             else:
+                # 1000 normal mouse tracking 
+                # 1001 highlight mouse tracking 
+                # 1002 button mouse tracking 
+                # 1003 all mouse tracking 
+                # 1005 UTF-8 mouse encoding 
+                # 1006 SGR mouse encoding 
+                # 1015 URXVT mouse encoding 
+                # 2004 bracketed paste mode
                 pass
                 #raise tff.NotHandledException("DECSET %d" % param)
 
