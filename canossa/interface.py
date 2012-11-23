@@ -18,15 +18,28 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # ***** END LICENSE BLOCK *****
 
-__author__  = "Hayaki Saito (user@zuse.jp)"
-__version__ = "0.0.7"
-__license__ = "GPL v3"
 
-from canossa import create, main
+import abc
 
-from screen import Screen 
+################################################################################
+#
+# interfaces
+#
+# - ICanossa
+#
+class ICanossaScreen:
 
-''' main '''
-if __name__ == '__main__':    
-    main()
+    __metaclass__ = abc.ABCMeta
+
+    def drawrect(self, s, col, row, width, height):
+        pass
+
+    def draw(self, context):
+        pass
+
+    def resize(self, row, col):
+        pass
+
+    def write(self, c):
+        pass
 

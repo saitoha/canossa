@@ -39,6 +39,11 @@ along with this program. If not, see http://www.gnu.org/licenses/.
         ''' % __init__.__version__
         return
 
+def create(row, col, y, x, is_cjk, visibility=False):
+    import output, screen
+
+    screen = screen.Screen(row, col, y, x, is_cjk)
+    return output.OutputHandler(screen, visibility=visibility)
 
 def main():
     import sys, os, optparse, select
@@ -87,8 +92,7 @@ def main():
     language, encoding = locale.getdefaultlocale()
     termenc = encoding
 
-    import tff
-    import output
+    import tff, output
 
     # create pty
     tty = tff.DefaultPTY(term, lang, command, sys.stdin)
@@ -100,7 +104,7 @@ def main():
     if options.visibility:
         outputhandler = output.OutputHandler(visibility=True)
     else:
-        canossahandler = output.OutputHandler(visibility=False)
+        canossahandler = output.OoutputHandler(visibility=False)
         outputhandler = tff.FilterMultiplexer(canossahandler, tff.DefaultHandler())
 
     # create TFF session

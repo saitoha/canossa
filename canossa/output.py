@@ -19,7 +19,6 @@
 # ***** END LICENSE BLOCK *****
 
 import tff
-import threading
 
 def _param_generator(params, minimum, offset, maxarg):
     for p in ''.join([chr(p) for p in params]).split(';')[:maxarg]:
@@ -79,76 +78,73 @@ class OutputHandler(tff.DefaultHandler):
         self.__super = super(OutputHandler, self)
 
         if scr:
-            self.__screen = scr
+            self.screen = scr
         else:
             import sys, screen
             # make screen
             # get current position
             row, col, y, x = _get_pos_and_size(sys.stdin, sys.stdout)
-            self.__screen = screen.Screen(row, col, y, x)
+            self.screen = screen.Screen(row, col, y, x)
 
         self.__super = super(OutputHandler, self)
         self.__visibility = visibility
 
     def handle_csi(self, context, parameter, intermediate, final):
-        p = ''.join([chr(c) for c in parameter])
-        i = ''.join([chr(c) for c in intermediate])
-        f = chr(final)
-        if i == '':
+        if len(intermediate) == 0:
             if final == 0x40: # @
                 ''' ICH - Insert Blank Character(s) '''
                 ps = _parse_params(parameter, minimum=1)[0]
-                self.__screen.ich(ps)
+                self.screen.ich(ps)
 
             elif final == 0x41: # A
                 ''' CUU - Cursor Up '''
                 ps = _parse_params(parameter, minimum=1)[0]
-                self.__screen.cuu(ps)
+                self.screen.cuu(ps)
 
             elif final == 0x42: # B
                 ''' CUD - Cursor Down '''
                 ps = _parse_params(parameter, minimum=1)[0]
-                self.__screen.cud(ps)
+                self.screen.cud(ps)
 
             elif final == 0x43: # C
                 ''' CUF - Cursor Forward '''
                 ps = _parse_params(parameter, minimum=1)[0]
-                self.__screen.cuf(ps)
+                self.screen.cuf(ps)
 
             elif final == 0x44: # D
                 ''' CUF - Cursor Backward '''
                 ps = _parse_params(parameter, minimum=1)[0]
-                self.__screen.cub(ps)
+                self.screen.cub(ps)
 
             elif final == 0x48: # H
                 ''' CUP - Cursor Position '''
                 row, col = _parse_params(parameter, offset=-1, minarg=2)
-                self.__screen.cup(row, col)
+                self.screen.cup(row, col)
 
             elif final == 0x4a: # J
                 ''' ED - Erase Display '''
                 ps = _parse_params(parameter)[0]
-                self.__screen.ed(ps)
+                self.screen.ed(ps)
 
             elif final == 0x4b: # K
                 ''' EL - Erase Line(s) '''
                 ps = _parse_params(parameter)[0]
-                self.__screen.el(ps)
+                self.screen.el(ps)
 
             elif final == 0x4c: # L
                 ''' IL - Insert Line(s) '''
                 ps = _parse_params(parameter, minimum=1)[0]
-                self.__screen.il(ps)
+                self.screen.il(ps)
 
             elif final == 0x4d: # M
                 ''' DL - Down Line(s) '''
                 ps = _parse_params(parameter, minimum=1)[0]
-                self.__screen.dl(ps)
+                self.screen.dl(ps)
 
             elif final == 0x50: # P
                 ''' DCH - Delete Char(s) '''
                 ps = _parse_params(parameter, minimum=1)[0]
-                self.__screen.dch(ps)
+                self.screen.dch(ps)
 
             elif final == 0x63: # c DA2
                 ''' DA2 - Secondary Device Attribute '''
@@ -157,24 +153,24 @@ class OutputHandler(tff.DefaultHandler):
             elif final == 0x64: # d
                 ''' VPA - Vertical Position Absolute '''
                 ps = _parse_params(parameter, offset=-1)[0]
-                self.__screen.vpa(ps)
+                self.screen.vpa(ps)
 
             elif final == 0x66: # f
                 ''' HVP - Horizontal and Vertical Position '''
                 row, col = _parse_params(parameter, offset=-1, minarg=2)
-                self.__screen.hvp(row, col)
+                self.screen.hvp(row, col)
 
             elif final == 0x67: # g
                 ''' TBC - Tabstop Clear '''
                 ps = _parse_params(parameter)[0]
-                self.__screen.tbc(ps)
+                self.screen.tbc(ps)
 
             elif final == 0x68: # h
                 if len(parameter) > 0:
                     if parameter[0] == 0x3f: #
                         mnemonic = 'DECSET'
                         params = _parse_params(parameter[1:])
-                        self.__screen.decset(params)
+                        self.screen.decset(params)
                     else:
                         mnemonic = 'SM'
                 return not self.__visibility
@@ -184,7 +180,7 @@ class OutputHandler(tff.DefaultHandler):
                     if parameter[0] == 0x3f: # ?
                         mnemonic = 'DECRST'
                         params = _parse_params(parameter[1:])
-                        self.__screen.decrst(params)
+                        self.screen.decrst(params)
                     else:
                         mnemonic = 'RM'
                 return not self.__visibility
@@ -192,7 +188,7 @@ class OutputHandler(tff.DefaultHandler):
             elif final == 0x6d: # m
                 ''' SGR - Select Graphics Rendition '''
                 params = _parse_params(parameter)
-                self.__screen.sgr(params)
+                self.screen.sgr(params)
 
             elif final == 0x6e: # n
                 ''' DSR - Device Status Request '''
@@ -222,19 +218,19 @@ class OutputHandler(tff.DefaultHandler):
                 if len(parameter) > 0:
                     if parameter[0] == 0x3f: # ?
                         params = _parse_params(parameter[:1])
-                        self.__screen.xt_rest(params)
+                        self.screen.xt_rest(params)
                     else:
                         top, bottom = _parse_params(parameter, offset=-1, minarg=2)
-                        self.__screen.decstbm(top, bottom)
+                        self.screen.decstbm(top, bottom)
                 else:
-                    top, bottom = 0, self.__screen.height - 1
-                    self.__screen.decstbm(top, bottom)
+                    top, bottom = 0, self.screen.height - 1
+                    self.screen.decstbm(top, bottom)
 
             elif final == 0x73: # s
                 if len(parameter) > 0:
                     if parameter[0] == 0x3f: # ?
                         params = _parse_params(parameter[:1])
-                        self.__screen.xt_save(params)
+                        self.screen.xt_save(params)
 
             elif final == 0x78: # x
                 return not self.__visibility
@@ -256,47 +252,47 @@ class OutputHandler(tff.DefaultHandler):
                 pass
 
             elif final == 0x37: # 7
-                self.__screen.cursor.save()
+                self.screen.cursor.save()
                 return True
             elif final == 0x38: # 8
-                self.__screen.cursor.restore()
+                self.screen.cursor.restore()
                 return True
             elif final == 0x44: # D
-                self.__screen.ind()
+                self.screen.ind()
             elif final == 0x45: # E
-                self.__screen.nel()
+                self.screen.nel()
             elif final == 0x48: # H
-                self.__screen.hts()
+                self.screen.hts()
             elif final == 0x4d: # M
-                self.__screen.ri()
+                self.screen.ri()
             elif final == 0x63: # c
-                self.__screen.ris()
+                self.screen.ris()
                 return not self.__visibility # pass through
         elif intermediate == [0x23]: # #
             if final == 0x33: # 3
-                self.__screen.decdhlt()
+                self.screen.decdhlt()
             elif final == 0x34: # 4
-                self.__screen.decdhlb()
+                self.screen.decdhlb()
             elif final == 0x35: # 5
-                self.__screen.decswl()
+                self.screen.decswl()
             elif final == 0x36: # 6
-                self.__screen.decdwl()
+                self.screen.decdwl()
             elif final == 0x38: # 8
-                self.__screen.decaln()
+                self.screen.decaln()
             else:
                 pass
         elif intermediate == [0x28]: # (
-            self.__screen.set_g0(final)
+            self.screen.set_g0(final)
             return True 
         elif intermediate == [0x29]: # )
-            self.__screen.set_g1(final)
+            self.screen.set_g1(final)
             return True 
         else:
             return True 
         return True
 
     def handle_char(self, context, c):
-        screen = self.__screen
+        screen = self.screen
         if c < 0x20:
             if c == 0x00: #NUL
                 pass
@@ -333,10 +329,10 @@ class OutputHandler(tff.DefaultHandler):
 
     def handle_draw(self, context):
         if self.__visibility:
-            self.__screen.draw()
+            self.screen.draw(context)
 
     def handle_resize(self, context, row, col):
-        self.__screen.resize(row, col)
+        self.screen.resize(row, col)
 
 
 
