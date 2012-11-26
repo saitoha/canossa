@@ -24,7 +24,7 @@ setup(name                  = 'canossa',
       packages              = find_packages(exclude=[]),
       zip_safe              = True,
       include_package_data  = False,
-      install_requires      = ['tff ==0.0.9'],
+      install_requires      = ['tff >=0.0.10, <0.1.0'],
       entry_points          = """
                               [console_scripts]
                               canossa = canossa:main
