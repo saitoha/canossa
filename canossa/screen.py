@@ -20,10 +20,10 @@
 
 
 import wcwidth
-try:
-    from CStringIO import StringIO
-except:
-    from StringIO import StringIO
+#try:
+#    from cStringIO import StringIO
+#except:
+from StringIO import StringIO
 import sys
 #import logger
 
@@ -164,7 +164,7 @@ class SuuportsAlternateScreenTrait():
                 line.resize(self.width)
         assert len(lines) == self.height
         for line in lines:
-            assert self.width == len(line.cells)
+            assert self.width == line.length()
 
 class SupportsAnsiModeTrait():
     pass
@@ -308,6 +308,10 @@ class ICanossaScreenImpl(ICanossaScreen):
             self.lines[i].draw(s, col, col + width)
         self.cursor.attr.draw(s)
 
+    def getyx(self):
+        cursor = self.cursor
+        return cursor.row, cursor.col
+
     def draw(self, context):
         cursor = self.cursor
         s = StringIO()
@@ -333,7 +337,7 @@ class ICanossaScreenImpl(ICanossaScreen):
                 line.resize(col)
         assert row == len(lines)
         for line in lines:
-            assert col == len(line.cells)
+            assert col == line.length()
         if self.scroll_top == 0 and self.scroll_bottom == self.height:
             self.scroll_top = 0
             self.scroll_bottom = row 
@@ -370,8 +374,8 @@ class ICanossaScreenImpl(ICanossaScreen):
             line.write(c, col, self.cursor.attr)
             self.cursor.dirty = True
             self.cursor.col += 1
-            #if col > len(line.cells) - 1:
-            #    self.cursor.col = len(line.cells) - 1
+            #if col > line.length() - 1:
+            #    self.cursor.col = line.length() - 1
         elif width == 2: # wide character
             if self.cursor.col >= self.width - 1:
                 self.cursor.col = self.width - 2
@@ -380,8 +384,8 @@ class ICanossaScreenImpl(ICanossaScreen):
             line.write(c, col + 1, self.cursor.attr)
             self.cursor.dirty = True
             self.cursor.col += 2
-            #if col > len(line.cells) - 1:
-            #    self.cursor.col = len(line.cells) - 1
+            #if col > line.length() - 1:
+            #    self.cursor.col = line.length() - 1
         elif width == 0: # combining character
             line.combine(c, col)
 
@@ -571,9 +575,7 @@ class Screen(ICanossaScreenImpl,
 
     def ris(self):
         for line in self.lines:
-            line.dirty = True
-            for cell in line.cells:
-                cell.write(0x20, self.cursor.attr) # SP 
+            line.clear(self.cursor.attr)
         self.dectcem = True
         self.cursor.clear() 
         self._setup_tab()

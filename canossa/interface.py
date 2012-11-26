@@ -31,15 +31,19 @@ class ICanossaScreen:
 
     __metaclass__ = abc.ABCMeta
 
+    @abc.abstractmethod
     def drawrect(self, s, col, row, width, height):
         pass
 
+    @abc.abstractmethod
     def draw(self, context):
         pass
 
+    @abc.abstractmethod
     def resize(self, row, col):
         pass
 
+    @abc.abstractmethod
     def write(self, c):
         pass
 

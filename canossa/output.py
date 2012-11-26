@@ -90,160 +90,164 @@ class OutputHandler(tff.DefaultHandler):
         self.__visibility = visibility
 
     def handle_csi(self, context, parameter, intermediate, final):
-        if len(intermediate) == 0:
-            if final == 0x40: # @
-                ''' ICH - Insert Blank Character(s) '''
-                ps = _parse_params(parameter, minimum=1)[0]
-                self.screen.ich(ps)
+        try:
+            if len(intermediate) == 0:
+                if final == 0x40: # @
+                    ''' ICH - Insert Blank Character(s) '''
+                    ps = _parse_params(parameter, minimum=1)[0]
+                    self.screen.ich(ps)
 
-            elif final == 0x41: # A
-                ''' CUU - Cursor Up '''
-                ps = _parse_params(parameter, minimum=1)[0]
-                self.screen.cuu(ps)
+                elif final == 0x41: # A
+                    ''' CUU - Cursor Up '''
+                    ps = _parse_params(parameter, minimum=1)[0]
+                    self.screen.cuu(ps)
 
-            elif final == 0x42: # B
-                ''' CUD - Cursor Down '''
-                ps = _parse_params(parameter, minimum=1)[0]
-                self.screen.cud(ps)
+                elif final == 0x42: # B
+                    ''' CUD - Cursor Down '''
+                    ps = _parse_params(parameter, minimum=1)[0]
+                    self.screen.cud(ps)
 
-            elif final == 0x43: # C
-                ''' CUF - Cursor Forward '''
-                ps = _parse_params(parameter, minimum=1)[0]
-                self.screen.cuf(ps)
+                elif final == 0x43: # C
+                    ''' CUF - Cursor Forward '''
+                    ps = _parse_params(parameter, minimum=1)[0]
+                    self.screen.cuf(ps)
 
-            elif final == 0x44: # D
-                ''' CUF - Cursor Backward '''
-                ps = _parse_params(parameter, minimum=1)[0]
-                self.screen.cub(ps)
+                elif final == 0x44: # D
+                    ''' CUF - Cursor Backward '''
+                    ps = _parse_params(parameter, minimum=1)[0]
+                    self.screen.cub(ps)
 
-            elif final == 0x48: # H
-                ''' CUP - Cursor Position '''
-                row, col = _parse_params(parameter, offset=-1, minarg=2)
-                self.screen.cup(row, col)
+                elif final == 0x48: # H
+                    ''' CUP - Cursor Position '''
+                    row, col = _parse_params(parameter, offset=-1, minarg=2)
+                    self.screen.cup(row, col)
 
-            elif final == 0x4a: # J
-                ''' ED - Erase Display '''
-                ps = _parse_params(parameter)[0]
-                self.screen.ed(ps)
+                elif final == 0x4a: # J
+                    ''' ED - Erase Display '''
+                    ps = _parse_params(parameter)[0]
+                    self.screen.ed(ps)
 
-            elif final == 0x4b: # K
-                ''' EL - Erase Line(s) '''
-                ps = _parse_params(parameter)[0]
-                self.screen.el(ps)
+                elif final == 0x4b: # K
+                    ''' EL - Erase Line(s) '''
+                    ps = _parse_params(parameter)[0]
+                    self.screen.el(ps)
 
-            elif final == 0x4c: # L
-                ''' IL - Insert Line(s) '''
-                ps = _parse_params(parameter, minimum=1)[0]
-                self.screen.il(ps)
+                elif final == 0x4c: # L
+                    ''' IL - Insert Line(s) '''
+                    ps = _parse_params(parameter, minimum=1)[0]
+                    self.screen.il(ps)
 
-            elif final == 0x4d: # M
-                ''' DL - Down Line(s) '''
-                ps = _parse_params(parameter, minimum=1)[0]
-                self.screen.dl(ps)
+                elif final == 0x4d: # M
+                    ''' DL - Down Line(s) '''
+                    ps = _parse_params(parameter, minimum=1)[0]
+                    self.screen.dl(ps)
 
-            elif final == 0x50: # P
-                ''' DCH - Delete Char(s) '''
-                ps = _parse_params(parameter, minimum=1)[0]
-                self.screen.dch(ps)
+                elif final == 0x50: # P
+                    ''' DCH - Delete Char(s) '''
+                    ps = _parse_params(parameter, minimum=1)[0]
+                    self.screen.dch(ps)
 
-            elif final == 0x63: # c DA2
-                ''' DA2 - Secondary Device Attribute '''
-                return not self.__visibility
-
-            elif final == 0x64: # d
-                ''' VPA - Vertical Position Absolute '''
-                ps = _parse_params(parameter, offset=-1)[0]
-                self.screen.vpa(ps)
-
-            elif final == 0x66: # f
-                ''' HVP - Horizontal and Vertical Position '''
-                row, col = _parse_params(parameter, offset=-1, minarg=2)
-                self.screen.hvp(row, col)
-
-            elif final == 0x67: # g
-                ''' TBC - Tabstop Clear '''
-                ps = _parse_params(parameter)[0]
-                self.screen.tbc(ps)
-
-            elif final == 0x68: # h
-                if len(parameter) > 0:
-                    if parameter[0] == 0x3f: #
-                        mnemonic = 'DECSET'
-                        params = _parse_params(parameter[1:])
-                        self.screen.decset(params)
-                    else:
-                        mnemonic = 'SM'
-                return not self.__visibility
-
-            elif final == 0x6c: # l
-                if len(parameter) > 0:
-                    if parameter[0] == 0x3f: # ?
-                        mnemonic = 'DECRST'
-                        params = _parse_params(parameter[1:])
-                        self.screen.decrst(params)
-                    else:
-                        mnemonic = 'RM'
-                return not self.__visibility
-
-            elif final == 0x6d: # m
-                ''' SGR - Select Graphics Rendition '''
-                params = _parse_params(parameter)
-                self.screen.sgr(params)
-
-            elif final == 0x6e: # n
-                ''' DSR - Device Status Request '''
-                return not self.__visibility
-
-            elif final == 0x70: # p
-
-                if intermediate == []: 
-                    if len(parameter) and parameter[0] == 0x3e: # >h
-                        ''' DECRQM - Request DEC Private Mode '''
-                elif intermediate == [0x22]: # "
-                    ''' DECSCL - Set Conformance Level '''
-                    return not self.__visibility
-                elif intermediate == [0x24]: # $
-                    if len(parameter) and parameter[0] == 0x3f: # ?
-                        ''' DECRQM - Request DEC Private Mode '''
-                        return not self.__visibility
-                    else:
-                        ''' DECRQM - Request ANSI Mode '''
-                        return not self.__visibility
-                elif intermediate == [0x21]: # !
-                    ''' DECTSR - Soft Reset '''
-                    # TODO: implement soft reset
+                elif final == 0x63: # c DA2
+                    ''' DA2 - Secondary Device Attribute '''
                     return not self.__visibility
 
-            elif final == 0x72: # r
-                if len(parameter) > 0:
-                    if parameter[0] == 0x3f: # ?
-                        params = _parse_params(parameter[1:])
-                        self.screen.xt_rest(params)
+                elif final == 0x64: # d
+                    ''' VPA - Vertical Position Absolute '''
+                    ps = _parse_params(parameter, offset=-1)[0]
+                    self.screen.vpa(ps)
+
+                elif final == 0x66: # f
+                    ''' HVP - Horizontal and Vertical Position '''
+                    row, col = _parse_params(parameter, offset=-1, minarg=2)
+                    self.screen.hvp(row, col)
+
+                elif final == 0x67: # g
+                    ''' TBC - Tabstop Clear '''
+                    ps = _parse_params(parameter)[0]
+                    self.screen.tbc(ps)
+
+                elif final == 0x68: # h
+                    if len(parameter) > 0:
+                        if parameter[0] == 0x3f: #
+                            mnemonic = 'DECSET'
+                            params = _parse_params(parameter[1:])
+                            self.screen.decset(params)
+                        else:
+                            mnemonic = 'SM'
+                    return not self.__visibility
+
+                elif final == 0x6c: # l
+                    if len(parameter) > 0:
+                        if parameter[0] == 0x3f: # ?
+                            mnemonic = 'DECRST'
+                            params = _parse_params(parameter[1:])
+                            self.screen.decrst(params)
+                        else:
+                            mnemonic = 'RM'
+                    return not self.__visibility
+
+                elif final == 0x6d: # m
+                    ''' SGR - Select Graphics Rendition '''
+                    params = _parse_params(parameter)
+                    self.screen.sgr(params)
+
+                elif final == 0x6e: # n
+                    ''' DSR - Device Status Request '''
+                    return not self.__visibility
+
+                elif final == 0x70: # p
+
+                    if intermediate == []: 
+                        if len(parameter) and parameter[0] == 0x3e: # >h
+                            ''' DECRQM - Request DEC Private Mode '''
+                    elif intermediate == [0x22]: # "
+                        ''' DECSCL - Set Conformance Level '''
+                        return not self.__visibility
+                    elif intermediate == [0x24]: # $
+                        if len(parameter) and parameter[0] == 0x3f: # ?
+                            ''' DECRQM - Request DEC Private Mode '''
+                            return not self.__visibility
+                        else:
+                            ''' DECRQM - Request ANSI Mode '''
+                            return not self.__visibility
+                    elif intermediate == [0x21]: # !
+                        ''' DECTSR - Soft Reset '''
+                        # TODO: implement soft reset
+                        return not self.__visibility
+
+                elif final == 0x72: # r
+                    if len(parameter) > 0:
+                        if parameter[0] == 0x3f: # ?
+                            params = _parse_params(parameter[1:])
+                            self.screen.xt_rest(params)
+                        else:
+                            top, bottom = _parse_params(parameter, offset=-1, minarg=2)
+                            self.screen.decstbm(top, bottom)
                     else:
-                        top, bottom = _parse_params(parameter, offset=-1, minarg=2)
+                        top, bottom = 0, self.screen.height - 1
                         self.screen.decstbm(top, bottom)
+
+                elif final == 0x73: # s
+                    if len(parameter) > 0:
+                        if parameter[0] == 0x3f: # ?
+                            params = _parse_params(parameter[1:])
+                            self.screen.xt_save(params)
+
+                elif final == 0x78: # x
+                    return not self.__visibility
+
                 else:
-                    top, bottom = 0, self.screen.height - 1
-                    self.screen.decstbm(top, bottom)
-
-            elif final == 0x73: # s
-                if len(parameter) > 0:
-                    if parameter[0] == 0x3f: # ?
-                        params = _parse_params(parameter[1:])
-                        self.screen.xt_save(params)
-
-            elif final == 0x78: # x
-                return not self.__visibility
-
+                    pass
+                    #mnemonic = '[' + chr(final) + ']'
+                    #raise Exception(mnemonic)
             else:
                 pass
-                #mnemonic = '[' + chr(final) + ']'
+                #mnemonic = '[' + str(intermediate) + ':' + chr(final) + ']'
                 #raise Exception(mnemonic)
-        else:
+        except ValueError:
             pass
-            #mnemonic = '[' + str(intermediate) + ':' + chr(final) + ']'
-            #raise Exception(mnemonic)
-
+        except TypeError:
+            pass
         return True 
 
     def handle_esc(self, context, intermediate, final):

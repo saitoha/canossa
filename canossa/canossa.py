@@ -104,7 +104,7 @@ def main():
     if options.visibility:
         outputhandler = output.OutputHandler(visibility=True)
     else:
-        canossahandler = output.OoutputHandler(visibility=False)
+        canossahandler = output.OutputHandler(visibility=False)
         outputhandler = tff.FilterMultiplexer(canossahandler, tff.DefaultHandler())
 
     # create TFF session

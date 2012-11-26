@@ -21,13 +21,53 @@
 from attribute import Attribute
 from cell import Cell
 
+""" 
+This module exports Line object, that consists of some cell objects.
+
+   +-----+-----+-----+-...                   ...-+-----+
+   |  A  |  B  |  C  |       ... ... ...         |     |
+   +-----+-----+-----+-...                   ...-+-----+
+
+Ordinally, each cell contains a narrow character
+
+>>> line = Line(10)
+>>> attr = Attribute()
+>>> print line
+<ESC>#5<ESC>(B<ESC>[0m<SP><SP><SP><SP><SP><SP><SP><SP><SP><SP>
+>>> line.clear(attr)
+>>> print line
+<ESC>#5<ESC>(B<ESC>[0;39;49m<SP><SP><SP><SP><SP><SP><SP><SP><SP><SP>
+>>> line.write(0x40, 0, attr)
+>>> line.write(0x50, 0, attr)
+>>> print line
+<ESC>#5<ESC>(B<ESC>[0;39;49mP<SP><SP><SP><SP><SP><SP><SP><SP><SP>
+>>> line.write(0x40, 1, attr)
+>>> print line
+<ESC>#5<ESC>(B<ESC>[0;39;49mP@<SP><SP><SP><SP><SP><SP><SP><SP>
+
+A wide character occupies 2 cells, the first cell contains '\0'
+
+   +----+---------+-----+-...                   ...-+-----+
+   | \0 | \x3042  |  C  |       ... ... ...         |     |
+   +----+---------+-----+-...                   ...-+-----+
+    <------------> <--->
+     a wide char   char 
+
+>>> line.write(0x3042, 2, attr)
+>>> print line
+<ESC>#5<ESC>(B<ESC>[0;39;49mP@あ<SP><SP><SP><SP><SP><SP><SP>
+>>> line.write(0x30, 5, attr)
+>>> print line
+<ESC>#5<ESC>(B<ESC>[0;39;49mP@あ<SP><SP>0<SP><SP><SP><SP>
+"""
+
 _LINE_TYPE_DHLT = 3
 _LINE_TYPE_DHLB = 4
 _LINE_TYPE_SWL  = 5
 _LINE_TYPE_DWL  = 6
 
-
 class SupportsDoubleSizedTrait():
+    ''' For DECDWL/DECDHL support '''
 
     _type = _LINE_TYPE_SWL
 
@@ -51,11 +91,13 @@ class SupportsDoubleSizedTrait():
         return self._type
 
 class SupportsWideTrait():
+    ''' provides pad method. it makes the cell at specified position contain '\0'. '''
 
     def pad(self, pos):
         self.cells[pos].pad()
 
 class SupportsCombiningTrait():
+    ''' provides combine method. it combines specified character to the cell at specified position. '''
 
     def combine(self, value, pos):
         self.cells[max(0, pos - 1)].combine(value)
@@ -67,6 +109,9 @@ class Line(SupportsDoubleSizedTrait,
     def __init__(self, width):
         self.cells = [Cell() for cell in xrange(0, width)]
         self.dirty = True
+
+    def length(self):
+        return len(self.cells)
 
     def resize(self, col):
         width = len(self.cells)
@@ -90,7 +135,7 @@ class Line(SupportsDoubleSizedTrait,
         attr = None 
         cells = self.cells
         c = None
-        s.write("\x1b#%d" % self._type)
+        s.write(u"\x1b#%d" % self._type)
         if left > 0:
             c = cells[left - 1].get()
             if c is None:
@@ -119,25 +164,11 @@ class Line(SupportsDoubleSizedTrait,
         language, encoding = locale.getdefaultlocale()
         s = codecs.getwriter(encoding)(StringIO.StringIO())
         self.draw(s, 0, len(self.cells)) 
-        return s.getvalue().replace("\x1b", "<ESC>").replace("\x00", "<NUL>")
-
-def test():
-    line = Line(10) 
-    attr = Attribute()
-    print line
-    line.clear(attr)
-    print line
-    line.write(0x40, 0, attr)
-    line.write(0x50, 0, attr)
-    print line
-    line.write(0x40, 1, attr)
-    print line
-    line.write(0x3042, 2, attr)
-    print line
-    line.write(0x30, 5, attr)
-    print line
+        result = s.getvalue().replace("\x1b", "<ESC>")
+        result = result.replace("\x20", "<SP>")
+        result = result.replace("\x00", "<NUL>")
 
 if __name__ == "__main__":
-    print "line test."
-    test()
+    import doctest
+    doctest.testmod()
 
