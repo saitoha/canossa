@@ -147,21 +147,25 @@ class Attribute():
         return s.getvalue().replace("\x1b", "<ESC>")
 
 def test():
-    attr = Attribute() 
-    print attr
-    attr.set_sgr([0])
-    print attr.equeals(Attribute())
-    print attr
-    attr.set_charset("A")
-    print attr
-    attr.set_sgr([0, 5, 6])
-    print attr
-    attr.set_sgr([7, 8])
-    print attr
-    attr.set_sgr([17, 18])
-    print attr
-    attr.set_sgr([38, 5, 200, 48, 5, 100])
-    print attr
+    """
+    >>> attr = Attribute() 
+    >>> print attr
+    >>> attr.set_sgr([0])
+    >>> print attr.equeals(Attribute())
+    >>> print attr
+    >>> attr.set_charset("A")
+    >>> print attr
+    >>> attr.set_sgr([0, 5, 6])
+    >>> print attr
+    >>> attr.set_sgr([7, 8])
+    >>> print attr
+    >>> attr.set_sgr([17, 18])
+    >>> print attr
+    >>> attr.set_sgr([38, 5, 200, 48, 5, 100])
+    >>> print attr
+    """
+    import doctest
+    doctest.testmod()
 
 if __name__ == "__main__":
     print "attribute test."
