@@ -15,6 +15,9 @@ clean:
 	rm -rf dist/ build/ canossa.egg-info
 	rm -f **/*.pyc
 
+test:
+	python setup.py test
+
 update:
 	python setup.py register
 	python setup.py sdist upload
