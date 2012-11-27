@@ -44,28 +44,31 @@ class Cell():
         self.attr = attr.get()
 
 def test():
-    from attribute import Attribute
-    cell = Cell() 
-    attr = Attribute()
-    print cell.get()
-    cell.write(0x34, attr)
-    print cell.get()
-    cell.clear(attr)
-    print cell.get()
-    cell.write(0x3042, attr)
-    print cell.get()
-    cell.pad()
-    print cell.get()
-    cell.write(0x09a4, attr)
-    print cell.get()
-    cell.combine(0x20DE)
-    print cell.get()
-    cell.combine(0x20DD)
-    print cell.get()
-    cell.combine(0x0308)
-    print cell.get()
+    """
+    >>> from attribute import Attribute
+    >>> cell = Cell() 
+    >>> attr = Attribute()
+    >>> print cell.get()
+    >>> cell.write(0x34, attr)
+    >>> print cell.get()
+    >>> cell.clear(attr)
+    >>> print cell.get()
+    >>> cell.write(0x3042, attr)
+    >>> print cell.get()
+    >>> cell.pad()
+    >>> print cell.get()
+    >>> cell.write(0x09a4, attr)
+    >>> print cell.get()
+    >>> cell.combine(0x20DE)
+    >>> print cell.get()
+    >>> cell.combine(0x20DD)
+    >>> print cell.get()
+    >>> cell.combine(0x0308)
+    >>> print cell.get()
+    """
+    import doctest
+    doctest.testmod()
 
 if __name__ == "__main__":
-    print "line test."
     test()
 
