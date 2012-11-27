@@ -67,22 +67,25 @@ class Cursor():
 
 
 def test():
-    cursor = Cursor() 
-    print cursor
-    cursor.clear()
-    print cursor
-    cursor.setyx(10, 20)
-    print cursor
-    print cursor.getyx()
-    cursor.save()
-    cursor.setyx(24, 15)
-    print cursor
-    cursor.clear()
-    print cursor
-    cursor.restore()
-    print cursor
+    """
+    >>> cursor = Cursor() 
+    >>> print cursor
+    >>> cursor.clear()
+    >>> print cursor
+    >>> cursor.setyx(10, 20)
+    >>> print cursor
+    >>> print cursor.getyx()
+    >>> cursor.save()
+    >>> cursor.setyx(24, 15)
+    >>> print cursor
+    >>> cursor.clear()
+    >>> print cursor
+    >>> cursor.restore()
+    >>> print cursor
+    """
+    import doctest
+    doctest.testmod()
 
 if __name__ == "__main__":
-    print "attribute test."
     test()
 
