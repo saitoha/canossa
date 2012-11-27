@@ -180,7 +180,7 @@ class SupportsExtendedModeTrait():
             if param == 1:
                 pass # DECCKM
             elif param == 3:
-                self.resize(self.width, 132)
+                self.resize(self.height, 132)
                 self.ris()
             elif param == 4:
                 pass
@@ -220,7 +220,7 @@ class SupportsExtendedModeTrait():
             if param == 1:
                 pass # DECCKM
             elif param == 3:
-                self.resize(self.width, 80)
+                self.resize(self.height, 80)
                 self.ris()
             elif param == 4:
                 pass
@@ -341,13 +341,13 @@ class ICanossaScreenImpl(ICanossaScreen):
         if self.scroll_top == 0 and self.scroll_bottom == self.height:
             self.scroll_top = 0
             self.scroll_bottom = row 
-        self.height = row
-        self.width = col
         try:
-        #    sys.stdout.write("\x1b]2;%d-%d\x1b\\" % (row, col))
             self.cursor.row, self.cursor.col = _get_pos()
+            #sys.stdout.write("\x1b]2;%d-%d (%d, %d)\x1b\\" % (row, col, self.cursor.row, self.cursor.col))
         except:
             pass
+        self.height = row
+        self.width = col
         if self.cursor.row >= self.height:
             self.cursor.row = self.height - 1
         if self.cursor.col >= self.width:
