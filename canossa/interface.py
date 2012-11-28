@@ -32,11 +32,11 @@ class ICanossaScreen:
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def drawrect(self, s, col, row, width, height):
+    def copyrect(self, s, srcx, srcy, width, height, destx=None, desty=None):
         pass
 
     @abc.abstractmethod
-    def draw(self, context):
+    def drawall(self, context):
         pass
 
     @abc.abstractmethod
