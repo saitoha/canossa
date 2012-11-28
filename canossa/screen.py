@@ -174,16 +174,16 @@ class SupportsExtendedModeTrait():
     dectcem = True
     decawm = True
     decom = False
+    allow_deccolm = False
 
     def decset(self, params):
         for param in params:
             if param == 1:
                 pass # DECCKM
             elif param == 3:
-                self.resize(self.height, 132)
-                self.ris()
-            elif param == 4:
-                pass
+                if self.allow_deccolm:
+                    self.resize(self.height, 132)
+                    self.ris()
             elif param == 6:
                 self.decom = True
             elif param == 7:
@@ -192,6 +192,8 @@ class SupportsExtendedModeTrait():
                 pass # cursor blink
             elif param == 25:
                 self.dectcem = True
+            elif param == 40:
+                self.allow_deccolm = True
             elif param == 1047:
                 self.switch_altbuf()
                 return True
@@ -203,27 +205,16 @@ class SupportsExtendedModeTrait():
                 self.switch_altbuf()
                 return True
             else:
-                # 1000 normal mouse tracking 
-                # 1001 highlight mouse tracking 
-                # 1002 button mouse tracking 
-                # 1003 all mouse tracking 
-                # 1005 UTF-8 mouse encoding 
-                # 1006 SGR mouse encoding 
-                # 1015 URXVT mouse encoding 
-                # 2004 bracketed paste mode
                 pass
-                #import tff
-                #raise tff.NotHandledException("DECSET %d" % param)
 
     def decrst(self, params):
         for param in params:
             if param == 1:
                 pass # DECCKM
             elif param == 3:
-                self.resize(self.height, 80)
-                self.ris()
-            elif param == 4:
-                pass
+                if self.allow_deccolm:
+                    self.resize(self.height, 80)
+                    self.ris()
             elif param == 6:
                 self.decom = False
             elif param == 7:
@@ -232,8 +223,8 @@ class SupportsExtendedModeTrait():
                 pass # cursor blink
             elif param == 25:
                 self.dectcem = False
-            elif param == 1000:
-                pass
+            elif param == 40:
+                self.allow_deccolm = False
             elif param == 1047:
                 self.switch_mainbuf()
                 return True
@@ -244,8 +235,8 @@ class SupportsExtendedModeTrait():
                 self.switch_mainbuf()
                 self.restore_pos()
                 return True
-            elif param == 2004:
-                pass # bracketed paste mode
+            else:
+                pass
 
     def xt_save(self, params):
         pass
@@ -298,24 +289,59 @@ class SupportsTabStopTrait():
 
 from interface import *
 
+class CanossaRangeException(Exception):
+    ''' thrown when an invalid range is detected '''
+
+    def __init__(self, message):
+        """
+        >>> e = CanossaRangeException("test1")
+        >>> e.message
+        test1
+        """
+        self.message = message
+
+    def __str__(self):
+        """
+        >>> e = CanossaRangeException("test2")
+        >>> print e
+        'test2'
+        """
+        return repr(self.message)
+
+
 class ICanossaScreenImpl(ICanossaScreen):
 
-    def drawrect(self, s, col, row, width, height):
-        height = min(height, self.height)
-        width =  min(width, self.width)
-        for i in xrange(row, row + height):
-            s.write("\x1b[%d;%dH" % (i + 1, col + 1))
-            self.lines[i].draw(s, col, col + width)
+    def copyrect(self, s, srcx, srcy, width, height, destx=None, desty=None):
+        if destx is None:
+            destx = srcx
+        if desty is None:
+            desty = srcy
+
+        #height = min(height, (self.height - 1) - desty)
+        #width =  min(width, (self.width - 1) - destx)
+        if srcx < 0 or srcy < 0 or height < 0 or width < 0:
+            raise CanossaRangeException("invalid rect is detected. (%d, %d, %d, %d)" % (srcx, srcy, width, height))
+
+        for i in xrange(desty, desty + height):
+            s.write("\x1b[%d;%dH" % (i + 1, destx + 1))
+            self.lines[i].draw(s, srcx, srcx + width)
+
         self.cursor.attr.draw(s)
 
     def getyx(self):
         cursor = self.cursor
         return cursor.row, cursor.col
 
-    def draw(self, context):
+    def drawall(self, context):
         cursor = self.cursor
         s = StringIO()
-        self.drawrect(s, 0, 0, self.width, self.height)
+
+        for i in xrange(0, self.height):
+            s.write("\x1b[%d;1H" % (i + 1))
+            self.lines[i].draw(s, 0, self.width)
+
+        self.cursor.attr.draw(s)
+
         cursor.draw(s)
         context.writestring(s.getvalue())
 
