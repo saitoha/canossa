@@ -74,6 +74,9 @@ def _get_pos_and_size(stdin, stdout):
     
 class OutputHandler(tff.DefaultHandler):
 
+    __cpr = False
+    __xcpr = False
+
     def __init__(self, scr=None, visibility=False):
         self.__super = super(OutputHandler, self)
 
@@ -88,6 +91,8 @@ class OutputHandler(tff.DefaultHandler):
 
         self.__super = super(OutputHandler, self)
         self.__visibility = visibility
+        self.__cpr = False
+        self.__xcpr = False
 
     def handle_csi(self, context, parameter, intermediate, final):
         try:
@@ -193,6 +198,14 @@ class OutputHandler(tff.DefaultHandler):
 
                 elif final == 0x6e: # n
                     ''' DSR - Device Status Request '''
+                    if self.__visibility:
+                        if parameter == [0x36]: # n
+                            if intermediate == []: 
+                                self.__cpr = True
+                                return True
+                            elif intermediate == [0x3f]: # ?
+                                self.__xcpr = True
+                                return True
                     return not self.__visibility
 
                 elif final == 0x70: # p
@@ -310,7 +323,7 @@ class OutputHandler(tff.DefaultHandler):
             elif c == 0x09: # HT
                 screen.ht()
             elif c == 0x0a: # NL
-                screen.cr()
+                #screen.cr()
                 screen.lf()
             elif c == 0x0b: # VT
                 screen.lf()
@@ -333,7 +346,13 @@ class OutputHandler(tff.DefaultHandler):
 
     def handle_draw(self, context):
         if self.__visibility:
-            self.screen.draw(context)
+            self.screen.drawall(context)
+            if self.__cpr:
+                self.__cpr = False
+                context.puts("\x1b[6n")
+            if self.__xcpr:
+                self.__xcpr = False
+                context.puts("\x1b[?6n")
 
     def handle_resize(self, context, row, col):
         self.screen.resize(row, col)
