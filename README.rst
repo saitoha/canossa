@@ -6,7 +6,7 @@ Install
 
 via github ::
 
-    $ git clone https://github.com/saitoha/canossa.git
+    $ git clone --recursive https://github.com/saitoha/canossa.git
     $ cd canossa
     $ python setup.py install
 
