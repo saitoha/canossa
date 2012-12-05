@@ -1,3 +1,6 @@
 [submodule "canossa/tff"]
 	path = canossa/tff
 	url = git://github.com/saitoha/tff.git
+[submodule "canossa/termprop"]
+	path = canossa/termprop
+	url = git://github.com/saitoha/termprop.git
