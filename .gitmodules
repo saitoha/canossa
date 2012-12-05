@@ -1,0 +1,3 @@
+[submodule "canossa/termprop"]
+	path = canossa/termprop
+	url = git://github.com/saitoha/termprop.git
