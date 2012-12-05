@@ -18,17 +18,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # ***** END LICENSE BLOCK *****
 
+from attribute import Attribute
+
 class Cell():
 
     __value = None
-    attr = (0, 0x42)
+
+    attr = Attribute((0, 0x42))
 
     def __init__(self):
         self.__value = u' '
 
     def write(self, value, attr):
         self.__value = unichr(value)
-        self.attr = attr.get()
+        self.attr = attr.clone()
 
     def pad(self):
         self.__value = None 
@@ -41,7 +44,7 @@ class Cell():
 
     def clear(self, attr):
         self.__value = u' '
-        self.attr = attr.get()
+        self.attr = attr.clone()
 
 def test():
     """

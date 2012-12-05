@@ -27,7 +27,7 @@ class Cursor():
         self.row = y
         self.dirty = True
         if attr:
-            self.attr = Attribute(attr)
+            self.attr = attr.clone()
         else:
             self.attr = Attribute()
         self.__backup = None
@@ -39,7 +39,7 @@ class Cursor():
         self.attr.clear()
 
     def save(self):
-        self.__backup = Cursor(self.row, self.col, self.attr.get())
+        self.__backup = Cursor(self.row, self.col, self.attr.clone())
 
     def restore(self):
         if self.__backup:

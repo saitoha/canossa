@@ -29,14 +29,14 @@ _ATTR_BG         = 23
 
 class Attribute():
 
-    __value = (0x100 << _ATTR_FG | 0x100 << _ATTR_BG, 0x42)
+    _value = (0x100 << _ATTR_FG | 0x100 << _ATTR_BG, 0x42)
 
     def __init__(self, value = (0x100 << _ATTR_FG | 0x100 << _ATTR_BG, 0x42)):
-        self.__value = value
+        self._value = value
 
     def draw(self, s):
         params = [0]
-        value, charset = self.__value 
+        value, charset = self._value 
         for i in xrange(0, 8):
             if value & (2 << i):
                 params.append(i) 
@@ -63,20 +63,20 @@ class Attribute():
         s.write(u'\x1b(%c\x1b[%sm' % (charset, ';'.join([str(p) for p in params])))
 
     def clear(self):
-        self.__value = (0x100 << _ATTR_FG | 0x100 << _ATTR_BG, 0x42)
+        self._value = (0x100 << _ATTR_FG | 0x100 << _ATTR_BG, 0x42)
 
-    def get(self):
-        return self.__value
+    def clone(self):
+        return Attribute(self._value)
 
     def set_charset(self, charset):
-        value, old = self.__value
-        self.__value = (value, charset)
+        value, old = self._value
+        self._value = (value, charset)
 
     def set_sgr(self, pm):
         i = 0
         if len(pm) == 0:
             pm.append(0)
-        value, charset = self.__value
+        value, charset = self._value
         while i < len(pm):
             n = pm[i]
             if n == 0:
@@ -135,10 +135,10 @@ class Attribute():
                pass
                #logger.writeLine("SGR %d is ignored." % n)
             i += 1
-        self.__value = (value, charset)
+        self._value = (value, charset)
 
-    def equeals(self, other):
-        return self.__value == other.__value
+    def equals(self, other):
+        return self._value == other._value
 
     def __str__(self):
         import StringIO

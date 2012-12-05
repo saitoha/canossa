@@ -39,10 +39,10 @@ along with this program. If not, see http://www.gnu.org/licenses/.
         ''' % __init__.__version__
         return
 
-def create(row, col, y, x, is_cjk, visibility=False):
+def create(row, col, y, x, termenc, termprop, visibility=False):
     import output, screen
 
-    screen = screen.Screen(row, col, y, x, is_cjk)
+    screen = screen.Screen(row, col, y, x, termenc, termprop)
     return output.OutputHandler(screen, visibility=visibility)
 
 def main():
@@ -102,9 +102,9 @@ def main():
 
     # make screen
     if options.visibility:
-        outputhandler = output.OutputHandler(visibility=True)
+        outputhandler = output.OutputHandler(visibility=True, termenc=termenc)
     else:
-        canossahandler = output.OutputHandler(visibility=False)
+        canossahandler = output.OutputHandler(visibility=False, termenc=termenc)
         outputhandler = tff.FilterMultiplexer(canossahandler, tff.DefaultHandler())
 
     # create TFF session

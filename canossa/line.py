@@ -91,6 +91,9 @@ class SupportsDoubleSizedTrait():
         self._type = _LINE_TYPE_DHLB
         self.dirty = True
 
+    def is_normal(self):
+        return self._type == _LINE_TYPE_SWL
+
     def type(self):
         '''
         >>> line = Line(5)
@@ -173,7 +176,7 @@ class Line(SupportsDoubleSizedTrait,
         <ESC>#5<ESC>(B<ESC>[0;39;49m<SP><SP><SP><SP><SP>
         '''
         self.dirty = True
-        self._type = _LINE_TYPE_SWL
+        self.set_swl()
         for cell in self.cells:
             cell.clear(attr)
 
@@ -192,9 +195,10 @@ class Line(SupportsDoubleSizedTrait,
         >>> print line
         <ESC>#5<ESC>(B<ESC>[0;39;49mPあ<SP><SP><SP>
         '''
-        self.cells[pos].write(value, attr)
+        cell = self.cells[pos]
+        cell.write(value, attr)
 
-    def draw(self, s, left, right):
+    def drawrange(self, s, left, right, cursor):
         '''
         >>> line = Line(5)
         >>> import StringIO
@@ -205,11 +209,9 @@ class Line(SupportsDoubleSizedTrait,
         >>> print result 
         <ESC>#5<ESC>(B<ESC>[0m<SP><SP>
         '''
-        self.dirty = False
-        attr = None 
         cells = self.cells
         c = None
-        s.write(u"\x1b#%d" % self._type)
+        attr = cursor.attr
         if left > 0:
             c = cells[left - 1].get()
             if c is None:
@@ -218,19 +220,45 @@ class Line(SupportsDoubleSizedTrait,
         for cell in cells[left:right]:
             c = cell.get()
             if not c is None:
-                if attr != cell.attr:
+                if not attr.equals(cell.attr):
                     attr = cell.attr
-                    Attribute(attr).draw(s)
+                    attr.draw(s)
                 s.write(c)
         if c is None:
             for cell in cells[right:]:
                 c = cell.get()
                 if not c is None:
-                    if attr != cell.attr:
+                    if not attr.equals(cell.attr):
                         attr = cell.attr
-                        Attribute(attr).draw(s)
+                        attr.draw(s)
                     s.write(c)
                     break
+        cursor.attr = attr
+
+    def drawall(self, s, cursor):
+        self.dirty = False
+        cells = self.cells
+        c = None
+        s.write(u"\x1b#%d" % self._type)
+        attr = cursor.attr
+        for cell in cells:
+            c = cell.get()
+            if not c is None:
+                if not attr.equals(cell.attr):
+                    attr = cell.attr
+                    attr.draw(s)
+                s.write(c)
+        if c is None:
+            for cell in cells[right:]:
+                c = cell.get()
+                if not c is None:
+                    if not attr.equals(cell.attr):
+                        attr = cell.attr
+                        attr.draw(s)
+                    s.write(c)
+                    break
+        cursor.attr = attr
+        
 
     def __str__(self):
         '''

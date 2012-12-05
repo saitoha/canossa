@@ -77,7 +77,7 @@ class OutputHandler(tff.DefaultHandler):
     __cpr = False
     __xcpr = False
 
-    def __init__(self, scr=None, visibility=False):
+    def __init__(self, scr=None, termenc="UTF-8", termprop=None, visibility=False):
         self.__super = super(OutputHandler, self)
 
         if scr:
@@ -87,7 +87,7 @@ class OutputHandler(tff.DefaultHandler):
             # make screen
             # get current position
             row, col, y, x = _get_pos_and_size(sys.stdin, sys.stdout)
-            self.screen = screen.Screen(row, col, y, x)
+            self.screen = screen.Screen(row, col, y, x, termenc, termprop)
 
         self.__super = super(OutputHandler, self)
         self.__visibility = visibility

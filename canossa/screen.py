@@ -19,12 +19,12 @@
 # ***** END LICENSE BLOCK *****
 
 
-import wcwidth
-#try:
-#    from cStringIO import StringIO
-#except:
-from StringIO import StringIO
+try:
+    from cStringIO import StringIO
+except:
+    from StringIO import StringIO
 import sys
+import codecs
 #import logger
 
 import sys, os, termios, select
@@ -85,16 +85,6 @@ class SupportsDoubleSizedTrait():
     def decdwl(self):
         line = self.lines[self.cursor.row] 
         line.set_dwl()
-
-class SupportsWideCharacterTrait():
-
-    _wcwidth = None
-
-    def _setup_wcwidth(self, is_cjk=False):
-        if is_cjk:
-            self._wcwidth = wcwidth.mk_wcwidth
-        else:
-            self._wcwidth = wcwidth.mk_wcwidth_cjk
 
 class SuuportsCursorPersistentTrait():
 
@@ -275,11 +265,21 @@ class SupportsTabStopTrait():
     def ht(self):
         line = self.lines[self.cursor.row] 
         col = self.cursor.col
+        if line.is_normal():
+            if len(self._tabstop) > 0:
+                max_pos = self._tabstop[-1]
+            else:
+                max_pos = 0
+        else:
+            max_pos = self.width / 2 - 1
         if col < self.width:
             col += 1
             for stop in self._tabstop:
                 if col <= stop:
-                    self.cursor.col = stop 
+                    if stop >= max_pos:
+                        self.cursor.col = max_pos
+                    else:
+                        self.cursor.col = stop 
                     break
             else:
                 self.cursor.col = self.width - 1 
@@ -322,9 +322,11 @@ class ICanossaScreenImpl(ICanossaScreen):
         if srcx < 0 or srcy < 0 or height < 0 or width < 0:
             raise CanossaRangeException("invalid rect is detected. (%d, %d, %d, %d)" % (srcx, srcy, width, height))
 
+        cursor = Cursor(0, 0)
         for i in xrange(desty, desty + height):
             s.write("\x1b[%d;%dH" % (i + 1, destx + 1))
-            self.lines[i].draw(s, srcx, srcx + width)
+            line = self.lines[i]
+            line.drawrange(s, srcx, srcx + width, cursor)
 
         self.cursor.attr.draw(s)
 
@@ -333,17 +335,19 @@ class ICanossaScreenImpl(ICanossaScreen):
         return cursor.row, cursor.col
 
     def drawall(self, context):
-        cursor = self.cursor
-        s = StringIO()
+        s = self._output
 
+        cursor = Cursor(0, 0)
         for i in xrange(0, self.height):
             s.write("\x1b[%d;1H" % (i + 1))
-            self.lines[i].draw(s, 0, self.width)
+            line = self.lines[i]
+            line.drawall(s, cursor)
 
         self.cursor.attr.draw(s)
 
-        cursor.draw(s)
+        self.cursor.draw(s)
         context.writestring(s.getvalue())
+        s.truncate(0)
 
     def resize(self, row, col):
         lines = self.lines
@@ -368,7 +372,9 @@ class ICanossaScreenImpl(ICanossaScreen):
             self.scroll_top = 0
             self.scroll_bottom = row 
         try:
-            self.cursor.row, self.cursor.col = _get_pos()
+            pos = _get_pos()
+            if not pos is None:
+                self.cursor.row, self.cursor.col = pos
             #sys.stdout.write("\x1b]2;%d-%d (%d, %d)\x1b\\" % (row, col, self.cursor.row, self.cursor.col))
         except:
             pass
@@ -384,35 +390,39 @@ class ICanossaScreenImpl(ICanossaScreen):
         row, col = self.cursor.row, self.cursor.col
         line = self.lines[row] 
 
-        if col >= self.width:
-            self._wrap()
-            row, col = self.cursor.row, self.cursor.col
-            line = self.lines[row] 
+        width = self.width
+        if col >= width:
+            if self.decawm:
+                self._wrap()
+                row, col = self.cursor.row, self.cursor.col
+                line = self.lines[row] 
+            else:
+                col = width - 1
 
         line.dirty = True
 
-        width = self._wcwidth(c)
+        char_width = self._mk_wcwidth(c)
+        if char_width == 0:
+            if not self._termprop is None:
+                if not self._termprop.has_combine:
+                    char_width = 1
 
-        if width == 1: # normal (narrow) character
-            if self.cursor.col >= self.width:
-                self.cursor.col = self.width - 1
+        if char_width == 1: # normal (narrow) character
+            if self.cursor.col >= width:
+                self.cursor.col = width - 1
                 col = self.cursor.col
             line.write(c, col, self.cursor.attr)
             self.cursor.dirty = True
             self.cursor.col += 1
-            #if col > line.length() - 1:
-            #    self.cursor.col = line.length() - 1
-        elif width == 2: # wide character
-            if self.cursor.col >= self.width - 1:
-                self.cursor.col = self.width - 2
+        elif char_width == 2: # wide character
+            if self.cursor.col >= width - 1:
+                self.cursor.col = width - 2
                 col = self.cursor.col
             line.pad(col)
             line.write(c, col + 1, self.cursor.attr)
             self.cursor.dirty = True
             self.cursor.col += 2
-            #if col > line.length() - 1:
-            #    self.cursor.col = line.length() - 1
-        elif width == 0: # combining character
+        elif char_width == 0: # combining character
             line.combine(c, col)
 
 class MockScreen():
@@ -446,30 +456,35 @@ class Screen(ICanossaScreenImpl,
              SupportsExtendedModeTrait,
              SupportsTabStopTrait,
              SupportsDoubleSizedTrait,
-             SupportsWideCharacterTrait,
              SuuportsCursorPersistentTrait,
              SuuportsAlternateScreenTrait,
              SuuportsISO2022DesignationTrait):
 
     _saved_pos = None
 
-    def __init__(self, row=24, col=80, y=0, x=0, is_cjk=False):
+    def __init__(self, row=24, col=80, y=0, x=0, termenc="UTF-8", termprop=None):
         self.height = row
         self.width = col
         self.cursor = Cursor(y, x)
         self.scroll_top = 0 
         self.scroll_bottom = self.height 
+        self._output = codecs.getwriter(termenc)(StringIO())
+
+        if termprop is None:
+            import termprop as tp
+            termprop = tp.Termprop()
+
+        self._mk_wcwidth = termprop.mk_wcwidth
+        self._termprop = termprop
 
         self._setup_lines()
-        self._setup_wcwidth()
         self._setup_altbuf()
         self._setup_tab()
         self._setup_charset()
 
     def _wrap(self):
         self.cursor.col = 0 
-        if self.decawm:
-            self.lf()
+        self.lf()
 
     def bs(self):
         if self.cursor.col >= self.width:
@@ -483,13 +498,15 @@ class Screen(ICanossaScreenImpl,
 
     def lf(self):
         if self.cursor.col >= self.width:
-            self._wrap() 
+            if self.decawm:
+                self._wrap() 
         self.cursor.row += 1
         if self.cursor.row >= self.scroll_bottom:
-            for line in self.lines:
+            for line in self.lines[self.scroll_top + 1:self.scroll_bottom]:
                 line.dirty = True
-            self.lines.insert(self.scroll_bottom, Line(self.width))
-            self.lines.pop(self.scroll_top)
+            line = self.lines.pop(self.scroll_top)
+            line.clear(self.cursor.attr)
+            self.lines.insert(self.scroll_bottom - 1, line)
             self.cursor.row = self.scroll_bottom - 1 
         self.cursor.dirty = True
 
@@ -504,8 +521,9 @@ class Screen(ICanossaScreenImpl,
         if self.cursor.row <= self.scroll_top:
             for line in self.lines:
                 line.dirty = True
-            self.lines.insert(self.scroll_top, Line(self.width))
-            self.lines.pop(self.scroll_bottom)
+            line = self.lines.pop(self.scroll_bottom - 1)
+            line.clear(self.cursor.attr)
+            self.lines.insert(self.scroll_top, line)
             self.cursor.row = self.scroll_top 
         else:
             self.cursor.row -= 1
