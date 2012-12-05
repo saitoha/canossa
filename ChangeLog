@@ -1,7 +1,10 @@
 
 2012-11-26 Hayaki Saito <user@zuse.jp>
 
-    * Use TFF 0.1.10
+    * Use TFF 0.0.10
     * Add some tests
 
+2012-12-05 Hayaki Saito <user@zuse.jp>
 
+    * Use TFF 0.1.0
+    * Use git-submodule
