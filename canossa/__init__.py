@@ -25,6 +25,8 @@ __license__ = "GPL v3"
 from canossa import create, main
 
 from screen import Screen 
+import tff
+import termprop
 
 ''' main '''
 if __name__ == '__main__':    
