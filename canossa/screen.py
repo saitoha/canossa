@@ -128,11 +128,26 @@ class SuuportsAlternateScreenTrait():
         self._mainbuf = self.lines
 
     def switch_mainbuf(self):
-        for line in self.lines:
-            line.clear(self.cursor.attr)
         self.lines = self._mainbuf
         for line in self.lines:
-            line.resize(self.width)
+            line.clear(self.cursor.attr)
+        lines = self.lines
+        if len(lines) > self.height:
+            while len(lines) != self.height:
+                lines.pop()
+            for line in lines:
+                line.resize(self.width)
+        elif len(lines) < self.height:
+            for line in lines:
+                line.resize(self.width)
+            while len(lines) != self.height:
+                lines.insert(0, Line(self.width))
+        else:
+            for line in lines:
+                line.resize(self.width)
+        assert len(lines) == self.height
+        for line in lines:
+            assert self.width == line.length()
 
     def switch_altbuf(self):
         self.lines = self._altbuf
@@ -336,15 +351,13 @@ class ICanossaScreenImpl(ICanossaScreen):
 
     def drawall(self, context):
         s = self._output
-
         cursor = Cursor(0, 0)
+        cursor.attr.draw(s)
         for i in xrange(0, self.height):
             s.write("\x1b[%d;1H" % (i + 1))
             line = self.lines[i]
             line.drawall(s, cursor)
-
         self.cursor.attr.draw(s)
-
         self.cursor.draw(s)
         context.writestring(s.getvalue())
         s.truncate(0)
