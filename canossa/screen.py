@@ -357,8 +357,8 @@ class ICanossaScreenImpl(ICanossaScreen):
             s.write("\x1b[%d;1H" % (i + 1))
             line = self.lines[i]
             line.drawall(s, cursor)
-        self.cursor.attr.draw(s)
         self.cursor.draw(s)
+        self.cursor.attr.draw(s)
         context.writestring(s.getvalue())
         s.truncate(0)
 
