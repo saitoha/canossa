@@ -19,13 +19,14 @@
 # ***** END LICENSE BLOCK *****
 
 
-_ATTR_BOLD       = 1
-_ATTR_UNDERLINED = 4
-_ATTR_BLINK      = 5
-_ATTR_INVERSE    = 7
-_ATTR_INVISIBLE  = 8
-_ATTR_FG         = 14 
-_ATTR_BG         = 23 
+
+_ATTR_BOLD       = 1    # 00000000 00000000 00000000 00000010
+_ATTR_UNDERLINED = 4    # 00000000 00000000 00000000 00010000
+_ATTR_BLINK      = 5    # 00000000 00000000 00000000 00100000
+_ATTR_INVERSE    = 7    # 00000000 00000000 00000000 10000000
+_ATTR_INVISIBLE  = 8    # 00000000 00000000 00000001 00000000
+_ATTR_FG         = 13   # 00000000 00111111 11100000 00000000
+_ATTR_BG         = 22   # 01111111 11000000 00000000 00000000
 
 class Attribute():
 
@@ -37,29 +38,35 @@ class Attribute():
     def draw(self, s):
         params = [0]
         value, charset = self._value 
-        for i in xrange(0, 8):
-            if value & (2 << i):
+        for i in (1, 4, 5, 7, 8):
+            if value & (1 << i):
                 params.append(i) 
 
         fg = value >> _ATTR_FG & 0x1ff
-        if fg == 0:
+        if fg == 0x100:
             pass
+            #params.append(39)
         elif fg < 8:
             params.append(30 + fg)
-        elif fg == 0x100:
-            params.append(39)
+        elif fg < 16:
+            params.append(90 + fg - 8)
         else:
-            params += [38, 5, fg]
+            params.append(38)
+            params.append(5)
+            params.append(fg)
 
         bg = value >> _ATTR_BG & 0x1ff
-        if fg == 0:
+        if bg == 0x100:
             pass
+            #params.append(49)
         elif bg < 8:
             params.append(40 + bg)
-        elif bg == 0x100:
-            params.append(49)
+        elif bg < 16:
+            params.append(100 + bg - 8)
         else:
-            params += [48, 5, bg]
+            params.append(48)
+            params.append(5)
+            params.append(bg)
         s.write(u'\x1b(%c\x1b[%sm' % (charset, ';'.join([str(p) for p in params])))
 
     def clear(self):
@@ -75,37 +82,38 @@ class Attribute():
     def set_sgr(self, pm):
         i = 0
         if len(pm) == 0:
-            pm.append(0)
+            value = 0x100 << _ATTR_FG | 0x100 << _ATTR_BG
+            return
         value, charset = self._value
         while i < len(pm):
             n = pm[i]
             if n == 0:
                 value = 0x100 << _ATTR_FG | 0x100 << _ATTR_BG
             elif n == 1:
-                value |= 2 << _ATTR_BOLD 
+                value |= 1 << _ATTR_BOLD 
             elif n == 4:
-                value |= 2 << _ATTR_UNDERLINED 
+                value |= 1 << _ATTR_UNDERLINED 
             elif n == 5:
-                value |= 2 << _ATTR_BLINK 
+                value |= 1 << _ATTR_BLINK 
             elif n == 7:
-                value |= 2 << _ATTR_INVERSE 
+                value |= 1 << _ATTR_INVERSE 
             elif n == 8:
-                value |= 2 << _ATTR_INVISIBLE 
+                value |= 1 << _ATTR_INVISIBLE 
             elif n == 21:
-                value &= ~(2 << _ATTR_BOLD)
+                value &= ~(1 << _ATTR_BOLD)
             elif n == 22:
-                value &= ~(2 << _ATTR_BOLD | 2 << _ATTR_UNDERLINED)
+                value &= ~(1 << _ATTR_BOLD | 1 << _ATTR_UNDERLINED)
             elif n == 24:
-                value &= ~(2 << _ATTR_UNDERLINED)
+                value &= ~(1 << _ATTR_UNDERLINED)
             elif n == 25:
-                value &= ~(2 << _ATTR_BLINK)
+                value &= ~(1 << _ATTR_BLINK)
             elif n == 27:
-                value &= ~(2 << _ATTR_INVERSE)
+                value &= ~(1 << _ATTR_INVERSE)
             elif n == 28:
-                value &= ~(2 << _ATTR_VISIBLE)
-            elif 30 <= n and n < 38:
-                value = value & ~(0x1ff << _ATTR_FG) | (n - 30) << _ATTR_FG
+                value &= ~(1 << _ATTR_VISIBLE)
 
+            elif 30 <= n and n < 38:
+                value = (value & ~(0x1ff << _ATTR_FG)) | (n - 30) << _ATTR_FG
             elif n == 38:
                 i += 1
                 n1 = pm[i]
@@ -115,9 +123,9 @@ class Attribute():
                     value = value & ~(0x1ff << _ATTR_FG) | (n2 << _ATTR_FG)
             elif n == 39:
                 value = value & ~(0x1ff << _ATTR_FG) | (0x100 << _ATTR_FG)
-            elif 40 <= n and n < 48:
-                value = value & ~(0x1ff << _ATTR_BG) | (n - 40) << _ATTR_BG
 
+            elif 40 <= n and n < 48:
+                value = (value & ~(0x1ff << _ATTR_BG)) | (n - 40) << _ATTR_BG
             elif n == 48:
                 i += 1
                 n1 = pm[i]
@@ -127,10 +135,12 @@ class Attribute():
                     value = value & ~(0x1ff << _ATTR_BG) | (n2 << _ATTR_BG)
             elif n == 49:
                 value = value & ~(0x1ff << _ATTR_BG) | (0x100 << _ATTR_BG)
+
             elif 90 <= n and n < 98:
-                value = value & ~(0x1ff << _ATTR_FG) | (n - 90 + 8) << _ATTR_FG
+                value = (value & ~(0x1ff << _ATTR_FG)) | (n - 90 + 8) << _ATTR_FG
             elif 100 <= n and n < 108:
-                value = value & ~(0x1ff << _ATTR_BG) | (n - 100 + 8) << _ATTR_BG
+                value = (value & ~(0x1ff << _ATTR_BG)) | (n - 100 + 8) << _ATTR_BG
+
             else:
                pass
                #logger.writeLine("SGR %d is ignored." % n)
@@ -138,6 +148,7 @@ class Attribute():
         self._value = (value, charset)
 
     def equals(self, other):
+        return False
         return self._value == other._value
 
     def __str__(self):
