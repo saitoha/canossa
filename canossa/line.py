@@ -195,8 +195,7 @@ class Line(SupportsDoubleSizedTrait,
         >>> print line
         <ESC>#5<ESC>(B<ESC>[0;39;49mPあ<SP><SP><SP>
         '''
-        cell = self.cells[pos]
-        cell.write(value, attr)
+        self.cells[pos].write(value, attr)
 
     def drawrange(self, s, left, right, cursor):
         '''
