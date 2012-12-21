@@ -183,8 +183,8 @@ class SupportsExtendedModeTrait():
 
     def decset(self, params):
         for param in params:
-            if param == 1:
-                pass # DECCKM
+            if param == 25:
+                self.dectcem = True
             elif param == 3:
                 if self.allow_deccolm:
                     self.resize(self.height, 132)
@@ -193,10 +193,6 @@ class SupportsExtendedModeTrait():
                 self.decom = True
             elif param == 7:
                 self.decawm = True
-            elif param == 12:
-                pass # cursor blink
-            elif param == 25:
-                self.dectcem = True
             elif param == 40:
                 self.allow_deccolm = True
             elif param == 1047:
@@ -209,13 +205,11 @@ class SupportsExtendedModeTrait():
                 self.save_pos()
                 self.switch_altbuf()
                 return True
-            else:
-                pass
 
     def decrst(self, params):
         for param in params:
-            if param == 1:
-                pass # DECCKM
+            if param == 25:
+                self.dectcem = False
             elif param == 3:
                 if self.allow_deccolm:
                     self.resize(self.height, 80)
@@ -224,10 +218,6 @@ class SupportsExtendedModeTrait():
                 self.decom = False
             elif param == 7:
                 self.decawm = False
-            elif param == 12:
-                pass # cursor blink
-            elif param == 25:
-                self.dectcem = False
             elif param == 40:
                 self.allow_deccolm = False
             elif param == 1047:
@@ -240,8 +230,6 @@ class SupportsExtendedModeTrait():
                 self.switch_mainbuf()
                 self.restore_pos()
                 return True
-            else:
-                pass
 
     def xt_save(self, params):
         pass
@@ -399,44 +387,79 @@ class ICanossaScreenImpl(ICanossaScreen):
             self.cursor.col = self.width - 1
         self._setup_tab()
 
-    def write(self, c):
-        row, col = self.cursor.row, self.cursor.col
+    def sp(self):
+        cursor = self.cursor
+        row, col = cursor.row, cursor.col
         line = self.lines[row] 
 
         width = self.width
         if col >= width:
             if self.decawm:
                 self._wrap()
-                row, col = self.cursor.row, self.cursor.col
+                row, col = cursor.row, cursor.col
                 line = self.lines[row] 
             else:
                 col = width - 1
 
         line.dirty = True
 
-        char_width = self._mk_wcwidth(c)
-        if char_width == 0:
-            if not self._termprop is None:
-                if not self._termprop.has_combine:
-                    char_width = 1
+        if col >= width:
+            col = width - 1
+            cursor.col = col
+        line.write(0x20, col, cursor.attr)
+        cursor.dirty = True
+        cursor.col += 1
 
-        if char_width == 1: # normal (narrow) character
-            if self.cursor.col >= width:
-                self.cursor.col = width - 1
-                col = self.cursor.col
-            line.write(c, col, self.cursor.attr)
-            self.cursor.dirty = True
-            self.cursor.col += 1
-        elif char_width == 2: # wide character
-            if self.cursor.col >= width - 1:
-                self.cursor.col = width - 2
-                col = self.cursor.col
-            line.pad(col)
-            line.write(c, col + 1, self.cursor.attr)
-            self.cursor.dirty = True
-            self.cursor.col += 2
-        elif char_width == 0: # combining character
-            line.combine(c, col)
+    def write(self, c):
+        cursor = self.cursor
+        row, col = cursor.row, cursor.col
+        line = self.lines[row] 
+
+        width = self.width
+        if col >= width:
+            if self.decawm:
+                self._wrap()
+                row, col = cursor.row, cursor.col
+                line = self.lines[row] 
+            else:
+                col = width - 1
+
+        line.dirty = True
+
+        if c < 0xff:
+            if col >= width:
+                col = width - 1
+                cursor.col = col
+            line.write(c, col, cursor.attr)
+            cursor.dirty = True
+            cursor.col += 1
+        else:
+            char_width = self._mk_wcwidth(c)
+            if char_width == 1: # normal (narrow) character
+                if col >= width:
+                    col = width - 1
+                    cursor.col = col
+                line.write(c, col, cursor.attr)
+                cursor.dirty = True
+                cursor.col += 1
+            elif char_width == 2: # wide character
+                if col >= width - 1:
+                    col = width - 2
+                    cursor.col = col
+                line.pad(col)
+                line.write(c, col + 1, cursor.attr)
+                cursor.dirty = True
+                cursor.col += 2
+            elif char_width == 0: # combining character
+                if not self._termprop is None:
+                    if not self._termprop.has_combine:
+                        if col >= width:
+                            col = width - 1
+                            cursor.col = col
+                        line.write(c, col, cursor.attr)
+                        cursor.dirty = True
+                        cursor.col += 1
+                line.combine(c, col)
 
 class MockScreen():
 
@@ -575,52 +598,49 @@ class Screen(ICanossaScreenImpl,
         self.cursor.dirty = True
 
     def cup(self, row, col):
+        cursor = self.cursor
         if self.decom:
-            row += self.scroll_top
             top = self.scroll_top
             bottom = self.scroll_bottom
+            row += top
+            if row >= bottom:
+                cursor.row = bottom - 1
+            else:
+                cursor.row = row
         else:
-            top = 0
             bottom = self.height
-        if row >= bottom:
-            self.cursor.row = bottom - 1
-        elif row < top:
-            self.cursor.row = top
-        else:
-            self.cursor.row = row
-        self.cursor.col = col
-        self.cursor.dirty = True
+            if row >= bottom:
+                cursor.row = bottom - 1
+            else:
+                cursor.row = row
+        cursor.col = col
+        cursor.dirty = True
 
     def ed(self, ps):
-        if self.cursor.row >= self.height:
-            self.cursor.row = self.height - 1
-        if self.cursor.col >= self.width:
-            self.cursor.col = self.width - 1
+        cursor = self.cursor
+        if cursor.row >= self.height:
+            cursor.row = self.height - 1
+        if cursor.col >= self.width:
+            cursor.col = self.width - 1
         if ps == 0:
-            line = self.lines[self.cursor.row] 
+            line = self.lines[cursor.row] 
             line.dirty = True
-            for cell in line.cells[self.cursor.col:]:
-                cell.clear(self.cursor.attr)
-            if self.cursor.row < self.height:
-                for line in self.lines[self.cursor.row + 1:]:
-                    line.clear(self.cursor.attr)
-
+            for cell in line.cells[cursor.col:]:
+                cell.clear(cursor.attr)
+            if cursor.row < self.height:
+                for line in self.lines[cursor.row + 1:]:
+                    line.clear(cursor.attr)
         elif ps == 1:
-            line = self.lines[self.cursor.row] 
+            line = self.lines[cursor.row] 
             line.dirty = True
-            for cell in line.cells[:self.cursor.col]:
-                cell.clear(self.cursor.attr)
-            if self.cursor.row > 0:
-                for line in self.lines[:self.cursor.row]:
-                    line.clear(self.cursor.attr)
-
+            for cell in line.cells[:cursor.col]:
+                cell.clear(cursor.attr)
+            if cursor.row > 0:
+                for line in self.lines[:cursor.row]:
+                    line.clear(cursor.attr)
         elif ps == 2:
             for line in self.lines:
-                line.clear(self.cursor.attr)
-
-        else:
-            raise
-  
+                line.clear(cursor.attr)
 
     def decaln(self):
         for line in self.lines:
@@ -714,7 +734,7 @@ class Screen(ICanossaScreenImpl,
         elif ps == 2:
             cells = line.cells
         else:
-            raise
+            return
         line.dirty = True
         for cell in cells:
             cell.clear(self.cursor.attr) 

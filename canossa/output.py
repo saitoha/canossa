@@ -97,7 +97,31 @@ class OutputHandler(tff.DefaultHandler):
     def handle_csi(self, context, parameter, intermediate, final):
         try:
             if len(intermediate) == 0:
-                if final == 0x40: # @
+                if final == 0x6d: # m
+                    ''' SGR - Select Graphics Rendition '''
+                    params = _parse_params(parameter)
+                    self.screen.sgr(params)
+
+                elif final == 0x48: # H
+                    ''' CUP - Cursor Position '''
+                    row, col = _parse_params(parameter, offset=-1, minarg=2)
+                    self.screen.cup(row, col)
+
+                elif final == 0x68: # h
+                    if len(parameter) > 0:
+                        if parameter[0] == 0x3f: #
+                            params = _parse_params(parameter[1:])
+                            self.screen.decset(params)
+                    return not self.__visibility
+
+                elif final == 0x6c: # l
+                    if len(parameter) > 0:
+                        if parameter[0] == 0x3f: # ?
+                            params = _parse_params(parameter[1:])
+                            self.screen.decrst(params)
+                    return not self.__visibility
+
+                elif final == 0x40: # @
                     ''' ICH - Insert Blank Character(s) '''
                     ps = _parse_params(parameter, minimum=1)[0]
                     self.screen.ich(ps)
@@ -121,11 +145,6 @@ class OutputHandler(tff.DefaultHandler):
                     ''' CUF - Cursor Backward '''
                     ps = _parse_params(parameter, minimum=1)[0]
                     self.screen.cub(ps)
-
-                elif final == 0x48: # H
-                    ''' CUP - Cursor Position '''
-                    row, col = _parse_params(parameter, offset=-1, minarg=2)
-                    self.screen.cup(row, col)
 
                 elif final == 0x4a: # J
                     ''' ED - Erase Display '''
@@ -170,31 +189,6 @@ class OutputHandler(tff.DefaultHandler):
                     ''' TBC - Tabstop Clear '''
                     ps = _parse_params(parameter)[0]
                     self.screen.tbc(ps)
-
-                elif final == 0x68: # h
-                    if len(parameter) > 0:
-                        if parameter[0] == 0x3f: #
-                            mnemonic = 'DECSET'
-                            params = _parse_params(parameter[1:])
-                            self.screen.decset(params)
-                        else:
-                            mnemonic = 'SM'
-                    return not self.__visibility
-
-                elif final == 0x6c: # l
-                    if len(parameter) > 0:
-                        if parameter[0] == 0x3f: # ?
-                            mnemonic = 'DECRST'
-                            params = _parse_params(parameter[1:])
-                            self.screen.decrst(params)
-                        else:
-                            mnemonic = 'RM'
-                    return not self.__visibility
-
-                elif final == 0x6d: # m
-                    ''' SGR - Select Graphics Rendition '''
-                    params = _parse_params(parameter)
-                    self.screen.sgr(params)
 
                 elif final == 0x6e: # n
                     ''' DSR - Device Status Request '''
@@ -249,14 +243,14 @@ class OutputHandler(tff.DefaultHandler):
                 elif final == 0x78: # x
                     return not self.__visibility
 
-                else:
-                    pass
-                    #mnemonic = '[' + chr(final) + ']'
-                    #raise Exception(mnemonic)
-            else:
-                pass
-                #mnemonic = '[' + str(intermediate) + ':' + chr(final) + ']'
-                #raise Exception(mnemonic)
+                #else:
+                #    pass
+                #    #mnemonic = '[' + chr(final) + ']'
+                #    #raise Exception(mnemonic)
+            #else:
+            #    pass
+            #    #mnemonic = '[' + str(intermediate) + ':' + chr(final) + ']'
+            #    #raise Exception(mnemonic)
         except ValueError:
             pass
         except TypeError:
@@ -310,27 +304,28 @@ class OutputHandler(tff.DefaultHandler):
 
     def handle_char(self, context, c):
         screen = self.screen
-        if c < 0x20:
-            if c == 0x00: #NUL
+        if c <= 0x20:
+            if c == 0x20: # SP
+                screen.sp()
+            elif c == 0x0a: # NL
+                screen.lf()
+            elif c == 0x0d: # CR
+                screen.cr()
+            elif c == 0x09: # HT
+                screen.ht()
+            elif c == 0x08: # BS
+                screen.bs()
+            elif c == 0x00: #NUL
                 pass
             elif c == 0x05: # ENQ
                 screen.write(c)
                 return not self.__visibility
             elif c == 0x07: # BEL
                 screen.write(c)
-            elif c == 0x08: # BS
-                screen.bs()
-            elif c == 0x09: # HT
-                screen.ht()
-            elif c == 0x0a: # NL
-                #screen.cr()
-                screen.lf()
             elif c == 0x0b: # VT
                 screen.lf()
             elif c == 0x0c: # FF
                 screen.lf()
-            elif c == 0x0d: # CR
-                screen.cr()
             elif c == 0x0e: # SO
                 screen.so()
                 return True 
