@@ -22,11 +22,11 @@ __author__  = "Hayaki Saito (user@zuse.jp)"
 __version__ = "0.0.15"
 __license__ = "GPL v3"
 
-from canossa import create, main
-
 from screen import Screen 
 import tff
 import termprop
+
+from canossa import create, main
 
 ''' main '''
 if __name__ == '__main__':    
