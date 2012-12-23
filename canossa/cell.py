@@ -22,29 +22,39 @@ from attribute import Attribute
 
 class Cell():
 
-    __value = None
+    _value = None
+    _combine = None
 
     attr = Attribute((0, 0x42))
 
     def __init__(self):
-        self.__value = u' '
+        self._value = 0x20 
 
     def write(self, value, attr):
-        self.__value = unichr(value)
+        self._value = value
         self.attr = attr.clone()
 
     def pad(self):
-        self.__value = None 
+        self._value = None 
 
     def combine(self, value):
-        self.__value += unichr(value)
+        if self._combine:
+            self._combine.append(unichr(value))
+        else:
+            self._combine = unichr(value)
 
     def get(self):
-        return self.__value
+        if self._value is None:
+            return None
+        result = unichr(self._value)
+        if self._combine is None:
+            return result
+        return result + self._combine 
 
     def clear(self, attr):
-        self.__value = u' '
-        self.attr = attr.clone()
+        self._value = 0x20 
+        self._combine = None 
+        self.attr = attr.bceclone()
 
 def test():
     """

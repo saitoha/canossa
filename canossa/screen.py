@@ -314,6 +314,25 @@ class CanossaRangeException(Exception):
 
 class ICanossaScreenImpl(ICanossaScreen):
 
+    def copyline(self, s, x, y, length):
+        cursor = Cursor(0, 0)
+        cursor.attr.draw(s)
+        while True:
+            s.write("\x1b[%d;%dH" % (y + 1, x + 1)) 
+            line = self.lines[y]
+            if x + length < self.width:
+                line.drawrange(s, x, x + length, cursor)
+                break
+            line.drawrange(s, x, self.width - x, cursor)
+            length -= self.width - x
+            if y > self.height - 1:
+                break
+            x = 0
+            if self.decawm:
+                y += 1
+
+        self.cursor.attr.draw(s)
+
     def copyrect(self, s, srcx, srcy, width, height, destx=None, desty=None):
         if destx is None:
             destx = srcx
@@ -323,9 +342,11 @@ class ICanossaScreenImpl(ICanossaScreen):
         #height = min(height, (self.height - 1) - desty)
         #width =  min(width, (self.width - 1) - destx)
         if srcx < 0 or srcy < 0 or height < 0 or width < 0:
-            raise CanossaRangeException("invalid rect is detected. (%d, %d, %d, %d)" % (srcx, srcy, width, height))
+            message = "invalid rect is detected. (%d, %d, %d, %d)" % (srcx, srcy, width, height)
+            raise CanossaRangeException(message)
 
         cursor = Cursor(0, 0)
+        cursor.attr.draw(s)
         for i in xrange(desty, desty + height):
             s.write("\x1b[%d;%dH" % (i + 1, destx + 1))
             line = self.lines[i]
@@ -656,6 +677,9 @@ class Screen(ICanossaScreenImpl,
         self.dectcem = True
         self.cursor.clear() 
         self._setup_tab()
+
+    def reset_sgr(self):
+        self.cursor.attr.clear()
 
     def sgr(self, pm):
         self.cursor.attr.set_sgr(pm)

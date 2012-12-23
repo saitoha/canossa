@@ -20,17 +20,30 @@
 
 import tff
 
-def _param_generator(params, minimum, offset, maxarg):
-    for p in ''.join([chr(p) for p in params]).split(';')[:maxarg]:
-        if p == '':
-            yield minimum 
-        else:
-            yield max(minimum, int(p) + offset)
- 
-def _parse_params(params, minimum=0, offset=0, minarg=1, maxarg=255):
-   if len(params) < minarg:
-        return [minimum] * minarg
-   return [param for param in _param_generator(params, minimum, offset, maxarg)]
+def _param_generator(params, minimum=0, offset=0, minarg=1):
+    param = 0
+    for c in params:
+        if c < 0x3a:
+            param = param * 10 + c - 0x30
+        elif c < 0x3c:
+            param += offset 
+            if minimum > param:
+                yield minimum
+            else:
+                yield param
+            minarg -= 1
+            param = 0
+    param += offset 
+    if minimum > param:
+        yield minimum
+    else:
+        yield param
+    minarg -= 1
+    if minarg > 0:
+        yield minimum
+
+def _parse_params(params, minimum=0, offset=0, minarg=1):
+   return [param for param in _param_generator(params, minimum, offset, minarg)]
 
 def _get_pos_and_size(stdin, stdout):
     import sys, os, termios, select
@@ -99,27 +112,40 @@ class OutputHandler(tff.DefaultHandler):
             if len(intermediate) == 0:
                 if final == 0x6d: # m
                     ''' SGR - Select Graphics Rendition '''
-                    params = _parse_params(parameter)
-                    self.screen.sgr(params)
+                    if len(parameter) == 0:
+                        self.screen.reset_sgr()
+                    else:
+                        params = _param_generator(parameter)
+                        self.screen.sgr(params)
 
                 elif final == 0x48: # H
                     ''' CUP - Cursor Position '''
-                    row, col = _parse_params(parameter, offset=-1, minarg=2)
+                    row, col = _param_generator(parameter, offset=-1, minarg=2)
                     self.screen.cup(row, col)
 
                 elif final == 0x68: # h
                     if len(parameter) > 0:
                         if parameter[0] == 0x3f: #
-                            params = _parse_params(parameter[1:])
+                            params = _param_generator(parameter)
                             self.screen.decset(params)
                     return not self.__visibility
 
                 elif final == 0x6c: # l
                     if len(parameter) > 0:
                         if parameter[0] == 0x3f: # ?
-                            params = _parse_params(parameter[1:])
+                            params = _param_generator(parameter)
                             self.screen.decrst(params)
                     return not self.__visibility
+
+                elif final == 0x4b: # K
+                    ''' EL - Erase Line(s) '''
+                    ps = _parse_params(parameter)[0]
+                    self.screen.el(ps)
+
+                elif final == 0x4a: # J
+                    ''' ED - Erase Display '''
+                    ps = _parse_params(parameter)[0]
+                    self.screen.ed(ps)
 
                 elif final == 0x40: # @
                     ''' ICH - Insert Blank Character(s) '''
@@ -145,16 +171,6 @@ class OutputHandler(tff.DefaultHandler):
                     ''' CUF - Cursor Backward '''
                     ps = _parse_params(parameter, minimum=1)[0]
                     self.screen.cub(ps)
-
-                elif final == 0x4a: # J
-                    ''' ED - Erase Display '''
-                    ps = _parse_params(parameter)[0]
-                    self.screen.ed(ps)
-
-                elif final == 0x4b: # K
-                    ''' EL - Erase Line(s) '''
-                    ps = _parse_params(parameter)[0]
-                    self.screen.el(ps)
 
                 elif final == 0x4c: # L
                     ''' IL - Insert Line(s) '''
@@ -255,6 +271,8 @@ class OutputHandler(tff.DefaultHandler):
             pass
         except TypeError:
             pass
+        finally:
+            pass
         return True 
 
     def handle_esc(self, context, intermediate, final):
@@ -350,7 +368,10 @@ class OutputHandler(tff.DefaultHandler):
                 context.puts("\x1b[?6n")
 
     def handle_resize(self, context, row, col):
-        self.screen.resize(row, col)
+        try:
+            self.screen.resize(row, col)
+        except:
+            pass
 
 
 

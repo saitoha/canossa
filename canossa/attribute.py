@@ -37,8 +37,12 @@ class Attribute():
     def __init__(self, value = (_ATTR_DEFAULT, 0x42)):
         self._value = value
 
-    def draw(self, s):
+    def draw(self, s, attr = None):
         params = [0]
+        if attr:
+            value_current, charset_current = attr._value 
+        else:
+            value_current, charset_current = (-1, 0x00) 
         value, charset = self._value 
         for i in (1, 4, 5, 7, 8):
             if value & (1 << i):
@@ -47,35 +51,36 @@ class Attribute():
         fg = value >> _ATTR_FG & 0x1ff
         if fg == 0x100:
             pass
-            #params.append(39)
         elif fg < 8:
             params.append(30 + fg)
         elif fg < 16:
             params.append(90 + fg - 8)
         else:
-            params.append(38)
-            params.append(5)
-            params.append(fg)
+            params.extend((38, 5, fg))
 
         bg = value >> _ATTR_BG & 0x1ff
         if bg == 0x100:
             pass
-            #params.append(49)
         elif bg < 8:
             params.append(40 + bg)
         elif bg < 16:
             params.append(100 + bg - 8)
         else:
-            params.append(48)
-            params.append(5)
-            params.append(bg)
-        s.write(u'\x1b(%c\x1b[%sm' % (charset, ';'.join([str(p) for p in params])))
+            params.extend((48, 5, fg))
+
+        if charset != charset_current:
+            s.write(u'\x1b(%c' % charset)
+        s.write(u'\x1b[%sm' % ';'.join([str(p) for p in params]))
 
     def clear(self):
         self._value = (_ATTR_DEFAULT, 0x42)
 
     def clone(self):
         return Attribute(self._value)
+
+    def bceclone(self):
+        value, charset = self._value 
+        return Attribute((value & (0x1ff << _ATTR_BG), charset))
 
     def set_charset(self, charset):
         value, old = self._value
@@ -84,69 +89,58 @@ class Attribute():
     def set_sgr(self, pm):
         i = 0
         value, charset = self._value
-        if len(pm) == 0:
-            self._value = (_ATTR_DEFAULT, charset)
-        else:
-            while i < len(pm):
-                n = pm[i]
-                if n < 8:
-                    if n == 0:
-                        value = _ATTR_DEFAULT
-                    elif n == 1:
-                        value |= 1 << _ATTR_BOLD 
-                    elif n == 4:
-                        value |= 1 << _ATTR_UNDERLINED 
-                    elif n == 5:
-                        value |= 1 << _ATTR_BLINK 
-                    elif n == 7:
-                        value |= 1 << _ATTR_INVERSE 
-                    elif n == 8:
-                        value |= 1 << _ATTR_INVISIBLE 
-                elif n < 30:
-                    if n == 21:
-                        value &= ~(1 << _ATTR_BOLD)
-                    elif n == 22:
-                        value &= ~(1 << _ATTR_BOLD | 1 << _ATTR_UNDERLINED)
-                    elif n == 24:
-                        value &= ~(1 << _ATTR_UNDERLINED)
-                    elif n == 25:
-                        value &= ~(1 << _ATTR_BLINK)
-                    elif n == 27:
-                        value &= ~(1 << _ATTR_INVERSE)
-                    elif n == 28:
-                        value &= ~(1 << _ATTR_VISIBLE)
-                elif n < 40:
-                    if n == 38:
-                        i += 1
-                        n1 = pm[i]
-                        i += 1
-                        n2 = pm[i]
-                        if n1 == 5:
-                            value = value & ~(0x1ff << _ATTR_FG) | (n2 << _ATTR_FG)
-                    elif n == 39:
-                        value = value & ~(0x1ff << _ATTR_FG) | (0x100 << _ATTR_FG)
-                    else:
-                        value = (value & ~(0x1ff << _ATTR_FG)) | (n - 30) << _ATTR_FG
-                elif n < 50:
-                    if n == 48:
-                        i += 1
-                        n1 = pm[i]
-                        i += 1
-                        n2 = pm[i]
-                        if n1 == 5:
-                            value = value & ~(0x1ff << _ATTR_BG) | (n2 << _ATTR_BG)
-                    elif n == 49:
-                        value = value & ~(0x1ff << _ATTR_BG) | (0x100 << _ATTR_BG)
-                    else:
-                        value = (value & ~(0x1ff << _ATTR_BG)) | (n - 40) << _ATTR_BG
+        mode = 0
+        for n in pm:
+            if n < 8:
+                if n == 0:
+                    value = _ATTR_DEFAULT
+                elif n == 1:
+                    value |= 1 << _ATTR_BOLD 
+                elif n == 4:
+                    value |= 1 << _ATTR_UNDERLINED 
+                elif n == 5:
+                    value |= 1 << _ATTR_BLINK 
+                elif n == 7:
+                    value |= 1 << _ATTR_INVERSE 
+                elif n == 8:
+                    value |= 1 << _ATTR_INVISIBLE 
+            elif n < 30:
+                if n == 21:
+                    value &= ~(1 << _ATTR_BOLD)
+                elif n == 22:
+                    value &= ~(1 << _ATTR_BOLD | 1 << _ATTR_UNDERLINED)
+                elif n == 24:
+                    value &= ~(1 << _ATTR_UNDERLINED)
+                elif n == 25:
+                    value &= ~(1 << _ATTR_BLINK)
+                elif n == 27:
+                    value &= ~(1 << _ATTR_INVERSE)
+                elif n == 28:
+                    value &= ~(1 << _ATTR_VISIBLE)
+            elif n < 40:
+                if n == 38:
+                    if pm.next() == 5:
+                        value = value & ~(0x1ff << _ATTR_FG) | (pm.next() << _ATTR_FG)
+                elif n == 39:
+                    value = value & ~(0x1ff << _ATTR_FG) | (0x100 << _ATTR_FG)
+                else:
+                    value = (value & ~(0x1ff << _ATTR_FG)) | (n - 30) << _ATTR_FG
+            elif n < 50:
+                if n == 48:
+                    if pm.next() == 5:
+                        value = value & ~(0x1ff << _ATTR_BG) | (pm.next() << _ATTR_BG)
+                elif n == 49:
+                    value = value & ~(0x1ff << _ATTR_BG) | (0x100 << _ATTR_BG)
+                else:
+                    value = (value & ~(0x1ff << _ATTR_BG)) | (n - 40) << _ATTR_BG
 
-                elif 90 <= n and n < 98:
-                    value = (value & ~(0x1ff << _ATTR_FG)) | (n - 90 + 8) << _ATTR_FG
-                elif 100 <= n and n < 108:
-                    value = (value & ~(0x1ff << _ATTR_BG)) | (n - 100 + 8) << _ATTR_BG
-                #logger.writeLine("SGR %d is ignored." % n)
-                i += 1
-            self._value = (value, charset)
+            elif 90 <= n and n < 98:
+                value = (value & ~(0x1ff << _ATTR_FG)) | (n - 90 + 8) << _ATTR_FG
+            elif 100 <= n and n < 108:
+                value = (value & ~(0x1ff << _ATTR_BG)) | (n - 100 + 8) << _ATTR_BG
+            #logger.writeLine("SGR %d is ignored." % n)
+            i += 1
+        self._value = (value, charset)
 
     def equals(self, other):
         return self._value == other._value

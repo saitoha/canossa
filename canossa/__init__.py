@@ -26,7 +26,8 @@ from screen import Screen
 import tff
 import termprop
 
-from canossa import create, main
+from canossa import * 
+from popup import *
 
 ''' main '''
 if __name__ == '__main__':    

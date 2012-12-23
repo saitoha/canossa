@@ -221,16 +221,16 @@ class Line(SupportsDoubleSizedTrait,
             c = cell.get()
             if not c is None:
                 if not attr.equals(cell.attr):
+                    cell.attr.draw(s, attr)
                     attr = cell.attr
-                    attr.draw(s)
                 s.write(c)
         if c is None:
             for cell in cells[right:]:
                 c = cell.get()
                 if not c is None:
                     if not attr.equals(cell.attr):
+                        cell.attr.draw(s, attr)
                         attr = cell.attr
-                        attr.draw(s)
                     s.write(c)
                     break
         cursor.attr = attr
