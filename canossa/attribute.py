@@ -19,38 +19,69 @@
 # ***** END LICENSE BLOCK *****
 
 
-
 _ATTR_BOLD       = 1    # 00000000 00000000 00000000 00000010
 _ATTR_UNDERLINED = 4    # 00000000 00000000 00000000 00010000
 _ATTR_BLINK      = 5    # 00000000 00000000 00000000 00100000
 _ATTR_INVERSE    = 7    # 00000000 00000000 00000000 10000000
 _ATTR_INVISIBLE  = 8    # 00000000 00000000 00000001 00000000
+_ATTR_NRC        = 9    # 00000000 00000000 00011110 00000000
 _ATTR_FG         = 13   # 00000000 00111111 11100000 00000000
 _ATTR_BG         = 22   # 01111111 11000000 00000000 00000000
 
 _ATTR_DEFAULT    = 0x100 << _ATTR_FG | 0x100 << _ATTR_BG
 
+_NRC_REVERSE_MAP = [ 'B', '0', 'A', '4',
+                     'C', 'R', 'Q', 'K',
+                     'Y', 'E', '6', 'Z',
+                     'H', '7', '=', '5' ]
+_NRC_MAP = {}
+
+for key, value in enumerate(_NRC_REVERSE_MAP):
+    _NRC_MAP[ord(value)] = key
+
 class Attribute():
 
-    _value = (_ATTR_DEFAULT, 0x42)
+    """
+    >>> attr = Attribute() 
+    >>> print attr
+    >>> attr.set_sgr([0])
+    >>> print attr.equeals(Attribute())
+    >>> print attr
+    >>> attr.set_charset(0x41)
+    >>> print attr
+    >>> attr.set_sgr((0, 5, 6))
+    >>> print attr
+    >>> attr.set_sgr((7, 8))
+    >>> print attr
+    >>> attr.set_sgr((17, 18))
+    >>> print attr
+    >>> attr.set_sgr((38, 5, 200, 48, 5, 100))
+    >>> print attr
+    """
 
-    def __init__(self, value = (_ATTR_DEFAULT, 0x42)):
-        self._value = value
+    _attrvalue = _ATTR_DEFAULT
+    defaultvalue = _ATTR_DEFAULT
+
+    def __init__(self, value = _ATTR_DEFAULT):
+        self._attrvalue = value
+
+    def setvalue(self, attrvalue):
+        self._attrvalue = attrvalue
 
     def draw(self, s, attr = None):
         params = [0]
         if attr:
-            value_current, charset_current = attr._value 
+            value_current = attr._attrvalue 
         else:
-            value_current, charset_current = (-1, 0x00) 
-        value, charset = self._value 
+            value_current = _ATTR_DEFAULT 
+        value = self._attrvalue 
         for i in (1, 4, 5, 7, 8):
             if value & (1 << i):
                 params.append(i) 
 
         fg = value >> _ATTR_FG & 0x1ff
         if fg == 0x100:
-            pass
+            params.append(39)
         elif fg < 8:
             params.append(30 + fg)
         elif fg < 16:
@@ -60,35 +91,41 @@ class Attribute():
 
         bg = value >> _ATTR_BG & 0x1ff
         if bg == 0x100:
-            pass
+            params.append(49)
         elif bg < 8:
             params.append(40 + bg)
         elif bg < 16:
             params.append(100 + bg - 8)
         else:
-            params.extend((48, 5, fg))
+            params.extend((48, 5, bg))
 
-        if charset != charset_current:
-            s.write(u'\x1b(%c' % charset)
+        charset = value & 0xf << 9
+        if charset != value_current & 0xf << 9:
+            s.write(u'\x1b(%c' % _NRC_REVERSE_MAP[charset])
         s.write(u'\x1b[%sm' % ';'.join([str(p) for p in params]))
 
     def clear(self):
-        self._value = (_ATTR_DEFAULT, 0x42)
+        self._attrvalue = _ATTR_DEFAULT
 
-    def clone(self):
-        return Attribute(self._value)
+    def copyfrom(self, attr):
+        self._attrvalue = attr._attrvalue
 
-    def bceclone(self):
-        value, charset = self._value 
-        return Attribute((value & (0x1ff << _ATTR_BG), charset))
+    def getbcevalue(self):
+        value = self._attrvalue 
+        return value & (0x1ff << _ATTR_BG)
 
     def set_charset(self, charset):
-        value, old = self._value
-        self._value = (value, charset)
+        value = self._attrvalue
+        try:
+            code = _NRC_MAP[charset] 
+            self._attrvalue = value & ~(0xf << _ATTR_NRC) | (code << _ATTR_NRC)
+        except ValueError:
+            return False
+        return True
 
     def set_sgr(self, pm):
         i = 0
-        value, charset = self._value
+        value = self._attrvalue
         mode = 0
         for n in pm:
             if n < 8:
@@ -140,10 +177,10 @@ class Attribute():
                 value = (value & ~(0x1ff << _ATTR_BG)) | (n - 100 + 8) << _ATTR_BG
             #logger.writeLine("SGR %d is ignored." % n)
             i += 1
-        self._value = (value, charset)
+        self._attrvalue = value
 
     def equals(self, other):
-        return self._value == other._value
+        return self._attrvalue == other._attrvalue
 
     def __str__(self):
         import StringIO
@@ -151,24 +188,8 @@ class Attribute():
         self.draw(s)
         return s.getvalue().replace("\x1b", "<ESC>")
 
+
 def test():
-    """
-    >>> attr = Attribute() 
-    >>> print attr
-    >>> attr.set_sgr([0])
-    >>> print attr.equeals(Attribute())
-    >>> print attr
-    >>> attr.set_charset("A")
-    >>> print attr
-    >>> attr.set_sgr([0, 5, 6])
-    >>> print attr
-    >>> attr.set_sgr([7, 8])
-    >>> print attr
-    >>> attr.set_sgr([17, 18])
-    >>> print attr
-    >>> attr.set_sgr([38, 5, 200, 48, 5, 100])
-    >>> print attr
-    """
     import doctest
     doctest.testmod()
 

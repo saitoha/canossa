@@ -26,45 +26,12 @@ except:
 import sys
 import codecs
 #import logger
-
+import termprop
 import sys, os, termios, select
-from attribute import Attribute
 
 #
 # CSI ... ; ... R
 #
-def _get_pos():
-    stdin = sys.stdin 
-    stdout = sys.stdout
-    stdin_fileno = stdin.fileno()
-    vdisable = os.fpathconf(stdin_fileno, 'PC_VDISABLE')
-    backup = termios.tcgetattr(stdin_fileno)
-    new = termios.tcgetattr(stdin_fileno)
-    new[3] &= ~(termios.ECHO | termios.ICANON)
-    termios.tcsetattr(stdin_fileno, termios.TCSANOW, new)
-    try:
-        stdout.write("\x1b[6n")
-        stdout.flush()
-    except:
-        pass
-    def get_report():
-        
-        rfd, wfd, xfd = select.select([stdin_fileno], [], [], 0.5)
-        if rfd:
-            data = os.read(stdin_fileno, 1024)
-            assert data[:2] == '\x1b['
-            assert data[-1] == 'R'
-            y, x = [int(n) - 1 for n in  data[2:-1].split(';')]
-            return y, x
-    try:
-        return get_report()
-    except:
-        import time
-        time.sleep(0.1)
-        return get_report()
-    finally:
-        termios.tcsetattr(stdin_fileno, termios.TCSANOW, backup)
-
 from cursor import Cursor
 from line import Line
 
@@ -129,8 +96,9 @@ class SuuportsAlternateScreenTrait():
 
     def switch_mainbuf(self):
         self.lines = self._mainbuf
+        bcevalue = self.cursor.attr.getbcevalue()
         for line in self.lines:
-            line.clear(self.cursor.attr)
+            line.clear(bcevalue)
         lines = self.lines
         if len(lines) > self.height:
             while len(lines) != self.height:
@@ -151,8 +119,9 @@ class SuuportsAlternateScreenTrait():
 
     def switch_altbuf(self):
         self.lines = self._altbuf
+        bcevalue = self.cursor.attr.getbcevalue()
         for line in self.lines:
-            line.clear(self.cursor.attr)
+            line.clear(bcevalue)
         lines = self.lines
         if len(lines) > self.height:
             while len(lines) != self.height:
@@ -394,18 +363,20 @@ class ICanossaScreenImpl(ICanossaScreen):
             self.scroll_top = 0
             self.scroll_bottom = row 
         try:
-            pos = _get_pos()
-            if not pos is None:
-                self.cursor.row, self.cursor.col = pos
+            pos = termprop.getyx()
+            if pos != (0, 0):
+                row, col = pos
+                self.cursor.row, self.cursor.col = (row + 1, col + 1) 
             #sys.stdout.write("\x1b]2;%d-%d (%d, %d)\x1b\\" % (row, col, self.cursor.row, self.cursor.col))
         except:
             pass
         self.height = row
         self.width = col
-        if self.cursor.row >= self.height:
-            self.cursor.row = self.height - 1
-        if self.cursor.col >= self.width:
-            self.cursor.col = self.width - 1
+        cursor = self.cursor
+        if cursor.row >= self.height:
+            cursor.row = self.height - 1
+        if cursor.col >= self.width:
+            cursor.col = self.width - 1
         self._setup_tab()
 
     def sp(self):
@@ -444,22 +415,15 @@ class ICanossaScreenImpl(ICanossaScreen):
                 line = self.lines[row] 
             else:
                 col = width - 1
-
-        line.dirty = True
+                cursor.col = col
 
         if c < 0xff:
-            if col >= width:
-                col = width - 1
-                cursor.col = col
             line.write(c, col, cursor.attr)
-            cursor.dirty = True
+            #cursor.dirty = True
             cursor.col += 1
         else:
             char_width = self._mk_wcwidth(c)
             if char_width == 1: # normal (narrow) character
-                if col >= width:
-                    col = width - 1
-                    cursor.col = col
                 line.write(c, col, cursor.attr)
                 cursor.dirty = True
                 cursor.col += 1
@@ -474,9 +438,6 @@ class ICanossaScreenImpl(ICanossaScreen):
             elif char_width == 0: # combining character
                 if not self._termprop is None:
                     if not self._termprop.has_combine:
-                        if col >= width:
-                            col = width - 1
-                            cursor.col = col
                         line.write(c, col, cursor.attr)
                         cursor.dirty = True
                         cursor.col += 1
@@ -559,10 +520,11 @@ class Screen(ICanossaScreenImpl,
                 self._wrap() 
         self.cursor.row += 1
         if self.cursor.row >= self.scroll_bottom:
+            bcevalue = self.cursor.attr.getbcevalue()
             for line in self.lines[self.scroll_top + 1:self.scroll_bottom]:
                 line.dirty = True
             line = self.lines.pop(self.scroll_top)
-            line.clear(self.cursor.attr)
+            line.clear(bcevalue)
             self.lines.insert(self.scroll_bottom - 1, line)
             self.cursor.row = self.scroll_bottom - 1 
         self.cursor.dirty = True
@@ -576,10 +538,11 @@ class Screen(ICanossaScreenImpl,
 
     def ri(self):
         if self.cursor.row <= self.scroll_top:
+            bcevalue = self.cursor.attr.getbcevalue()
             for line in self.lines:
                 line.dirty = True
             line = self.lines.pop(self.scroll_bottom - 1)
-            line.clear(self.cursor.attr)
+            line.clear(bcevalue)
             self.lines.insert(self.scroll_top, line)
             self.cursor.row = self.scroll_top 
         else:
@@ -646,36 +609,43 @@ class Screen(ICanossaScreenImpl,
         if ps == 0:
             line = self.lines[cursor.row] 
             line.dirty = True
+            attr = cursor.attr
+            bcevalue = attr.getbcevalue()
             for cell in line.cells[cursor.col:]:
-                cell.clear(cursor.attr)
+                cell.clear(bcevalue)
             if cursor.row < self.height:
                 for line in self.lines[cursor.row + 1:]:
-                    line.clear(cursor.attr)
+                    line.clear(bcevalue)
         elif ps == 1:
             line = self.lines[cursor.row] 
             line.dirty = True
+            bcevalue = cursor.attr.getbcevalue()
             for cell in line.cells[:cursor.col]:
-                cell.clear(cursor.attr)
+                cell.clear(bcevalue)
             if cursor.row > 0:
                 for line in self.lines[:cursor.row]:
-                    line.clear(cursor.attr)
+                    line.clear(bcevalue)
         elif ps == 2:
+            bcevalue = cursor.attr.getbcevalue()
             for line in self.lines:
-                line.clear(cursor.attr)
+                line.clear(bcevalue)
 
     def decaln(self):
+        attr = self.cursor.attr
         for line in self.lines:
             line.dirty = True
             for cell in line.cells:
-                cell.write(0x45, self.cursor.attr) # E
+                cell.write(0x45, attr) # E
         self.scroll_top = 0 
         self.scroll_bottom = self.height 
 
     def ris(self):
+        cursor = self.cursor
+        defaultvalue = Cell.defaultvalue
         for line in self.lines:
-            line.clear(self.cursor.attr)
+            line.clear(defaultvalue)
         self.dectcem = True
-        self.cursor.clear() 
+        cursor.clear() 
         self._setup_tab()
 
     def reset_sgr(self):
@@ -686,8 +656,9 @@ class Screen(ICanossaScreenImpl,
 
     def ich(self, ps):
         ''' insert blank character(s) '''    
-        row = self.cursor.row
-        col = self.cursor.col
+        cursor = self.cursor
+        row = cursor.row
+        col = cursor.col
         if row >= self.scroll_bottom:
             self.cursor.row = self.scroll_bottom - 1
         elif row < self.scroll_top:
@@ -699,9 +670,10 @@ class Screen(ICanossaScreenImpl,
         if col > 0 and cells[col - 1].get() == '\x00':
             col -= 1
 
+        bcevalue = cursor.attr.getbcevalue()
         for i in xrange(0, ps):
             cell = cells.pop()
-            cell.clear(self.cursor.attr)
+            cell.clear(bcevalue)
             cells.insert(col, cell)
 
     def cuu(self, ps):
@@ -760,6 +732,7 @@ class Screen(ICanossaScreenImpl,
         else:
             return
         line.dirty = True
+        bcevalue = self.cursor.attr.getbcevalue()
         for cell in cells:
-            cell.clear(self.cursor.attr) 
+            cell.clear(bcevalue) 
 

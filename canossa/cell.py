@@ -22,41 +22,6 @@ from attribute import Attribute
 
 class Cell():
 
-    _value = None
-    _combine = None
-
-    attr = Attribute((0, 0x42))
-
-    def __init__(self):
-        self._value = 0x20 
-
-    def write(self, value, attr):
-        self._value = value
-        self.attr = attr.clone()
-
-    def pad(self):
-        self._value = None 
-
-    def combine(self, value):
-        if self._combine:
-            self._combine.append(unichr(value))
-        else:
-            self._combine = unichr(value)
-
-    def get(self):
-        if self._value is None:
-            return None
-        result = unichr(self._value)
-        if self._combine is None:
-            return result
-        return result + self._combine 
-
-    def clear(self, attr):
-        self._value = 0x20 
-        self._combine = None 
-        self.attr = attr.bceclone()
-
-def test():
     """
     >>> from attribute import Attribute
     >>> cell = Cell() 
@@ -79,6 +44,41 @@ def test():
     >>> cell.combine(0x0308)
     >>> print cell.get()
     """
+
+    _value = None
+    _combine = None
+
+    def __init__(self):
+        self._value = 0x20 
+        self.attr = Attribute()
+
+    def write(self, value, attr):
+        self._value = value
+        self.attr.copyfrom(attr)
+
+    def pad(self):
+        self._value = None 
+
+    def combine(self, value):
+        if self._combine:
+            self._combine.append(unichr(value))
+        else:
+            self._combine = unichr(value)
+
+    def get(self):
+        if self._value is None:
+            return None
+        result = unichr(self._value)
+        if self._combine is None:
+            return result
+        return result + self._combine 
+
+    def clear(self, attrvalue):
+        self._value = 0x20 
+        self._combine = None 
+        self.attr.setvalue(attrvalue)
+
+def test():
     import doctest
     doctest.testmod()
 

@@ -10,6 +10,32 @@ dirpath = os.path.abspath(os.path.dirname(inspect.getfile(inspect.currentframe()
 
 import canossa.line
 canossa.line.test()
+try:
+    import canossa.tff
+    import canossa.termprop
+except:
+    print "Please do:\n git submodule update --init"
+    import sys
+    sys.exit(1)
+
+import canossa.cell as cell
+import canossa.attribute as attribute
+import canossa.line as line
+import canossa.cursor as cursor
+import canossa.screen as screen
+import canossa.popup as popup
+import canossa.output as output
+
+import doctest
+dirty = False
+#for m in (attribute, cell, line, cursor, screen, popup, output):
+for m in [attribute]:
+    failure_count, test_count = doctest.testmod(m)
+    if failure_count > 0:
+        dirty = True
+if dirty:
+    raise Exception("test failed.")
+
 
 setup(name                  = 'canossa',
       version               = __version__,
