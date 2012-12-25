@@ -120,6 +120,15 @@ class IModeListener():
     def notifyimerestore(self):
         raise NotImplementedError("IModeListener::notifyimerestore")
 
+    def reset(self):
+        raise NotImplementedError("IModeListener::reset")
+
+    def hasevent(self):
+        raise NotImplementedError("IModeListener::hasevent")
+
+    def getenabled(self):
+        raise NotImplementedError("IModeListener::getenabled")
+
 class IListbox():
 
     def assign(self, a_list):
@@ -156,6 +165,48 @@ class IListboxListener():
 
     def oncancel(self, popup, context):
         raise NotImplementedError("IListboxListener::oncancel")
+
+
+class IModeListenerImpl(IModeListener):
+
+    _has_event = False
+    _imemode = True
+    _savedimemode = True
+
+    def notifyenabled(self, n):
+        if n == 8861:
+            self._has_event = True
+        elif n == 8860:
+            self._imemode = True
+
+    def notifydisabled(self, n):
+        if n == 8861:
+            self._has_event = False
+        elif n == 8860:
+            self.reset() 
+            self._imemode = False
+
+    def notifyimeon(self):
+        self._imemode = True
+
+    def notifyimeoff(self):
+        self.reset() 
+        self._imemode = False
+
+    def notifyimesave(self):
+        self._savedimemode = self._imemode
+
+    def notifyimerestore(self):
+        self._imemode = self._savedimemode
+
+    def reset(self):
+        pass
+
+    def hasevent(self):
+        return self._has_event
+
+    def getenabled(self):
+        return self._imemode
 
 class MouseDecoder(tff.DefaultHandler):
 
@@ -575,7 +626,6 @@ class IFocusListenerImpl(IFocusListener):
 
     def onfocusout(self):
         self._style = self._style_inactive
-
 
 _HITTEST_NONE            = 0x0
 _HITTEST_BODY_SELECTED   = 0x1

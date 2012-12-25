@@ -143,6 +143,7 @@ class SuuportsAlternateScreenTrait():
 class SupportsAnsiModeTrait():
     pass
 
+
 class SupportsExtendedModeTrait():
 
     dectcem = True
