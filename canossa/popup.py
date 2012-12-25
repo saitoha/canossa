@@ -108,6 +108,17 @@ class IModeListener():
     def notifydisabled(self, n):
         raise NotImplementedError("IModeListener::notifydisabled")
 
+    def notifyimeon(self):
+        raise NotImplementedError("IModeListener::notifyimeon")
+
+    def notifyimeoff(self):
+        raise NotImplementedError("IModeListener::notifyimeoff")
+
+    def notifyimesave(self):
+        raise NotImplementedError("IModeListener::notifyimesave")
+
+    def notifyimerestore(self):
+        raise NotImplementedError("IModeListener::notifyimerestore")
 
 class IListbox():
 
@@ -129,19 +140,22 @@ class IListbox():
     def draw(self, s):
         raise NotImplementedError("IListbox::draw")
 
-    def hide(self, s):
-        raise NotImplementedError("IListbox::hide")
+    def close(self):
+        raise NotImplementedError("IListbox::close")
  
     def isshown(self):
         raise NotImplementedError("IListbox::isshown")
 
 class IListboxListener():
 
-    def onselected(self, index, text, remarks):
+    def onselected(self, popup, index, text, remarks):
         raise NotImplementedError("IListboxListener::onselected")
 
-    def onsettled(self, context):
+    def onsettled(self, popup, context):
         raise NotImplementedError("IListboxListener::onsettled")
+
+    def oncancel(self, popup, context):
+        raise NotImplementedError("IListboxListener::oncancel")
 
 class MouseDecoder(tff.DefaultHandler):
 
@@ -337,13 +351,13 @@ class IListboxImpl(IListbox):
                              }
 
     _style = _style_active
+    _show = False
 
     """ IListbox implementation """
     def assign(self, l):
         self._list = l
-        self._index = 0
         text, remarks = self._getcurrent()
-        self._listener.onselected(self._index, text, remarks)
+        self._listener.onselected(self, self._index, text, remarks)
 
     def isempty(self):
         return self._list == None
@@ -357,6 +371,7 @@ class IListboxImpl(IListbox):
         self._offset_top = 0
         self._list = None
         self._index = 0
+        self._scrollpos = 0
 
     def movenext(self):
         if self._index < len(self._list) - 1:
@@ -364,7 +379,7 @@ class IListboxImpl(IListbox):
             if self._index - self._height + 1 > self._scrollpos:
                 self._scrollpos = self._index - self._height + 1 
             text, remarks = self._getcurrent()
-            self._listener.onselected(self._index, text, remarks)
+            self._listener.onselected(self, self._index, text, remarks)
             return True
         return False
 
@@ -374,7 +389,7 @@ class IListboxImpl(IListbox):
             if self._index < self._scrollpos:
                 self._scrollpos = self._index
             text, remarks = self._getcurrent()
-            self._listener.onselected(self._index, text, remarks)
+            self._listener.onselected(self, self._index, text, remarks)
 
     def _calculate_scrollbar_postion(self):
         height = self._height
@@ -391,13 +406,28 @@ class IListboxImpl(IListbox):
             l, pos, left, top, width, height = self._getdisplayinfo()
             if self._show:
                 if self._left < left:
-                    self._screen.copyrect(s, self._left, top, left - self._left, height)
+                    self._screen.copyrect(s,
+                                          self._left + self._offset_left,
+                                          top + self._offset_top,
+                                          left - self._left,
+                                          height)
                 if self._left + self._width > left + width:
-                    self._screen.copyrect(s, left + width, top, self._left + self._width - (left + width), height)
+                    self._screen.copyrect(s,
+                                          left + width + self._offset_left,
+                                          top + self._offset_top,
+                                          self._left + self._width - (left + width),
+                                          height)
+                if self._top + self._height > top + height:
+                    self._screen.copyrect(s,
+                                          left + self._offset_left,
+                                          top + height + self._offset_top,
+                                          self._left + self._width,
+                                          self._height - height)
+
             elif not self._mouse_mode is None:
                 self._mouse_mode.setenabled(self._output, True)
                 self._style = self._style_active
-                
+       
             self._left = left 
             self._top = top 
             self._width = width
@@ -442,8 +472,9 @@ class IListboxImpl(IListbox):
             return True
         return False
 
-    def hide(self, s):
+    def close(self):
         if self.isshown(): 
+            s = self._output
             y, x = self._screen.getyx()
             s.write(u"\x1b[%d;%dH" % (y + 1, x + 1))
             self._show = False
@@ -483,7 +514,7 @@ class IListboxImpl(IListbox):
 
     def _getdisplayinfo(self):
         width = 0
-        l = [self._truncate_str(s, _POPUP_WIDTH_MAX) for s in self._list]
+        candidates = self._list
 
         y, x = self._screen.getyx()
 
@@ -495,16 +526,21 @@ class IListboxImpl(IListbox):
 
         height = min(height, _POPUP_HEIGHT_MAX)
 
-        if len(l) > height:
-            l = l[self._scrollpos:self._scrollpos + height]
+        if len(candidates) > height:
+            candidates = candidates[self._scrollpos:self._scrollpos + height]
             pos = self._index - self._scrollpos
         else:
             pos = self._index
 
-        for value in l:
-            width = max(width, self._termprop.wcswidth(value) + 6)
+        for value in candidates:
+            length = self._termprop.wcswidth(value)
+            if length > _POPUP_WIDTH_MAX:
+                length = self._termprop.wcswidth(value)
+            width = max(width, length + 6)
 
-        height = min(height, len(l))
+        candidates = [self._truncate_str(s, width) for s in candidates]
+
+        height = min(height, len(candidates))
 
         if x + width > self._screen.width:
             offset = x + width - self._screen.width + 1
@@ -521,7 +557,7 @@ class IListboxImpl(IListbox):
         else:
             left = x
 
-        return l, pos, left, top, width, height
+        return candidates, pos, left, top, width, height
 
     def _getdirection(self, row):
         screen = self._screen
@@ -566,7 +602,7 @@ class IMouseListenerImpl(IMouseListener):
         hittest = self._hittest(x, y)
         self._lasthittest = hittest
         if hittest == _HITTEST_BODY_SELECTED:
-            self._listener.onsettled(context)
+            self._listener.onsettled(self, context)
         elif hittest == _HITTEST_BODY_UNSELECTED:
             x -= self._offset_left
             y -= self._offset_top
@@ -588,12 +624,12 @@ class IMouseListenerImpl(IMouseListener):
                     break
                 self.movenext()
         elif self.isshown():
-            self.hide(self._output)
+            self.close()
 
     def ondoubleclick(self, context, x, y):
         hittest = self._lasthittest
         if hittest == _HITTEST_BODY_SELECTED:
-            self._listener.onsettled(context)
+            self._listener.onsettled(self, context)
         elif hittest == _HITTEST_SLIDER_ABOVE:
             for i in self._list:
                 if self._index <= 0:
@@ -793,13 +829,13 @@ class Listbox(tff.DefaultHandler,
             if self._mouse_decoder.handle_char(context, c):
                 pass
             elif c == 0x0d: # CR C-m
-                self._listener.onsettled(context)
+                self._listener.onsettled(self, context)
             elif c == 0x0a: # LF C-j
-                self._listener.onsettled(context)
+                self._listener.onsettled(self, context)
             elif c == 0x07: # BEL C-g
-                self.hide(self._output)
+                self._listener.oncancel(self, context)
             elif c == 0x08 or c == 0x7f: # BS or DEL
-                self._listener.onsettled(context)
+                self._listener.onsettled(self, context)
                 context.write(c)
             elif c == 0x09: # TAB C-i
                 self.movenext()
@@ -813,26 +849,26 @@ class Listbox(tff.DefaultHandler,
             elif c == 0x10: # C-p
                 self.moveprev()
             elif c == 0x1b: # ESC C-[ 
-                self.hide(self._output)
+                self._listener.oncancel(self, context)
             elif c == 0x02: # C-b 
                 return False
             elif c == 0x06: # C-f 
                 return False
             elif c < 0x20: # other control chars 
-                self._listener.onsettled(context)
+                self._listener.onsettled(self, context)
                 context.write(c)
             elif c == 0x20: # SP 
                 self.movenext()
             elif c == 0x78: # x
                 self.moveprev()
             elif c <= 0x7e:
-                self._listener.onsettled(context)
+                self._listener.onsettled(self, context)
                 return False
             #elif 0x41 <= c and c <= 0x5a: # A - Z
-            #    self._listener.onsettled(context)
+            #    self._listener.onsettled(self, context)
             #    return False
             #elif 0x61 <= c and c <= 0x7a: # a - z
-            #    self._listener.onsettled(context)
+            #    self._listener.onsettled(self, context)
             #    return False
             return True
         return False
@@ -859,6 +895,9 @@ class Listbox(tff.DefaultHandler,
         if self.isshown():
             if self._handle_ss3_cursor(context, final):
                 return True
+        if final == 0x5b: # [
+            self._listener.oncancel(self, context)
+            return False
         return False
 
     def _handle_csi_cursor(self, context, parameter, intermediate, final):
@@ -978,6 +1017,20 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
     def handle_csi(self, context, parameter, intermediate, final):
         if self._handle_mode(context, parameter, intermediate, final):
             return True
+        if final == 0x72 and parameter == [0x3c] and intermediate == []:
+            """ CSI < Ps r """
+            self._listener.notifyimerestore()
+        elif final == 0x73 and parameter == [0x3c] and intermediate == []:
+            """ CSI < Ps s """
+            self._listener.notifyimesave()
+        elif final == 0x74 and parameter[0] == 0x3c and intermediate == []:
+            """ CSI < Ps t """
+            if parameter == [0x3c]:
+                self._listener.notifyimeoff()
+            elif parameter == [0x3c, 0x30]:
+                self._listener.notifyimeoff()
+            elif parameter == [0x3c, 0x31]:
+                self._listener.notifyimeon()
         return False
 
     def _handle_mode(self, context, parameter, intermediate, final):

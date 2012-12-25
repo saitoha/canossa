@@ -212,6 +212,7 @@ class Line(SupportsDoubleSizedTrait,
         cells = self.cells
         attr = cursor.attr
         attr.draw(s)
+        c = None
         if left > 0:
             c = cells[left - 1].get()
             if c is None:
@@ -240,6 +241,7 @@ class Line(SupportsDoubleSizedTrait,
         s.write(u"\x1b#%d" % self._type)
         attr = cursor.attr
         attr.draw(s)
+        c = None
         for cell in cells:
             c = cell.get()
             if not c is None:
