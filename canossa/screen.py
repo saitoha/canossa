@@ -318,7 +318,7 @@ class ICanossaScreenImpl(ICanossaScreen):
         cursor = Cursor(0, 0)
         cursor.attr.draw(s)
         for i in xrange(srcy, srcy + height):
-            s.write("\x1b[%d;%dH" % (desty + i + 1, destx + 1))
+            s.write("\x1b[%d;%dH" % (desty - srcy + i + 1, destx + 1))
             line = self.lines[i]
             line.drawrange(s, srcx, srcx + width, cursor)
 
