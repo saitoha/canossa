@@ -317,8 +317,8 @@ class ICanossaScreenImpl(ICanossaScreen):
 
         cursor = Cursor(0, 0)
         cursor.attr.draw(s)
-        for i in xrange(desty, desty + height):
-            s.write("\x1b[%d;%dH" % (i + 1, destx + 1))
+        for i in xrange(srcy, srcy + height):
+            s.write("\x1b[%d;%dH" % (desty + i + 1, destx + 1))
             line = self.lines[i]
             line.drawrange(s, srcx, srcx + width, cursor)
 
@@ -369,7 +369,7 @@ class ICanossaScreenImpl(ICanossaScreen):
                 row, col = pos
                 self.cursor.row, self.cursor.col = (row + 1, col + 1) 
             #sys.stdout.write("\x1b]2;%d-%d (%d, %d)\x1b\\" % (row, col, self.cursor.row, self.cursor.col))
-        except:
+        finally:
             pass
         self.height = row
         self.width = col
@@ -420,7 +420,7 @@ class ICanossaScreenImpl(ICanossaScreen):
 
         if c < 0xff:
             line.write(c, col, cursor.attr)
-            #cursor.dirty = True
+            cursor.dirty = True
             cursor.col += 1
         else:
             char_width = self._mk_wcwidth(c)
@@ -538,17 +538,18 @@ class Screen(ICanossaScreenImpl,
         self.lf()
 
     def ri(self):
-        if self.cursor.row <= self.scroll_top:
-            bcevalue = self.cursor.attr.getbcevalue()
+        cursor = self.cursor
+        if cursor.row <= self.scroll_top:
+            bcevalue = cursor.attr.getbcevalue()
             for line in self.lines:
                 line.dirty = True
             line = self.lines.pop(self.scroll_bottom - 1)
             line.clear(bcevalue)
             self.lines.insert(self.scroll_top, line)
-            self.cursor.row = self.scroll_top 
+            cursor.row = self.scroll_top 
         else:
-            self.cursor.row -= 1
-        self.cursor.dirty = True
+            cursor.row -= 1
+        cursor.dirty = True
 
     def cr(self):
         self.cursor.col = 0

@@ -85,13 +85,21 @@ def _get_pos_and_size(stdin, stdout):
         termios.tcsetattr(stdin_fileno, termios.TCSANOW, backup)
 
     
-class OutputHandler(tff.DefaultHandler):
+_CPR_NONE=0
+_CPR_ANSI=1
+_CPR_DEC=2
+
+class Canossa(tff.DefaultHandler):
 
     __cpr = False
-    __xcpr = False
 
-    def __init__(self, scr=None, termenc="UTF-8", termprop=None, visibility=False):
-        self.__super = super(OutputHandler, self)
+    def __init__(self,
+                 scr=None,
+                 termenc="UTF-8",
+                 termprop=None,
+                 visibility=False):
+
+        self.__super = super(Canossa, self)
 
         if scr:
             self.screen = scr
@@ -102,10 +110,8 @@ class OutputHandler(tff.DefaultHandler):
             row, col, y, x = _get_pos_and_size(sys.stdin, sys.stdout)
             self.screen = screen.Screen(row, col, y, x, termenc, termprop)
 
-        self.__super = super(OutputHandler, self)
         self.__visibility = visibility
         self.__cpr = False
-        self.__xcpr = False
 
     def handle_csi(self, context, parameter, intermediate, final):
         try:
@@ -211,10 +217,12 @@ class OutputHandler(tff.DefaultHandler):
                     if self.__visibility:
                         if parameter == [0x36]: # n
                             if intermediate == []: 
-                                self.__cpr = True
+                                if not self._is_frame:
+                                    self.__cpr = _CPR_ANSI
                                 return True
                             elif intermediate == [0x3f]: # ?
-                                self.__xcpr = True
+                                if not self._is_frame:
+                                    self.__cpr = _CPR_DEC
                                 return True
                     return not self.__visibility
 
@@ -267,10 +275,10 @@ class OutputHandler(tff.DefaultHandler):
             #    pass
             #    #mnemonic = '[' + str(intermediate) + ':' + chr(final) + ']'
             #    #raise Exception(mnemonic)
-        except ValueError:
-            pass
-        except TypeError:
-            pass
+        #except ValueError:
+        #    pass
+        #except TypeError:
+        #    pass
         finally:
             pass
         return True 
@@ -360,11 +368,12 @@ class OutputHandler(tff.DefaultHandler):
     def handle_draw(self, context):
         if self.__visibility:
             self.screen.drawall(context)
-            if self.__cpr:
-                self.__cpr = False
+        if self.__cpr != _CPR_NONE:
+            if self.__cpr == _CPR_ANSI:
+                self.__cpr = _CPR_NONE
                 context.puts("\x1b[6n")
-            if self.__xcpr:
-                self.__xcpr = False
+            elif self.__cpr == _CPR_DEC:
+                self.__cpr = _CPR_NONE
                 context.puts("\x1b[?6n")
 
     def handle_resize(self, context, row, col):

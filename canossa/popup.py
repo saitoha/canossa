@@ -146,6 +146,9 @@ class IListbox():
     def moveprev(self):
         raise NotImplementedError("IListbox::moveprev")
 
+    def jumpnext(self):
+        raise NotImplementedError("IListbox::jumpnext")
+
     def draw(self, s):
         raise NotImplementedError("IListbox::draw")
 
@@ -156,6 +159,9 @@ class IListbox():
         raise NotImplementedError("IListbox::isshown")
 
 class IListboxListener():
+
+    def oninput(self, popup, context, c):
+        raise NotImplementedError("IListboxListener::oninput")
 
     def onselected(self, popup, index, text, remarks):
         raise NotImplementedError("IListboxListener::onselected")
@@ -405,8 +411,9 @@ class IListboxImpl(IListbox):
     _show = False
 
     """ IListbox implementation """
-    def assign(self, l):
+    def assign(self, l, index=0):
         self._list = l
+        self._index = index
         text, remarks = self._getcurrent()
         self._listener.onselected(self, self._index, text, remarks)
 
@@ -441,6 +448,15 @@ class IListboxImpl(IListbox):
                 self._scrollpos = self._index
             text, remarks = self._getcurrent()
             self._listener.onselected(self, self._index, text, remarks)
+            return True
+        return False
+
+    def jumpnext(self):
+        for i in xrange(0, self._height):
+            if self._index >= len(self._list):
+                return False
+            self.movenext()
+        return True
 
     def _calculate_scrollbar_postion(self):
         height = self._height
@@ -474,6 +490,12 @@ class IListboxImpl(IListbox):
                                           top + height + self._offset_top,
                                           self._left + self._width,
                                           self._height - height)
+                if self._top < top:
+                    self._screen.copyrect(s,
+                                          self._left + self._offset_left,
+                                          self._top + self._offset_top,
+                                          self._width,
+                                          top - self._top)
 
             elif not self._mouse_mode is None:
                 self._mouse_mode.setenabled(self._output, True)
@@ -877,50 +899,9 @@ class Listbox(tff.DefaultHandler,
     def handle_char(self, context, c):
         if self.isshown():
             if self._mouse_decoder.handle_char(context, c):
-                pass
-            elif c == 0x0d: # CR C-m
-                self._listener.onsettled(self, context)
-            elif c == 0x0a: # LF C-j
-                self._listener.onsettled(self, context)
-            elif c == 0x07: # BEL C-g
-                self._listener.oncancel(self, context)
-            elif c == 0x08 or c == 0x7f: # BS or DEL
-                self._listener.onsettled(self, context)
-                context.write(c)
-            elif c == 0x09: # TAB C-i
-                self.movenext()
-            elif c == 0x0e: # C-n
-                self.movenext()
-            elif c == 0x16: # C-v
-                for i in xrange(0, self._height):
-                    if self._index >= len(self._list):
-                        break
-                    self.movenext()
-            elif c == 0x10: # C-p
-                self.moveprev()
-            elif c == 0x1b: # ESC C-[ 
-                self._listener.oncancel(self, context)
-            elif c == 0x02: # C-b 
-                return False
-            elif c == 0x06: # C-f 
-                return False
-            elif c < 0x20: # other control chars 
-                self._listener.onsettled(self, context)
-                context.write(c)
-            elif c == 0x20: # SP 
-                self.movenext()
-            elif c == 0x78: # x
-                self.moveprev()
-            elif c <= 0x7e:
-                self._listener.onsettled(self, context)
-                return False
-            #elif 0x41 <= c and c <= 0x5a: # A - Z
-            #    self._listener.onsettled(self, context)
-            #    return False
-            #elif 0x61 <= c and c <= 0x7a: # a - z
-            #    self._listener.onsettled(self, context)
-            #    return False
-            return True
+                return True
+            if self._listener.oninput(self, context, c):
+                return True
         return False
 
     def handle_csi(self, context, parameter, intermediate, final):
