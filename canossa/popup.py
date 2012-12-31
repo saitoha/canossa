@@ -231,6 +231,7 @@ class MouseDecoder(tff.DefaultHandler):
     _mousedown = False
     _mousedrag = False
     _mouse_mode = None
+    _init_glich_time = None
 
     def __init__(self, popup, termprop, mouse_mode):
         self._mouse_mode = mouse_mode
@@ -244,6 +245,11 @@ class MouseDecoder(tff.DefaultHandler):
             try:
                 mouse_info = self._decode_mouse(context, parameter, intermediate, final)
                 if mouse_info:
+                    if self._init_glich_time:
+                        if time.time() - self._init_glich_time < 0.5:
+                            self._init_glich_time = None
+                            return False
+                        self._init_glich_time = None
                     mode, mouseup, code, x, y = mouse_info 
                     if mode == _MOUSE_PROTOCOL_NORMAL:
                         self._mouse_state = [] 
@@ -299,9 +305,11 @@ class MouseDecoder(tff.DefaultHandler):
         self._mouse_mode.setenabled(output, True)
         self._x = -1
         self._y = -1
+        self._init_glich_flag = time.time()
 
     def uninitialize_mouse(self, output):
         self._mouse_mode.setenabled(output, False)
+        self._init_glich_flag = None
 
     def handle_char(self, context, c):
         # xterm's X10/normal mouse encoding could not be handled 
@@ -781,7 +789,8 @@ class IMouseListenerImpl(IMouseListener):
             x -= self._offset_left
             y -= self._offset_top
             self._dragpos = (x, y)
-        elif hittest == _HITTEST_SLIDER_INNER or hittest == _HITTEST_SLIDER_ABOVE or hittest == _HITTEST_SLIDER_BELOW:
+        #elif hittest == _HITTEST_SLIDER_INNER or hittest == _HITTEST_SLIDER_ABOVE or hittest == _HITTEST_SLIDER_BELOW:
+        else:
             self._dragmode = _DRAGMODE_SCROLL
             self._scrollorigin = self._scrollpos
             self._dragpos = (x, y)
