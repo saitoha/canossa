@@ -108,7 +108,7 @@ class SuuportsAlternateScreenTrait():
         elif len(lines) < self.height:
             for line in lines:
                 line.resize(self.width)
-            while len(lines) != self.height:
+            while len(lines) < self.height:
                 lines.insert(0, Line(self.width))
         else:
             for line in lines:
@@ -131,7 +131,7 @@ class SuuportsAlternateScreenTrait():
         elif len(lines) < self.height:
             for line in lines:
                 line.resize(self.width)
-            while len(lines) != self.height:
+            while len(lines) < self.height:
                 lines.insert(0, Line(self.width))
         else:
             for line in lines:
@@ -236,7 +236,12 @@ class SupportsTabStopTrait():
             self._tabstop = []
 
     def ht(self):
-        line = self.lines[self.cursor.row] 
+        cursor = self.cursor
+        if cursor.row >= self.height:
+            cursor.row = self.height - 1
+        if cursor.col >= self.width:
+            cursor.col = self.width - 1
+        line = self.lines[cursor.row] 
         col = self.cursor.col
         if line.is_normal():
             if len(self._tabstop) > 0:
@@ -250,9 +255,9 @@ class SupportsTabStopTrait():
             for stop in self._tabstop:
                 if col <= stop:
                     if stop >= max_pos:
-                        self.cursor.col = max_pos
+                        cursor.col = max_pos
                     else:
-                        self.cursor.col = stop 
+                        cursor.col = stop 
                     break
             else:
                 self.cursor.col = self.width - 1 
@@ -344,15 +349,17 @@ class ICanossaScreenImpl(ICanossaScreen):
     def resize(self, row, col):
         lines = self.lines
         height = len(lines)
+        if row == height and col == self.width:
+            return
         if row < height:
-            while row != len(lines):
+            while row < len(lines):
                 lines.pop()
             for line in lines:
                 line.resize(col)
         elif row > height:
             for line in lines:
                 line.resize(col)
-            while row != len(lines):
+            while row > len(lines):
                 lines.insert(0, Line(col))
         else:
             for line in lines:
@@ -360,14 +367,15 @@ class ICanossaScreenImpl(ICanossaScreen):
         assert row == len(lines)
         for line in lines:
             assert col == line.length()
-        if self.scroll_top == 0 and self.scroll_bottom == self.height:
-            self.scroll_top = 0
+        if self.scroll_bottom > row:
             self.scroll_bottom = row 
+        if self.scroll_top < 0:
+            self.scroll_top = 0
         try:
-            pos = termprop.getyx()
+            pos = self._termprop.getyx()
             if pos != (0, 0):
                 row, col = pos
-                self.cursor.row, self.cursor.col = (row + 1, col + 1) 
+                self.cursor.row, self.cursor.col = row, col
             #sys.stdout.write("\x1b]2;%d-%d (%d, %d)\x1b\\" % (row, col, self.cursor.row, self.cursor.col))
         finally:
             pass
@@ -382,6 +390,11 @@ class ICanossaScreenImpl(ICanossaScreen):
 
     def sp(self):
         cursor = self.cursor
+        if cursor.row >= self.height:
+            cursor.row = self.height - 1
+        if cursor.col >= self.width:
+            cursor.col = self.width - 1
+
         row, col = cursor.row, cursor.col
         line = self.lines[row] 
 
@@ -405,6 +418,11 @@ class ICanossaScreenImpl(ICanossaScreen):
 
     def write(self, c):
         cursor = self.cursor
+        if cursor.row >= self.height:
+            cursor.row = self.height - 1
+        if cursor.col >= self.width:
+            cursor.col = self.width - 1
+
         row, col = cursor.row, cursor.col
         line = self.lines[row] 
 
@@ -659,6 +677,10 @@ class Screen(ICanossaScreenImpl,
     def ich(self, ps):
         ''' insert blank character(s) '''    
         cursor = self.cursor
+        if cursor.row >= self.height:
+            cursor.row = self.height - 1
+        if cursor.col >= self.width:
+            cursor.col = self.width - 1
         row = cursor.row
         col = cursor.col
         if row >= self.scroll_bottom:
@@ -704,6 +726,11 @@ class Screen(ICanossaScreenImpl,
             self.cursor.col = 0 
 
     def dl(self, ps):
+        cursor = self.cursor
+        if cursor.row >= self.height:
+            cursor.row = self.height - 1
+        if cursor.col >= self.width:
+            cursor.col = self.width - 1
         row = self.cursor.row
         lines = self.lines
         bottom = self.scroll_bottom
@@ -714,6 +741,11 @@ class Screen(ICanossaScreenImpl,
             lines.pop(row)
 
     def il(self, ps):
+        cursor = self.cursor
+        if cursor.row >= self.height:
+            cursor.row = self.height - 1
+        if cursor.col >= self.width:
+            cursor.col = self.width - 1
         row = self.cursor.row
         lines = self.lines
         bottom = self.scroll_bottom
@@ -724,11 +756,16 @@ class Screen(ICanossaScreenImpl,
             lines.insert(row, Line(self.width))
 
     def el(self, ps):
-        line = self.lines[self.cursor.row] 
+        cursor = self.cursor
+        if cursor.row >= self.height:
+            cursor.row = self.height - 1
+        if cursor.col >= self.width:
+            cursor.col = self.width - 1
+        line = self.lines[cursor.row] 
         if ps == 0:
-            cells = line.cells[self.cursor.col:]
+            cells = line.cells[cursor.col:]
         elif ps == 1:
-            cells = line.cells[:self.cursor.col]
+            cells = line.cells[cursor.col]
         elif ps == 2:
             cells = line.cells
         else:
