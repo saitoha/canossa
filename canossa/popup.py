@@ -429,7 +429,7 @@ class IListboxImpl(IListbox):
     _style_scrollbar_drag  = { 'selected'  : u'\x1b[0;1;37;42m',
                                'unselected': u'\x1b[0;1;37;41m',
                                'scrollbar' : u'\x1b[0;47m',
-                               'slider'    : u'\x1b[0;43m',
+                               'slider'    : u'\x1b[0;46m',
                              }
 
     _style_inactive        = { 'selected'  : u'\x1b[0;1;37;41m',
@@ -506,7 +506,10 @@ class IListboxImpl(IListbox):
         all_length = len(self._list)
         if height < all_length:
             start_pos = round(1.0 * scroll_pos / all_length * height)
-            end_pos = start_pos + round(1.0 * height / all_length * height)
+            end_pos = start_pos + round(1.0 * height / all_length * height + 1.0)
+            if start_pos > height - 1:
+                start_pos = height - 1
+                end_pos = height
             return start_pos, end_pos
         return None
 
@@ -778,7 +781,7 @@ class IMouseListenerImpl(IMouseListener):
             x -= self._offset_left
             y -= self._offset_top
             self._dragpos = (x, y)
-        elif hittest == _HITTEST_SLIDER_INNER:
+        elif hittest == _HITTEST_SLIDER_INNER or hittest == _HITTEST_SLIDER_ABOVE or hittest == _HITTEST_SLIDER_BELOW:
             self._dragmode = _DRAGMODE_SCROLL
             self._scrollorigin = self._scrollpos
             self._dragpos = (x, y)
