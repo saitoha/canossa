@@ -27,7 +27,7 @@ _MOUSE_PROTOCOL_X10          = 9
 _MOUSE_PROTOCOL_NORMAL       = 1000
 _MOUSE_PROTOCOL_HIGHLIGHT    = 1001
 _MOUSE_PROTOCOL_BUTTON_EVENT = 1002
-_MOUSE_PROTOCOL_ALL_EVENT    = 1003
+_MOUSE_PROTOCOL_ANY_EVENT    = 1003
 
 _MOUSE_ENCODING_UTF8         = 1005
 _MOUSE_ENCODING_SGR          = 1006
@@ -71,17 +71,23 @@ class IFocusListener():
 
 class IMouseListener():
 
+    """ down/up """
+    def onmousedown(self, context, x, y):
+        raise NotImplementedError("IMouseListener::onmousedown")
+
     def onmouseup(self, context, x, y):
         raise NotImplementedError("IMouseListener::onmouseup")
 
+    """ click/doubleclick """
     def onclick(self, context, x, y):
         raise NotImplementedError("IMouseListener::onclick")
 
     def ondoubleclick(self, context, x, y):
         raise NotImplementedError("IMouseListener::ondoubleclick")
 
-    def onmousemove(self, context, x, y):
-        raise NotImplementedError("IMouseListener::onmousemove")
+    """ hover """
+    def onmousehover(self, context, x, y):
+        raise NotImplementedError("IMouseListener::onmousehover")
 
     """ scroll """
     def onscrolldown(self, context, x, y):
@@ -214,11 +220,13 @@ class IModeListenerImpl(IModeListener):
     def getenabled(self):
         return self._imemode
 
+_DOUBLE_CLICK_SPAN = 0.2
+
 class MouseDecoder(tff.DefaultHandler):
 
     _mouse_state = None
-    _x = 0
-    _y = 0
+    _x = -1 
+    _y = -1 
     _lastclick = 0
     _mousedown = False
     _mousedrag = False
@@ -287,6 +295,14 @@ class MouseDecoder(tff.DefaultHandler):
                     return True
         return False 
 
+    def initialize_mouse(self, output):
+        self._mouse_mode.setenabled(output, True)
+        self._x = -1
+        self._y = -1
+
+    def uninitialize_mouse(self, output):
+        self._mouse_mode.setenabled(output, False)
+
     def handle_char(self, context, c):
         # xterm's X10/normal mouse encoding could not be handled 
         # by TFF filter because it is not ECMA-48 compatible sequense,
@@ -353,28 +369,36 @@ class MouseDecoder(tff.DefaultHandler):
 
     def __dispatch_mouse(self, context, code, x, y):
         if code & 32: # mouse move
-            if self._mousedrag:
-                self._popup.ondragmove(context, x, y)
-            elif self._mousedown:
-                self._mousedrag = True
-                self._popup.ondragstart(context, x, y)
-            else:
-                self._popup.onmousemove(context, x, y)
+            if x != self._x or y != self._y:
+                if self._mousedrag:
+                    self._popup.ondragmove(context, x, y)
+                elif self._mousedown:
+                    self._mousedrag = True
+                    self._popup.ondragstart(context, x, y)
+                else:
+                    self._popup.onmousehover(context, x, y)
+            self._x = x
+            self._y = y
 
         elif code & 0x3 == 0x3: # mouse up
-            self._mousedown = False
-            if self._mousedrag:
-                self._mousedrag = False
-                self._popup.ondragend(context, x, y)
-            elif x == self._x and y == self._y:
-                now = time.time()
-                if now - self._lastclick < 0.1:
-                    self._popup.ondoubleclick(context, x, y)
-                else:
-                    self._popup.onclick(context, x, y)
-                self._lastclick = now
-            else:
+            if self._mousedown:
+                self._mousedown = False
+                if self._mousedrag:
+                    self._mousedrag = False
+                    self._popup.ondragend(context, x, y)
+                elif x == self._x and y == self._y:
+                    now = time.time()
+                    if now - self._lastclick < _DOUBLE_CLICK_SPAN:
+                        self._popup.ondoubleclick(context, x, y)
+                    else:
+                        self._popup.onclick(context, x, y)
+                    self._lastclick = now
                 self._popup.onmouseup(context, x, y)
+            else:
+                if x != self._x or y != self._y:
+                    self._popup.onmousehover(context, x, y)
+                self._x = x
+                self._y = y
 
         elif code & 64: # mouse scroll
             if code & 0x1:
@@ -384,6 +408,7 @@ class MouseDecoder(tff.DefaultHandler):
         else: # mouse down
             self._x = x
             self._y = y
+            self._popup.onmousedown(context, x, y)
             self._mousedown = True
             self._mousedrag = False
 
@@ -401,6 +426,12 @@ class IListboxImpl(IListbox):
                                'slider'    : u'\x1b[0;45m',
                              }
 
+    _style_scrollbar_drag  = { 'selected'  : u'\x1b[0;1;37;42m',
+                               'unselected': u'\x1b[0;1;37;41m',
+                               'scrollbar' : u'\x1b[0;47m',
+                               'slider'    : u'\x1b[0;43m',
+                             }
+
     _style_inactive        = { 'selected'  : u'\x1b[0;1;37;41m',
                                'unselected': u'\x1b[0;1;37;42m',
                                'scrollbar' : u'',
@@ -414,8 +445,7 @@ class IListboxImpl(IListbox):
     def assign(self, l, index=0):
         self._list = l
         self._index = index
-        text, remarks = self._getcurrent()
-        self._listener.onselected(self, self._index, text, remarks)
+        self.notifyselection()
 
     def isempty(self):
         return self._list == None
@@ -431,13 +461,26 @@ class IListboxImpl(IListbox):
         self._index = 0
         self._scrollpos = 0
 
+    def notifyselection(self):
+        value = self._list[self._index]
+
+        # 補足説明
+        pos = value.find(u";")
+        if pos >= 0:
+            text = value[:pos]
+            remarks = value[pos:]
+        else:
+            text = value
+            remarks = None
+
+        self._listener.onselected(self, self._index, text, remarks)
+
     def movenext(self):
         if self._index < len(self._list) - 1:
             self._index += 1
             if self._index - self._height + 1 > self._scrollpos:
                 self._scrollpos = self._index - self._height + 1 
-            text, remarks = self._getcurrent()
-            self._listener.onselected(self, self._index, text, remarks)
+            self.notifyselection()
             return True
         return False
 
@@ -446,8 +489,7 @@ class IListboxImpl(IListbox):
             self._index -= 1
             if self._index < self._scrollpos:
                 self._scrollpos = self._index
-            text, remarks = self._getcurrent()
-            self._listener.onselected(self, self._index, text, remarks)
+            self.notifyselection()
             return True
         return False
 
@@ -477,7 +519,7 @@ class IListboxImpl(IListbox):
                                           self._left + self._offset_left,
                                           top + self._offset_top,
                                           left - self._left,
-                                          height)
+                                          self._height)
                 if self._left + self._width > left + width:
                     self._screen.copyrect(s,
                                           left + width + self._offset_left,
@@ -498,8 +540,8 @@ class IListboxImpl(IListbox):
                                           top - self._top)
 
             elif not self._mouse_mode is None:
-                self._mouse_mode.setenabled(self._output, True)
                 self._style = self._style_active
+                self._mouse_decoder.initialize_mouse(self._output)
        
             self._left = left 
             self._top = top 
@@ -558,7 +600,8 @@ class IListboxImpl(IListbox):
                                   self._height)
             s.write(u"\x1b[%d;%dH" % (y + 1, x + 1))
             if not self._mouse_mode is None:
-                self._mouse_mode.setenabled(self._output, False)
+                self._mouse_decoder.uninitialize_mouse(self._output)
+
         self.reset()
  
     def isshown(self):
@@ -571,19 +614,6 @@ class IListboxImpl(IListbox):
         if self._termprop.wcswidth(s) > length:
             return s[:length] + u"..."
         return s
-
-    def _getcurrent(self):
-        value = self._list[self._index]
-
-        # 補足説明
-        index = value.find(u";")
-        if index >= 0:
-            result = value[:index]
-            remarks = value[index:]
-        else:
-            result = value
-            remarks = None
-        return result, remarks 
 
     def _getdisplayinfo(self):
         width = 0
@@ -667,8 +697,11 @@ class IMouseListenerImpl(IMouseListener):
 
     """ IMouseListener implementation """
 
+    def onmousedown(self, context, x, y):
+        self._style = self._style_scrollbar_drag
+
     def onmouseup(self, context, x, y):
-        pass
+        self._style = self._style_active
 
     def onclick(self, context, x, y):
         hittest = self._hittest(x, y)
@@ -713,7 +746,7 @@ class IMouseListenerImpl(IMouseListener):
                     break
                 self.movenext()
 
-    def onmousemove(self, context, x, y):
+    def onmousehover(self, context, x, y):
         hittest = self._hittest(x, y)
         if self.isshown():
             if hittest == _HITTEST_BODY_UNSELECTED:
@@ -788,10 +821,13 @@ class IMouseListenerImpl(IMouseListener):
                     self._scrollpos = 0
                 elif self._scrollpos > all_length - self._height - 1:
                     self._scrollpos = all_length - self._height - 1
-                if self._index < self._scrollpos:
-                    self._index = self._scrollpos
-                elif self._index > self._scrollpos + self._height - 1:
-                    self._index = self._scrollpos + self._height - 1
+                if self._index != -1:
+                    if self._index < self._scrollpos:
+                        self._index = self._scrollpos
+                        self.notifyselection()
+                    elif self._index > self._scrollpos + self._height - 1:
+                        self._index = self._scrollpos + self._height - 1
+                        self.notifyselection()
 
     def _hittest(self, x, y):
         x -= self._offset_left
@@ -1035,8 +1071,9 @@ def _parse_params(params, minimum=0, offset=0, minarg=1):
 
 class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
 
-    def __init__(self, listener):
+    def __init__(self, listener, termprop):
         self._listener = listener
+        self._termprop = termprop
 
     def handle_esc(self, context, intermediate, final):
         if final == 0x63 and len(intermediate) == 0: # RIS
@@ -1049,13 +1086,13 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
         if self._handle_mode(context, parameter, intermediate, final):
             return True
         if final == 0x72 and parameter == [0x3c] and intermediate == []:
-            """ CSI < Ps r """
+            """ TTIMERS: CSI < Ps r """
             self._listener.notifyimerestore()
         elif final == 0x73 and parameter == [0x3c] and intermediate == []:
-            """ CSI < Ps s """
+            """ TTIMESV: CSI < Ps s """
             self._listener.notifyimesave()
         elif final == 0x74 and parameter[0] == 0x3c and intermediate == []:
-            """ CSI < Ps t """
+            """ TTIMEST: CSI < Ps t """
             if parameter == [0x3c]:
                 self._listener.notifyimeoff()
             elif parameter == [0x3c, 0x30]:
@@ -1093,8 +1130,8 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
                 elif param == _MOUSE_PROTOCOL_BUTTON_EVENT:
                     self.setprotocol(_MOUSE_PROTOCOL_BUTTON_EVENT)
                     modes.append(str(param))
-                elif param == _MOUSE_PROTOCOL_ALL_EVENT:
-                    self.setprotocol(_MOUSE_PROTOCOL_ALL_EVENT)
+                elif param == _MOUSE_PROTOCOL_ANY_EVENT:
+                    self.setprotocol(_MOUSE_PROTOCOL_ANY_EVENT)
                     modes.append(str(param))
                 elif param == _FOCUS_EVENT_TRACKING:
                     self.setfocusmode(_FOCUS_EVENT_TRACKING)
@@ -1104,6 +1141,14 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
                     self.setencoding(_MOUSE_ENCODING_URXVT)
                 elif param == _MOUSE_ENCODING_SGR:
                     self.setencoding(_MOUSE_ENCODING_SGR)
+                elif param == 8840:
+                    self._termprop.set_amb_as_double()
+                    modes.append(str(param))
+                elif param == 8428:
+                    self._termprop.set_amb_as_single()
+                    modes.append(str(param))
+                elif param == 8441:
+                    self._listener.notifyimeon()
                 elif param >= 8860 and param < 8870:
                     if not self._listener.notifyenabled(param):
                         modes.append(str(param))
@@ -1126,7 +1171,7 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
                 elif param == _MOUSE_PROTOCOL_BUTTON_EVENT:
                     self.setprotocol(0)
                     modes.append(str(param))
-                elif param == _MOUSE_PROTOCOL_ALL_EVENT:
+                elif param == _MOUSE_PROTOCOL_ANY_EVENT:
                     self.setprotocol(0)
                     modes.append(str(param))
                 elif param == _FOCUS_EVENT_TRACKING:
@@ -1137,6 +1182,14 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
                     self.setencoding(0)
                 elif param == _MOUSE_ENCODING_SGR:
                     self.setencoding(0)
+                elif param == 8840:
+                    self._termprop.set_amb_as_single()
+                    modes.append(str(param))
+                elif param == 8428:
+                    self._termprop.set_amb_as_double()
+                    modes.append(str(param))
+                elif param == 8441:
+                    self._listener.notifyimeoff()
                 elif param >= 8860 and param < 8870:
                     if not self._listener.notifydisabled(param):
                         modes.append(str(param))
