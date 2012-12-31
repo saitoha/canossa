@@ -61,7 +61,7 @@ class Cell():
 
     def combine(self, value):
         if self._combine:
-            self._combine.append(unichr(value))
+            self._combine += unichr(value)
         else:
             self._combine = unichr(value)
 
