@@ -519,7 +519,7 @@ class IListboxImpl(IListbox):
                                           self._left + self._offset_left,
                                           top + self._offset_top,
                                           left - self._left,
-                                          self._height)
+                                          self._height + self._top - top)
                 if self._left + self._width > left + width:
                     self._screen.copyrect(s,
                                           left + width + self._offset_left,

@@ -19,6 +19,8 @@
 # ***** END LICENSE BLOCK *****
 
 import tff
+import thread
+lck = thread.allocate_lock()
 
 def _param_generator(params, minimum=0, offset=0, minarg=1):
     param = 0
@@ -112,8 +114,12 @@ class Canossa(tff.DefaultHandler):
 
         self.__visibility = visibility
         self.__cpr = False
+        self._resized = True
 
     def handle_csi(self, context, parameter, intermediate, final):
+        if self._resized:
+            self._resized = False
+            self.screen.adjust_cursor()
         try:
             if len(intermediate) == 0:
                 if final == 0x6d: # m
@@ -284,6 +290,9 @@ class Canossa(tff.DefaultHandler):
         return True 
 
     def handle_esc(self, context, intermediate, final):
+        if self._resized:
+            self._resized = False
+            self.screen.adjust_cursor()
         if len(intermediate) == 0:
             if False:
                 pass
@@ -329,6 +338,9 @@ class Canossa(tff.DefaultHandler):
         return True
 
     def handle_char(self, context, c):
+        if self._resized:
+            self._resized = False
+            self.screen.adjust_cursor()
         screen = self.screen
         if c <= 0x20:
             if c == 0x20: # SP
@@ -377,10 +389,13 @@ class Canossa(tff.DefaultHandler):
                 context.puts("\x1b[?6n")
 
     def handle_resize(self, context, row, col):
+        #    self._size = (row, col)
+        lck.acquire()
+        self._resized = True
         try:
             self.screen.resize(row, col)
-        except:
-            pass
+        finally:
+            lck.release()
 
 
 

@@ -124,7 +124,7 @@ class SuuportsAlternateScreenTrait():
             line.clear(bcevalue)
         lines = self.lines
         if len(lines) > self.height:
-            while len(lines) != self.height:
+            while len(lines) > self.height:
                 lines.pop()
             for line in lines:
                 line.resize(self.width)
@@ -292,6 +292,12 @@ class ICanossaScreenImpl(ICanossaScreen):
     def copyline(self, s, x, y, length):
         cursor = Cursor(0, 0)
         cursor.attr.draw(s)
+        if y > self.height - 1:
+            y = self.height - 1
+        elif y < 0:
+            y = 0
+        assert self.height == len(self.lines)
+        assert y < self.height
         while True:
             s.write("\x1b[%d;%dH" % (y + 1, x + 1)) 
             line = self.lines[y]
@@ -300,12 +306,13 @@ class ICanossaScreenImpl(ICanossaScreen):
                 break
             line.drawrange(s, x, self.width - x, cursor)
             length -= self.width - x
-            if y > self.height - 1:
+            if length <= 0:
+                break
+            if y < self.height - 1:
                 break
             x = 0
             if self.decawm:
                 y += 1
-
         self.cursor.attr.draw(s)
 
     def copyrect(self, s, srcx, srcy, width, height, destx=None, desty=None):
@@ -323,6 +330,8 @@ class ICanossaScreenImpl(ICanossaScreen):
         cursor = Cursor(0, 0)
         cursor.attr.draw(s)
         for i in xrange(srcy, srcy + height):
+            if i >= self.height:
+                break
             s.write("\x1b[%d;%dH" % (desty - srcy + i + 1, destx + 1))
             line = self.lines[i]
             line.drawrange(s, srcx, srcx + width, cursor)
@@ -349,14 +358,13 @@ class ICanossaScreenImpl(ICanossaScreen):
     def resize(self, row, col):
         lines = self.lines
         height = len(lines)
-        if row == height and col == self.width:
-            return
+        assert self.height == len(lines)
         if row < height:
-            while row < len(lines):
+            while row != len(lines):
                 lines.pop()
             for line in lines:
                 line.resize(col)
-        elif row > height:
+        elif row != height:
             for line in lines:
                 line.resize(col)
             while row > len(lines):
@@ -367,26 +375,29 @@ class ICanossaScreenImpl(ICanossaScreen):
         assert row == len(lines)
         for line in lines:
             assert col == line.length()
-        if self.scroll_bottom > row:
-            self.scroll_bottom = row 
-        if self.scroll_top < 0:
+        if self.scroll_top == 0 and self.scroll_bottom == self.height:
             self.scroll_top = 0
-        try:
-            pos = self._termprop.getyx()
-            if pos != (0, 0):
-                row, col = pos
-                self.cursor.row, self.cursor.col = row, col
-            #sys.stdout.write("\x1b]2;%d-%d (%d, %d)\x1b\\" % (row, col, self.cursor.row, self.cursor.col))
-        finally:
-            pass
+            self.scroll_bottom = row 
         self.height = row
         self.width = col
+        assert self.height == len(self.lines)
         cursor = self.cursor
         if cursor.row >= self.height:
             cursor.row = self.height - 1
         if cursor.col >= self.width:
             cursor.col = self.width - 1
         self._setup_tab()
+
+    def adjust_cursor(self):
+        pos = self._termprop.getyx()
+        cursor = self.cursor
+        if pos != (0, 0):
+            row, col = pos
+            cursor.row, cursor.col = row - 1, col - 1
+        if cursor.row >= self.height:
+            cursor.row = self.height - 1
+        if cursor.col >= self.width:
+            cursor.col = self.width - 1
 
     def sp(self):
         cursor = self.cursor
