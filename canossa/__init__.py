@@ -27,6 +27,7 @@ import termprop
 
 from canossa import * 
 from popup import *
+from iframe import *
 from screen import *
 from output import *
 
