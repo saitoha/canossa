@@ -27,14 +27,6 @@ _POPUP_DIR_REVERSE = False
 _POPUP_WIDTH_MAX = 20
 _POPUP_HEIGHT_MAX = 12 
 
-class IFocusListener():
-
-    def onfocusin(self):
-        raise NotImplementedError("IFocusListener::onfocusin")
-
-    def onfocusout(self):
-        raise NotImplementedError("IFocusListener::onfocusout")
-
 class IModeListener():
 
     def notifyenabled(self, n):

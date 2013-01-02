@@ -42,6 +42,16 @@ class IInnerFrameListener():
         raise NotImplementedError("IInnerFrameListener::onclose")
 
 
+class IFocusListenerImpl(IFocusListener):
+
+    """ IFocusListener implementation """
+    def onfocusin(self):
+        pass
+
+    def onfocusout(self):
+        pass
+
+
 class IMouseListenerImpl(IMouseListener):
 
     _scrollorigin = 0
@@ -165,7 +175,9 @@ class IMouseListenerImpl(IMouseListener):
                             self._width,
                             self._offset_top - offset_y)
 
-class InnerFrame(tff.DefaultHandler, IMouseListenerImpl):
+class InnerFrame(tff.DefaultHandler,
+                 IMouseListenerImpl,
+                 IFocusListenerImpl):
 
     top = 0
     left = 0
