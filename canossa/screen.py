@@ -329,7 +329,7 @@ class ICanossaScreenImpl(ICanossaScreen):
             message = "invalid rect is detected. (%d, %d, %d, %d)" % (srcx, srcy, width, height)
             raise CanossaRangeException(message)
 
-        cursor = Cursor(0, 0)
+        cursor = Cursor(0, 0, self.cursor.attr)
         cursor.attr.draw(s)
         for i in xrange(srcy, srcy + height):
             if i >= self.height:
@@ -674,7 +674,7 @@ class Screen(ICanossaScreenImpl,
 
     def ris(self):
         cursor = self.cursor
-        defaultvalue = cursor.attr.getdefaultbcevalue()
+        defaultvalue = cursor.attr.getdefaultvalue()
         for line in self.lines:
             line.clear(defaultvalue)
         self.dectcem = True
