@@ -175,6 +175,7 @@ class SupportsExtendedModeTrait():
                 self.save_pos()
                 self.switch_altbuf()
                 return True
+        return False
 
     def decrst(self, params):
         for param in params:
@@ -200,6 +201,7 @@ class SupportsExtendedModeTrait():
                 self.switch_mainbuf()
                 self.restore_pos()
                 return True
+        return False
 
     def xt_save(self, params):
         pass
@@ -672,7 +674,7 @@ class Screen(ICanossaScreenImpl,
 
     def ris(self):
         cursor = self.cursor
-        defaultvalue = Cell.defaultvalue
+        defaultvalue = cursor.attr.getdefaultbcevalue()
         for line in self.lines:
             line.clear(defaultvalue)
         self.dectcem = True
@@ -776,7 +778,7 @@ class Screen(ICanossaScreenImpl,
         if ps == 0:
             cells = line.cells[cursor.col:]
         elif ps == 1:
-            cells = line.cells[cursor.col]
+            cells = line.cells[:cursor.col]
         elif ps == 2:
             cells = line.cells
         else:

@@ -107,12 +107,18 @@ class Attribute():
     def clear(self):
         self._attrvalue = _ATTR_DEFAULT
 
+    def clone(self):
+        return Attribute(self._attrvalue)
+
     def copyfrom(self, attr):
         self._attrvalue = attr._attrvalue
 
     def getbcevalue(self):
         value = self._attrvalue 
         return value & (0x1ff << _ATTR_BG)
+
+    def getdefaultbcevalue(self):
+        return _ATTR_DEFAULT & (0x1ff << _ATTR_BG)
 
     def set_charset(self, charset):
         value = self._attrvalue
