@@ -53,10 +53,18 @@ class IMouseListenerImpl(IMouseListener):
         return True 
 
     def onmousedown(self, context, x, y):
-        pass
+        hittest = self._hittest(x, y)
+        if hittest == _HITTEST_CLIENTAREA: 
+            x -= self.left + self.offset_left
+            y -= self.top + self.offset_top
+            context.puts("\x1b[M%c%c%c" % (0 + 32, x + 33, y + 33))
 
     def onmouseup(self, context, x, y):
-        pass 
+        hittest = self._hittest(x, y)
+        if hittest == _HITTEST_CLIENTAREA: 
+            x -= self.left + self.offset_left
+            y -= self.top + self.offset_top
+            context.puts("\x1b[M%c%c%c" % (3 + 32, x + 33, y + 33))
 
     def onclick(self, context, x, y):
         hittest = self._hittest(x, y)
@@ -64,29 +72,36 @@ class IMouseListenerImpl(IMouseListener):
         if hittest == _HITTEST_CLIENTAREA:
             pass
         elif hittest == _HITTEST_NONE:
-            pass
+            self.close()
 
     def ondoubleclick(self, context, x, y):
         hittest = self._lasthittest
         if hittest == _HITTEST_CLIENTAREA:
             pass
         elif hittest == _HITTEST_NONE:
-            pass
+            self.close()
 
     def onmousehover(self, context, x, y):
-        if self.mouseenabled():
-            hittest = self._hittest(x, y)
-            if hittest == _HITTEST_CLIENTAREA:
-                pass
-            elif hittest == _HITTEST_NONE:
-                pass
+        hittest = self._lasthittest
+        if hittest == _HITTEST_CLIENTAREA: 
+            x -= self.left + self.offset_left
+            y -= self.top + self.offset_top
+            context.puts("\x1b[M%c%c%c" % (32 + 32, x + 33, y + 33))
 
     """ scroll """
     def onscrolldown(self, context, x, y):
-        pass
+        hittest = self._lasthittest
+        if hittest == _HITTEST_CLIENTAREA: 
+            x -= self.left + self.offset_left
+            y -= self.top + self.offset_top
+            context.puts("\x1b[M%c%c%c" % (64 + 32, x + 33, y + 33))
 
     def onscrollup(self, context, x, y):
-        pass
+        hittest = self._lasthittest
+        if hittest == _HITTEST_CLIENTAREA: 
+            x -= self.left + self.offset_left
+            y -= self.top + self.offset_top
+            context.puts("\x1b[M%c%c%c" % (65 + 32, x + 33, y + 33))
 
     """ drag and drop """
     def ondragstart(self, s, x, y):
@@ -99,6 +114,10 @@ class IMouseListenerImpl(IMouseListener):
             pass
 
     def ondragend(self, s, x, y):
+        self.left += self.offset_left
+        self.top += self.offset_top
+        self.offset_left = 0
+        self.offset_top = 0
         self._dragpos = None
 
     def ondragmove(self, context, x, y):
@@ -125,18 +144,38 @@ class IMouseListenerImpl(IMouseListener):
             self._clearDeltaY(s, offset_y)
             self.offset_left = offset_x
             self.offset_top = offset_y
+        else:
+            hittest = self._hittest(x, y)
+            if hittest == _HITTEST_CLIENTAREA: 
+                x -= self.left + self.offset_left
+                y -= self.top + self.offset_top
+                context.puts("\x1b[M%c%c%c" % (32 + 32, x + 33, y + 33))
+
+    def _get_left(self):
+        return self.left + self.offset_left - 1
+
+    def _get_right(self):
+        return self.left + self.offset_left + self.innerscreen.width + 1
+
+    def _get_top(self):
+        return self.top + self.offset_top - 1
+
+    def _get_bottom(self):
+        return self.top + self.offset_top + self.innerscreen.height + 1
 
     def _hittest(self, x, y):
         screen = self.innerscreen
-        if y == self.top - 1 and x >= self.left and x <= self.left + screen.width:
+        left = self._get_left()
+        top = self._get_top()
+        if y == self._get_top() and x >= self._get_left() and x <= self._get_right():
             return _HITTEST_TITLEBAR
-        if x < self.left:
+        if x < self._get_left():
             return _HITTEST_NONE
-        elif x > self.left + screen.width:
+        elif x > self._get_right():
             return _HITTEST_NONE
-        if y < self.top:
+        if y < self._get_top():
             return _HITTEST_NONE
-        elif y > self.top + screen.height:
+        elif y > self._get_right():
             return _HITTEST_NONE
         return _HITTEST_CLIENTAREA
 

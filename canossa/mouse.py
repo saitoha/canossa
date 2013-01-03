@@ -349,7 +349,7 @@ class MouseDecoder(tff.DefaultHandler):
                     elif self._listener.mouseenabled():
                         if mouseup:
                             code |= 0x3
-                        self.__dispatch_mouse(context, code, x, y) 
+                        self._dispatch_mouse(context, code, x, y) 
                         return True
                     if self._mouse_mode.getprotocol() == _MOUSE_ENCODING_SGR:
                         if mode == _MOUSE_ENCODING_SGR: 
@@ -414,7 +414,7 @@ class MouseDecoder(tff.DefaultHandler):
                     code, x, y = self._mouse_state
                     self._mouse_state = None
                     if self._listener.mouseenabled():
-                        self.__dispatch_mouse(context, code, x - 1, y - 1) 
+                        self._dispatch_mouse(context, code, x - 1, y - 1) 
                     if self._mouse_mode.getprotocol() != 0:
                         params = (code + 0x20, x + 0x20, y + 0x20)
                         context.puts("\x1b[M%c%c%c" % params)
@@ -467,7 +467,7 @@ class MouseDecoder(tff.DefaultHandler):
                 return 1015, False, code, x, y 
         return None
 
-    def __dispatch_mouse(self, context, code, x, y):
+    def _dispatch_mouse(self, context, code, x, y):
         if code & 32: # mouse move
             if x != self._x or y != self._y:
                 if self._mousedrag:
