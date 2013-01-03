@@ -22,18 +22,24 @@ from attribute import Attribute
 
 class Cursor():
 
-    def __init__(self, y=0, x=0):
+    col = 0
+    row = 0
+    dirty = True
+    attr = None
+    __backup = None
+
+    def __init__(self, y=0, x=0, attr=Attribute()):
         self.col = x
         self.row = y
         self.dirty = True
-        self.attr = Attribute()
+        self.attr = attr 
         self.__backup = None
 
     def clear(self):
         self.col = 0
         self.row = 0
         self.dirty = True
-        self.attr.attrclear()
+        self.attr.clear()
 
     def save(self):
         self.__backup = Cursor(self.row, self.col, self.attr.clone())

@@ -76,7 +76,7 @@ class Attribute():
             value_current = _ATTR_DEFAULT 
         value = self._attrvalue 
         for i in (1, 4, 5, 7, 8):
-            if value & (1 << i):
+            if value & (1 << i) != 0:
                 params.append(i) 
 
         fg = value >> _ATTR_FG & 0x1ff
@@ -100,19 +100,25 @@ class Attribute():
             params.extend((48, 5, bg))
 
         charset = value & 0xf << 9
-        if charset != value_current & 0xf << 9:
+        if charset != value_current & 0xf << _ATTR_NRC:
             s.write(u'\x1b(%c' % _NRC_REVERSE_MAP[charset])
         s.write(u'\x1b[%sm' % ';'.join([str(p) for p in params]))
 
     def clear(self):
         self._attrvalue = _ATTR_DEFAULT
 
+    def clone(self):
+        return Attribute(self._attrvalue)
+
     def copyfrom(self, attr):
         self._attrvalue = attr._attrvalue
 
     def getbcevalue(self):
         value = self._attrvalue 
-        return value & (0x1ff << _ATTR_BG)
+        return value & (0x3ffff << _ATTR_FG)
+
+    def getdefaultvalue(self):
+        return _ATTR_DEFAULT
 
     def set_charset(self, charset):
         value = self._attrvalue
@@ -159,8 +165,9 @@ class Attribute():
                     if pm.next() == 5:
                         value = value & ~(0x1ff << _ATTR_FG) | (pm.next() << _ATTR_FG)
                 elif n == 39:
-                    value = value & ~(0x1ff << _ATTR_FG) | (0x100 << _ATTR_FG)
+                    value = (value & ~(0x1ff << _ATTR_FG)) | (0x100 << _ATTR_FG)
                 else:
+                    assert n != 0
                     value = (value & ~(0x1ff << _ATTR_FG)) | (n - 30) << _ATTR_FG
             elif n < 50:
                 if n == 48:

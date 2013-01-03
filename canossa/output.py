@@ -327,12 +327,12 @@ class Canossa(tff.DefaultHandler):
                 self.screen.decaln()
             else:
                 pass
-        elif intermediate == [0x28]: # (
-            self.screen.set_g0(final)
-            return True 
-        elif intermediate == [0x29]: # )
-            self.screen.set_g1(final)
-            return True 
+        #elif intermediate == [0x28]: # (
+        #    self.screen.set_g0(final)
+        #    return True 
+        #elif intermediate == [0x29]: # )
+        #    self.screen.set_g1(final)
+        #    return True 
         else:
             return True 
         return True
