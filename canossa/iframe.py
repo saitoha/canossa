@@ -196,7 +196,8 @@ class IMouseListenerImpl(IMouseListener):
                         self.left + self.offset_left - 1,
                         self.top + self.offset_top - 1,
                         innerscreen.width + 2,
-                        innerscreen.height + 2)
+                        innerscreen.height + 2,
+                        lazy=True)
 
     def _clearDeltaX(self, s, offset_x):
         screen = self._outerscreen

@@ -246,30 +246,31 @@ class IListboxImpl(IListbox):
         if self._list:
             l, pos, left, top, width, height = self._getdisplayinfo()
             if self._show:
+                screen = self._screen
                 if self._left < left:
-                    self._screen.copyrect(s,
-                                          self._left + self._offset_left,
-                                          top + self._offset_top,
-                                          left - self._left,
-                                          self._height + self._top - top)
+                    screen.copyrect(s,
+                                    self._left + self._offset_left,
+                                    top + self._offset_top,
+                                    left - self._left,
+                                    self._height + self._top - top)
                 if self._left + self._width > left + width:
-                    self._screen.copyrect(s,
-                                          left + width + self._offset_left,
-                                          top + self._offset_top,
-                                          self._left + self._width - (left + width),
-                                          height)
+                    screen.copyrect(s,
+                                    left + width + self._offset_left,
+                                    top + self._offset_top,
+                                    self._left + self._width - (left + width),
+                                    height)
                 if self._top + self._height > top + height:
-                    self._screen.copyrect(s,
-                                          left + self._offset_left,
-                                          top + height + self._offset_top,
-                                          self._left + self._width,
-                                          self._height - height)
+                    screen.copyrect(s,
+                                    left + self._offset_left,
+                                    top + height + self._offset_top,
+                                    self._left + self._width,
+                                    self._height - height)
                 if self._top < top:
-                    self._screen.copyrect(s,
-                                          self._left + self._offset_left,
-                                          self._top + self._offset_top,
-                                          self._width,
-                                          top - self._top)
+                    screen.copyrect(s,
+                                    self._left + self._offset_left,
+                                    self._top + self._offset_top,
+                                    self._width,
+                                    top - self._top)
 
             elif not self._mousemode is None:
                 self._style = self._style_active

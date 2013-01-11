@@ -317,7 +317,7 @@ class ICanossaScreenImpl(ICanossaScreen):
                 y += 1
         self.cursor.attr.draw(s)
 
-    def copyrect(self, s, srcx, srcy, width, height, destx=None, desty=None):
+    def copyrect(self, s, srcx, srcy, width, height, destx=None, desty=None, lazy=False):
         if destx is None:
             destx = srcx
         if desty is None:
@@ -334,9 +334,10 @@ class ICanossaScreenImpl(ICanossaScreen):
         for i in xrange(srcy, srcy + height):
             if i >= self.height:
                 break
-            s.write("\x1b[%d;%dH" % (desty - srcy + i + 1, destx + 1))
             line = self.lines[i]
-            line.drawrange(s, srcx, srcx + width, cursor)
+            if not lazy or line.dirty:
+                s.write("\x1b[%d;%dH" % (desty - srcy + i + 1, destx + 1))
+                line.drawrange(s, srcx, srcx + width, cursor)
 
         self.cursor.attr.draw(s)
 
