@@ -99,6 +99,8 @@ class IListboxListener():
     def oncancel(self, popup, context):
         raise NotImplementedError("IListboxListener::oncancel")
 
+    def onrepeat(self, popup, context):
+        raise NotImplementedError("IListboxListener::onrepeat")
 
 class IModeListenerImpl(IModeListener):
 
@@ -193,7 +195,6 @@ class IListboxImpl(IListbox):
     def notifyselection(self):
         value = self._list[self._index]
 
-        # 補足説明
         pos = value.find(u";")
         if pos >= 0:
             text = value[:pos]
@@ -208,6 +209,7 @@ class IListboxImpl(IListbox):
         if self._index < len(self._list) - 1:
             self._index += 1
             if self._index - self._height + 1 > self._scrollpos:
+                self._listener.onrepeat(self)
                 self._scrollpos = self._index - self._height + 1 
             self.notifyselection()
             return True
