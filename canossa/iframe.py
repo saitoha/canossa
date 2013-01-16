@@ -20,7 +20,8 @@
 
  
 import tff
-from mouse import *
+from mouse import IFocusListener, IMouseListener, MouseDecoder 
+from interface import IInnerFrame, IInnerFrameListener
 from output import Canossa
 from screen import Screen
 
@@ -35,11 +36,6 @@ _HITTEST_FRAME_TOPLEFT     = 7
 _HITTEST_FRAME_TOPRIGHT    = 8
 _HITTEST_FRAME_BOTTOMLEFT  = 9
 _HITTEST_FRAME_BOTTOMRIGHT = 10 
-
-class IInnerFrameListener():
-
-    def onclose(self, iframe, context):
-        raise NotImplementedError("IInnerFrameListener::onclose")
 
 
 class IFocusListenerImpl(IFocusListener):
@@ -236,6 +232,7 @@ class IMouseListenerImpl(IMouseListener):
                             self.offset_top - offset_y)
 
 class InnerFrame(tff.DefaultHandler,
+                 IInnerFrame,
                  IMouseListenerImpl,
                  IFocusListenerImpl):
 

@@ -25,7 +25,21 @@ import abc
 #
 # interfaces
 #
-# - ICanossa
+# + Screen Layer API
+#   - ICanossaScreen
+#
+# + Mode Handling
+#   - IModeListener
+#
+# + Widgets
+#
+#   + ListBox
+#     - IListbox
+#     - IListboxListener
+#
+#   + IInnerFrame
+#     - IInnerFrame
+#     - IInnerFrameListener
 #
 class ICanossaScreen:
 
@@ -150,5 +164,32 @@ class IListboxListener():
     @abc.abstractmethod
     def onrepeat(self, popup, context):
         raise NotImplementedError("IListboxListener::onrepeat")
+
+class IInnerFrame():
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def close(self):
+        raise NotImplementedError("IInnerFrame::close")
+
+    @abc.abstractmethod
+    def draw(self, output):
+        raise NotImplementedError("IInnerFrame::draw")
+
+class IInnerFrameListener():
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def onclose(self, iframe, context):
+        raise NotImplementedError("IInnerFrameListener::onclose")
+
+def test():
+    import doctest
+    doctest.testmod()
+
+if __name__ == "__main__":
+    test()
 
 

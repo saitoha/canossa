@@ -789,3 +789,11 @@ class Screen(ICanossaScreenImpl,
         for cell in cells:
             cell.clear(bcevalue) 
 
+def test():
+    import doctest
+    doctest.testmod()
+
+if __name__ == "__main__":
+    test()
+
+
