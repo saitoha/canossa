@@ -20,7 +20,8 @@
 
 import tff
 import thread
-lck = thread.allocate_lock()
+import logging
+lock = thread.allocate_lock()
 
 def _param_generator(params, minimum=0, offset=0, minarg=1):
     param = 0
@@ -337,6 +338,35 @@ class Canossa(tff.DefaultHandler):
             return True 
         return True
 
+    def handle_control_string(self, context, prefix, value):
+        if prefix == 0x5d: # ']'
+            try:
+                pos = value.index(0x3b)
+            except ValueError:
+                return 
+            if pos == -1:
+                return
+            elif pos == 0:
+                num = [0]
+            else:
+                try:
+                    num = value[:pos]
+                except:
+                    num = None 
+            if not num is None:
+                if num == [0x30] or num == [0x32]:
+                    arg = value[pos + 1:]
+                    self.screen.settitle(u''.join([unichr(x) for x in arg]))
+                    s = self.screen.gettitle()
+                    if s:
+                        value = num + [0x3b] + [ord(x) for x in s]
+                        new_title = u"".join([unichr(c) for c in value])
+                        context.writestring(u"\x1b]%s\x1b\\" % new_title)
+                        return True
+
+        return False
+
+
     def handle_char(self, context, c):
         if self._resized:
             self._resized = False
@@ -389,13 +419,12 @@ class Canossa(tff.DefaultHandler):
                 context.puts("\x1b[?6n")
 
     def handle_resize(self, context, row, col):
-        #    self._size = (row, col)
-        lck.acquire()
+        lock.acquire()
         self._resized = True
         try:
             self.screen.resize(row, col)
         finally:
-            lck.release()
+            lock.release()
 
 
 def test():

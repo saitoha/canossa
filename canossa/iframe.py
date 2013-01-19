@@ -45,8 +45,7 @@ class IFocusListenerImpl(IFocusListener):
         pass
 
     def onfocusout(self):
-        pass
-
+        self.close()
 
 class IMouseListenerImpl(IMouseListener):
 
@@ -78,14 +77,14 @@ class IMouseListenerImpl(IMouseListener):
         if hittest == _HITTEST_CLIENTAREA:
             pass
         elif hittest == _HITTEST_NONE:
-            self.close()
+            self.onfocusout()
 
     def ondoubleclick(self, context, x, y):
         hittest = self._lasthittest
         if hittest == _HITTEST_CLIENTAREA:
             pass
         elif hittest == _HITTEST_NONE:
-            self.close()
+            self.onfocusout()
 
     def onmousehover(self, context, x, y):
         hittest = self._lasthittest
@@ -242,19 +241,9 @@ class InnerFrame(tff.DefaultHandler,
     offset_left = 0
     enabled = True
 
-    def __init__(self,
-                 session,
-                 listener,
-                 screen,
-                 top,
-                 left,
-                 row,
-                 col,
-                 command,
-                 termenc,
-                 termprop,
-                 mousemode,
-                 output):
+    def __init__(self, session, listener, screen,
+                 top, left, row, col,
+                 command, termenc, termprop, mousemode, output):
 
         innerscreen = Screen(row, col, 0, 0, termenc, termprop)
         canossa = Canossa(innerscreen, visibility=False)
@@ -272,14 +261,9 @@ class InnerFrame(tff.DefaultHandler,
         self._outerscreen = screen
         self._listener = listener
 
-        session.add_subtty("xterm",
-                           "ja_JP.UTF-8",
-                           command,
-                           row, col,
-                           termenc,
-                           self,
-                           canossa,
-                           self)
+        session.add_subtty("xterm", "ja_JP.UTF-8",
+                           command, row, col, termenc,
+                           self, canossa, self)
         self._title = command
         session.switch_input_target()
 

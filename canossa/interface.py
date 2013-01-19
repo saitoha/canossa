@@ -41,25 +41,43 @@ import abc
 #     - IInnerFrame
 #     - IInnerFrameListener
 #
-class ICanossaScreen:
+class IScreen:
 
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def copyrect(self, s, srcx, srcy, width, height, destx=None, desty=None):
-        pass
+        raise NotImplementedError("IScreen::copyrect")
 
     @abc.abstractmethod
     def drawall(self, context):
-        pass
+        raise NotImplementedError("IScreen::drawall")
 
     @abc.abstractmethod
     def resize(self, row, col):
-        pass
+        raise NotImplementedError("IScreen::resize")
 
     @abc.abstractmethod
     def write(self, c):
-        pass
+        raise NotImplementedError("IScreen::write")
+
+    @abc.abstractmethod
+    def setlistener(self, listener):
+        raise NotImplementedError("IScreen::setlistener")
+
+class IScreenListener:
+
+    @abc.abstractmethod
+    def ontitlechanged(self, s):
+        raise NotImplementedError("IScreenListener::ontitlechanged")
+
+    @abc.abstractmethod
+    def onmodeenabled(self, n):
+        raise NotImplementedError("IScreenListener::onmodeenabled")
+
+    @abc.abstractmethod
+    def onmodedisabled(self, n):
+        raise NotImplementedError("IScreenListener::onmodedisabled")
 
 class IModeListener():
 

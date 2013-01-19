@@ -289,7 +289,9 @@ class CanossaRangeException(Exception):
         return repr(self.message)
 
 
-class ICanossaScreenImpl(ICanossaScreen):
+class IScreenImpl(IScreen):
+
+    _listener = None
 
     def copyline(self, s, x, y, length):
         cursor = Cursor(0, 0)
@@ -476,6 +478,9 @@ class ICanossaScreenImpl(ICanossaScreen):
                         cursor.col += 1
                 line.combine(c, col)
 
+    def setlistener(self, listener):
+        self._listener = listener
+
 class MockScreen():
 
     width = 80
@@ -501,7 +506,7 @@ class MockScreenWithCursor(MockScreen):
         self._setup_lines()
 
 
-class Screen(ICanossaScreenImpl,
+class Screen(IScreenImpl,
              MockScreenWithCursor,
              SupportsAnsiModeTrait,
              SupportsExtendedModeTrait,
@@ -512,6 +517,7 @@ class Screen(ICanossaScreenImpl,
              SuuportsISO2022DesignationTrait):
 
     _saved_pos = None
+    _title = u""
 
     def __init__(self, row=24, col=80, y=0, x=0, termenc="UTF-8", termprop=None):
         self.height = row
@@ -536,6 +542,14 @@ class Screen(ICanossaScreenImpl,
     def _wrap(self):
         self.cursor.col = 0 
         self.lf()
+
+    def settitle(self, s):
+        if self._listener:
+            s = self._listener.ontitlechanged(s)
+        self._title = s
+
+    def gettitle(self):
+        return self._title
 
     def bs(self):
         if self.cursor.col >= self.width:

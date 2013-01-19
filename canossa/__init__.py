@@ -19,14 +19,16 @@
 # ***** END LICENSE BLOCK *****
 
 __author__  = "Hayaki Saito (user@zuse.jp)"
-__version__ = "0.0.15"
+__version__ = "0.0.16"
 __license__ = "GPL v3"
 
 import tff
 import termprop
 
+from interface import * 
 from canossa import * 
 from popup import *
+from mouse import * 
 from iframe import *
 from screen import *
 from output import *
