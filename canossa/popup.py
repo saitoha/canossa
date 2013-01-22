@@ -19,94 +19,15 @@
 # ***** END LICENSE BLOCK *****
 
 import tff
+import logging
 
-from mouse import * 
+from interface import IModeListener, IListbox, IListboxListener
+from mouse import IFocusListener, IMouseListener, MouseDecoder
 
 _POPUP_DIR_NORMAL = True
 _POPUP_DIR_REVERSE = False
 _POPUP_WIDTH_MAX = 20
 _POPUP_HEIGHT_MAX = 12 
-
-class IFocusListener():
-
-    def onfocusin(self):
-        raise NotImplementedError("IFocusListener::onfocusin")
-
-    def onfocusout(self):
-        raise NotImplementedError("IFocusListener::onfocusout")
-
-class IModeListener():
-
-    def notifyenabled(self, n):
-        raise NotImplementedError("IModeListener::notifyenabled")
-
-    def notifydisabled(self, n):
-        raise NotImplementedError("IModeListener::notifydisabled")
-
-    def notifyimeon(self):
-        raise NotImplementedError("IModeListener::notifyimeon")
-
-    def notifyimeoff(self):
-        raise NotImplementedError("IModeListener::notifyimeoff")
-
-    def notifyimesave(self):
-        raise NotImplementedError("IModeListener::notifyimesave")
-
-    def notifyimerestore(self):
-        raise NotImplementedError("IModeListener::notifyimerestore")
-
-    def reset(self):
-        raise NotImplementedError("IModeListener::reset")
-
-    def hasevent(self):
-        raise NotImplementedError("IModeListener::hasevent")
-
-    def getenabled(self):
-        raise NotImplementedError("IModeListener::getenabled")
-
-class IListbox():
-
-    def assign(self, a_list):
-        raise NotImplementedError("IListbox::assign")
-
-    def isempty(self):
-        raise NotImplementedError("IListbox::isempty")
-
-    def reset(self):
-        raise NotImplementedError("IListbox::reset")
-
-    def movenext(self):
-        raise NotImplementedError("IListbox::movenext")
-
-    def moveprev(self):
-        raise NotImplementedError("IListbox::moveprev")
-
-    def jumpnext(self):
-        raise NotImplementedError("IListbox::jumpnext")
-
-    def draw(self, s):
-        raise NotImplementedError("IListbox::draw")
-
-    def close(self):
-        raise NotImplementedError("IListbox::close")
- 
-    def isshown(self):
-        raise NotImplementedError("IListbox::isshown")
-
-class IListboxListener():
-
-    def oninput(self, popup, context, c):
-        raise NotImplementedError("IListboxListener::oninput")
-
-    def onselected(self, popup, index, text, remarks):
-        raise NotImplementedError("IListboxListener::onselected")
-
-    def onsettled(self, popup, context):
-        raise NotImplementedError("IListboxListener::onsettled")
-
-    def oncancel(self, popup, context):
-        raise NotImplementedError("IListboxListener::oncancel")
-
 
 class IModeListenerImpl(IModeListener):
 
@@ -201,7 +122,6 @@ class IListboxImpl(IListbox):
     def notifyselection(self):
         value = self._list[self._index]
 
-        # 補足説明
         pos = value.find(u";")
         if pos >= 0:
             text = value[:pos]
@@ -213,16 +133,17 @@ class IListboxImpl(IListbox):
         self._listener.onselected(self, self._index, text, remarks)
 
     def movenext(self):
-        if self._index < len(self._list) - 1:
+        if self._list and self._index < len(self._list) - 1:
             self._index += 1
             if self._index - self._height + 1 > self._scrollpos:
+                self._listener.onrepeat(self)
                 self._scrollpos = self._index - self._height + 1 
             self.notifyselection()
             return True
         return False
 
     def moveprev(self):
-        if self._index > 0:
+        if self._list and self._index > 0:
             self._index -= 1
             if self._index < self._scrollpos:
                 self._scrollpos = self._index
@@ -254,30 +175,31 @@ class IListboxImpl(IListbox):
         if self._list:
             l, pos, left, top, width, height = self._getdisplayinfo()
             if self._show:
+                screen = self._screen
                 if self._left < left:
-                    self._screen.copyrect(s,
-                                          self._left + self._offset_left,
-                                          top + self._offset_top,
-                                          left - self._left,
-                                          self._height + self._top - top)
+                    screen.copyrect(s,
+                                    self._left + self._offset_left,
+                                    top + self._offset_top,
+                                    left - self._left,
+                                    self._height + self._top - top)
                 if self._left + self._width > left + width:
-                    self._screen.copyrect(s,
-                                          left + width + self._offset_left,
-                                          top + self._offset_top,
-                                          self._left + self._width - (left + width),
-                                          height)
+                    screen.copyrect(s,
+                                    left + width + self._offset_left,
+                                    top + self._offset_top,
+                                    self._left + self._width - (left + width),
+                                    height)
                 if self._top + self._height > top + height:
-                    self._screen.copyrect(s,
-                                          left + self._offset_left,
-                                          top + height + self._offset_top,
-                                          self._left + self._width,
-                                          self._height - height)
+                    screen.copyrect(s,
+                                    left + self._offset_left,
+                                    top + height + self._offset_top,
+                                    self._left + self._width,
+                                    self._height - height)
                 if self._top < top:
-                    self._screen.copyrect(s,
-                                          self._left + self._offset_left,
-                                          self._top + self._offset_top,
-                                          self._width,
-                                          top - self._top)
+                    screen.copyrect(s,
+                                    self._left + self._offset_left,
+                                    self._top + self._offset_top,
+                                    self._width,
+                                    top - self._top)
 
             elif not self._mousemode is None:
                 self._style = self._style_active
@@ -346,9 +268,6 @@ class IListboxImpl(IListbox):
  
     def isshown(self):
         return self._show
-
-#    def learn(self):
-#        self._list.insert(0, self._list.pop(self._index))
 
     def _truncate_str(self, s, length):
         if self._termprop.wcswidth(s) > length:

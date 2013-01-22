@@ -20,7 +20,8 @@
 
  
 import tff
-from mouse import *
+from mouse import IFocusListener, IMouseListener, MouseDecoder 
+from interface import IInnerFrame, IInnerFrameListener
 from output import Canossa
 from screen import Screen
 
@@ -36,11 +37,15 @@ _HITTEST_FRAME_TOPRIGHT    = 8
 _HITTEST_FRAME_BOTTOMLEFT  = 9
 _HITTEST_FRAME_BOTTOMRIGHT = 10 
 
-class IInnerFrameListener():
 
-    def onclose(self, iframe, context):
-        raise NotImplementedError("IInnerFrameListener::onclose")
+class IFocusListenerImpl(IFocusListener):
 
+    """ IFocusListener implementation """
+    def onfocusin(self):
+        pass
+
+    def onfocusout(self):
+        self.close()
 
 class IMouseListenerImpl(IMouseListener):
 
@@ -72,14 +77,14 @@ class IMouseListenerImpl(IMouseListener):
         if hittest == _HITTEST_CLIENTAREA:
             pass
         elif hittest == _HITTEST_NONE:
-            self.close()
+            self.onfocusout()
 
     def ondoubleclick(self, context, x, y):
         hittest = self._lasthittest
         if hittest == _HITTEST_CLIENTAREA:
             pass
         elif hittest == _HITTEST_NONE:
-            self.close()
+            self.onfocusout()
 
     def onmousehover(self, context, x, y):
         hittest = self._lasthittest
@@ -186,7 +191,8 @@ class IMouseListenerImpl(IMouseListener):
                         self.left + self.offset_left - 1,
                         self.top + self.offset_top - 1,
                         innerscreen.width + 2,
-                        innerscreen.height + 2)
+                        innerscreen.height + 2,
+                        lazy=True)
 
     def _clearDeltaX(self, s, offset_x):
         screen = self._outerscreen
@@ -224,7 +230,10 @@ class IMouseListenerImpl(IMouseListener):
                             width,
                             self.offset_top - offset_y)
 
-class InnerFrame(tff.DefaultHandler, IMouseListenerImpl):
+class InnerFrame(tff.DefaultHandler,
+                 IInnerFrame,
+                 IMouseListenerImpl,
+                 IFocusListenerImpl):
 
     top = 0
     left = 0
@@ -232,19 +241,9 @@ class InnerFrame(tff.DefaultHandler, IMouseListenerImpl):
     offset_left = 0
     enabled = True
 
-    def __init__(self,
-                 session,
-                 listener,
-                 screen,
-                 top,
-                 left,
-                 row,
-                 col,
-                 command,
-                 termenc,
-                 termprop,
-                 mousemode,
-                 output):
+    def __init__(self, session, listener, screen,
+                 top, left, row, col,
+                 command, termenc, termprop, mousemode, output):
 
         innerscreen = Screen(row, col, 0, 0, termenc, termprop)
         canossa = Canossa(innerscreen, visibility=False)
@@ -262,14 +261,9 @@ class InnerFrame(tff.DefaultHandler, IMouseListenerImpl):
         self._outerscreen = screen
         self._listener = listener
 
-        session.add_subtty("xterm",
-                           "ja_JP.UTF-8",
-                           command,
-                           row, col,
-                           termenc,
-                           self,
-                           canossa,
-                           self)
+        session.add_subtty("xterm", "ja_JP.UTF-8",
+                           command, row, col, termenc,
+                           self, canossa, self)
         self._title = command
         session.switch_input_target()
 

@@ -289,7 +289,9 @@ class CanossaRangeException(Exception):
         return repr(self.message)
 
 
-class ICanossaScreenImpl(ICanossaScreen):
+class IScreenImpl(IScreen):
+
+    _listener = None
 
     def copyline(self, s, x, y, length):
         cursor = Cursor(0, 0)
@@ -317,7 +319,7 @@ class ICanossaScreenImpl(ICanossaScreen):
                 y += 1
         self.cursor.attr.draw(s)
 
-    def copyrect(self, s, srcx, srcy, width, height, destx=None, desty=None):
+    def copyrect(self, s, srcx, srcy, width, height, destx=None, desty=None, lazy=False):
         if destx is None:
             destx = srcx
         if desty is None:
@@ -334,9 +336,10 @@ class ICanossaScreenImpl(ICanossaScreen):
         for i in xrange(srcy, srcy + height):
             if i >= self.height:
                 break
-            s.write("\x1b[%d;%dH" % (desty - srcy + i + 1, destx + 1))
             line = self.lines[i]
-            line.drawrange(s, srcx, srcx + width, cursor)
+            if not lazy or line.dirty:
+                s.write("\x1b[%d;%dH" % (desty - srcy + i + 1, destx + 1))
+                line.drawrange(s, srcx, srcx + width, cursor)
 
         self.cursor.attr.draw(s)
 
@@ -475,6 +478,9 @@ class ICanossaScreenImpl(ICanossaScreen):
                         cursor.col += 1
                 line.combine(c, col)
 
+    def setlistener(self, listener):
+        self._listener = listener
+
 class MockScreen():
 
     width = 80
@@ -500,7 +506,7 @@ class MockScreenWithCursor(MockScreen):
         self._setup_lines()
 
 
-class Screen(ICanossaScreenImpl,
+class Screen(IScreenImpl,
              MockScreenWithCursor,
              SupportsAnsiModeTrait,
              SupportsExtendedModeTrait,
@@ -511,6 +517,7 @@ class Screen(ICanossaScreenImpl,
              SuuportsISO2022DesignationTrait):
 
     _saved_pos = None
+    _title = u""
 
     def __init__(self, row=24, col=80, y=0, x=0, termenc="UTF-8", termprop=None):
         self.height = row
@@ -535,6 +542,14 @@ class Screen(ICanossaScreenImpl,
     def _wrap(self):
         self.cursor.col = 0 
         self.lf()
+
+    def settitle(self, s):
+        if self._listener:
+            s = self._listener.ontitlechanged(s)
+        self._title = s
+
+    def gettitle(self):
+        return self._title
 
     def bs(self):
         if self.cursor.col >= self.width:
@@ -787,4 +802,12 @@ class Screen(ICanossaScreenImpl,
         bcevalue = self.cursor.attr.getbcevalue()
         for cell in cells:
             cell.clear(bcevalue) 
+
+def test():
+    import doctest
+    doctest.testmod()
+
+if __name__ == "__main__":
+    test()
+
 

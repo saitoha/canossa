@@ -59,6 +59,14 @@ class IMouseMode():
     def setfocusmode(self, mode):
         raise NotImplementedError("IMouseMode::setfocusmode")
 
+class IFocusListener():
+
+    def onfocusin(self):
+        raise NotImplementedError("IFocusListener::onfocusin")
+
+    def onfocusout(self):
+        raise NotImplementedError("IFocusListener::onfocusout")
+
 
 class IMouseListener():
 
