@@ -20,6 +20,7 @@
 
 import tff
 import thread
+import logging
 lck = thread.allocate_lock()
 
 def _param_generator(params, minimum=0, offset=0, minarg=1):
@@ -121,7 +122,7 @@ class Canossa(tff.DefaultHandler):
             self._resized = False
             self.screen.adjust_cursor()
         try:
-            if len(intermediate) == 0:
+            if not intermediate:
                 if final == 0x6d: # m
                     ''' SGR - Select Graphics Rendition '''
                     if len(parameter) == 0:
@@ -273,20 +274,13 @@ class Canossa(tff.DefaultHandler):
                 elif final == 0x78: # x
                     return not self.__visibility
 
-                #else:
-                #    pass
-                #    #mnemonic = '[' + chr(final) + ']'
-                #    #raise Exception(mnemonic)
-            #else:
-            #    pass
-            #    #mnemonic = '[' + str(intermediate) + ':' + chr(final) + ']'
-            #    #raise Exception(mnemonic)
-        #except ValueError:
-        #    pass
-        #except TypeError:
-        #    pass
-        finally:
-            pass
+                else:
+                    mnemonic = '[' + chr(final) + ']'
+                    logging.error("mnemonic: %s" % mnemonic)
+            if intermediate == [ 0x21 ] and final == 0x70:
+                self.screen.decstr()
+        except:
+            logging.exception("handle_csi: %s" % mnemonic)
         return True 
 
     def handle_esc(self, context, intermediate, final):
@@ -389,7 +383,6 @@ class Canossa(tff.DefaultHandler):
                 context.puts("\x1b[?6n")
 
     def handle_resize(self, context, row, col):
-        #    self._size = (row, col)
         lck.acquire()
         self._resized = True
         try:
@@ -397,5 +390,11 @@ class Canossa(tff.DefaultHandler):
         finally:
             lck.release()
 
+def test():
+    import doctest
+    doctest.testmod()
+
+if __name__ == "__main__":
+    test()
 
 
