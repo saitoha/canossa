@@ -27,7 +27,7 @@ from mouse import IFocusListener, IMouseListener, MouseDecoder
 _POPUP_DIR_NORMAL = True
 _POPUP_DIR_REVERSE = False
 _POPUP_WIDTH_MAX = 20
-_POPUP_HEIGHT_MAX = 12 
+_POPUP_HEIGHT_MAX = 12
 
 class IModeListenerImpl(IModeListener):
 
@@ -45,14 +45,14 @@ class IModeListenerImpl(IModeListener):
         if n == 8861:
             self._has_event = False
         elif n == 8860:
-            self.reset() 
+            self.reset()
             self._imemode = False
 
     def notifyimeon(self):
         self._imemode = True
 
     def notifyimeoff(self):
-        self.reset() 
+        self.reset()
         self._imemode = False
 
     def notifyimesave(self):
@@ -137,7 +137,7 @@ class IListboxImpl(IListbox):
             self._index += 1
             if self._index - self._height + 1 > self._scrollpos:
                 self._listener.onrepeat(self)
-                self._scrollpos = self._index - self._height + 1 
+                self._scrollpos = self._index - self._height + 1
             self.notifyselection()
             return True
         return False
@@ -204,9 +204,9 @@ class IListboxImpl(IListbox):
             elif not self._mousemode is None:
                 self._style = self._style_active
                 self._mouse_decoder.initialize_mouse(self._output)
-       
-            self._left = left 
-            self._top = top 
+
+            self._left = left
+            self._top = top
             self._width = width
             self._height = height
 
@@ -222,9 +222,9 @@ class IListboxImpl(IListbox):
             if scrollbar_info:
                 start_pos, end_pos = scrollbar_info
             for i, value in enumerate(l):
-                if i == pos: # selected line 
+                if i == pos: # selected line
                     s.write(style_selected)
-                else: # unselected lines 
+                else: # unselected lines
                     s.write(style_unselected)
                 s.write(u'\x1b[%d;%dH' % (top + 1 + i, left + 1))
                 s.write(u' ' * (width - 1))
@@ -234,9 +234,9 @@ class IListboxImpl(IListbox):
                     else:
                         s.write(style_scrollbar)
                 s.write(u' ')
-                if i == pos: # selected line 
+                if i == pos: # selected line
                     s.write(style_selected)
-                else: # unselected lines 
+                else: # unselected lines
                     s.write(style_unselected)
                 if i == pos: s.write(u'\x1b[1m')
                 s.write(u'\x1b[%d;%dH' % (top + 1 + i, left + 1))
@@ -250,7 +250,7 @@ class IListboxImpl(IListbox):
         return False
 
     def close(self):
-        if self.isshown(): 
+        if self.isshown():
             s = self._output
             y, x = self._screen.getyx()
             s.write(u"\x1b[%d;%dH" % (y + 1, x + 1))
@@ -265,7 +265,7 @@ class IListboxImpl(IListbox):
                 self._mouse_decoder.uninitialize_mouse(self._output)
 
         self.reset()
- 
+
     def isshown(self):
         return self._show
 
@@ -282,9 +282,9 @@ class IListboxImpl(IListbox):
 
         vdirection = self._getdirection(y)
         if vdirection == _POPUP_DIR_NORMAL:
-            height = self._screen.height - (y + 1) 
+            height = self._screen.height - (y + 1)
         else:
-            height = y 
+            height = y
 
         height = min(height, _POPUP_HEIGHT_MAX)
 
@@ -325,8 +325,8 @@ class IListboxImpl(IListbox):
         screen = self._screen
         if row * 2 > screen.height:
             vdirection = _POPUP_DIR_REVERSE
-        else:            
-            vdirection = _POPUP_DIR_NORMAL 
+        else:
+            vdirection = _POPUP_DIR_NORMAL
         return vdirection
 
 class IFocusListenerImpl(IFocusListener):
@@ -352,7 +352,7 @@ class IMouseListenerImpl(IMouseListener):
 
     _dragmode = _DRAGMODE_MOVE
     _scrollorigin = 0
-    _lasthittest = None 
+    _lasthittest = None
 
     """ IMouseListener implementation """
 
@@ -473,7 +473,7 @@ class IMouseListenerImpl(IMouseListener):
                 self._clearDeltaY(s, offset_y)
 
                 self._offset_left = offset_x
-                self._offset_top = offset_y 
+                self._offset_top = offset_y
             elif self._dragmode == _DRAGMODE_SCROLL:
                 all_length = len(self._list)
                 origin_x, origin_y = self._dragpos
@@ -562,7 +562,7 @@ class Listbox(tff.DefaultHandler,
 
     _output = None
 
-    _show = False 
+    _show = False
     _mousemode = None
     _dragpos = None
 

@@ -21,13 +21,12 @@
 
 try:
     from cStringIO import StringIO
-except:
+except ImportError:
     from StringIO import StringIO
-import sys
 import codecs
 #import logger
-import termprop
-import sys, os, termios, select
+from interface import IScreen
+
 
 #
 # CSI ... ; ... R
@@ -35,23 +34,25 @@ import sys, os, termios, select
 from cursor import Cursor
 from line import Line
 
+
 class SupportsDoubleSizedTrait():
 
     def decdhlt(self):
-        line = self.lines[self.cursor.row] 
+        line = self.lines[self.cursor.row]
         line.set_dhlt()
 
     def decdhlb(self):
-        line = self.lines[self.cursor.row] 
+        line = self.lines[self.cursor.row]
         line.set_dhlb()
 
     def decswl(self):
-        line = self.lines[self.cursor.row] 
+        line = self.lines[self.cursor.row]
         line.set_swl()
 
     def decdwl(self):
-        line = self.lines[self.cursor.row] 
+        line = self.lines[self.cursor.row]
         line.set_dwl()
+
 
 class SuuportsCursorPersistentTrait():
 
@@ -62,9 +63,10 @@ class SuuportsCursorPersistentTrait():
         if self._saved_pos:
             self.cursor.row, self.cursor.col = self._saved_pos
 
+
 class SuuportsISO2022DesignationTrait():
 
-    __g = None 
+    __g = None
     __gl = None
 
     def _setup_charset(self):
@@ -139,6 +141,7 @@ class SuuportsAlternateScreenTrait():
         assert len(lines) == self.height
         for line in lines:
             assert self.width == line.length()
+
 
 class SupportsAnsiModeTrait():
     pass
@@ -215,7 +218,7 @@ class SupportsTabStopTrait():
     _tabstop = None
 
     def _setup_tab(self):
-        self._tabstop = [n for n in xrange(0, self.width + 1, 8)] 
+        self._tabstop = [n for n in xrange(0, self.width + 1, 8)]
 
     def hts(self):
         if self.cursor.col in self._tabstop:
@@ -243,7 +246,7 @@ class SupportsTabStopTrait():
             cursor.row = self.height - 1
         if cursor.col >= self.width:
             cursor.col = self.width - 1
-        line = self.lines[cursor.row] 
+        line = self.lines[cursor.row]
         col = self.cursor.col
         if line.is_normal():
             if len(self._tabstop) > 0:
@@ -259,15 +262,14 @@ class SupportsTabStopTrait():
                     if stop >= max_pos:
                         cursor.col = max_pos
                     else:
-                        cursor.col = stop 
+                        cursor.col = stop
                     break
             else:
-                self.cursor.col = self.width - 1 
-        else: 
+                self.cursor.col = self.width - 1
+        else:
             self.cursor.col = 0
         self.cursor.dirty = True
 
-from interface import *
 
 class CanossaRangeException(Exception):
     ''' thrown when an invalid range is detected '''
@@ -303,7 +305,7 @@ class IScreenImpl(IScreen):
         assert self.height == len(self.lines)
         assert y < self.height
         while True:
-            s.write("\x1b[%d;%dH" % (y + 1, x + 1)) 
+            s.write("\x1b[%d;%dH" % (y + 1, x + 1))
             line = self.lines[y]
             if x + length < self.width:
                 line.drawrange(s, x, x + length, cursor)
@@ -319,7 +321,8 @@ class IScreenImpl(IScreen):
                 y += 1
         self.cursor.attr.draw(s)
 
-    def copyrect(self, s, srcx, srcy, width, height, destx=None, desty=None, lazy=False):
+    def copyrect(self, s, srcx, srcy, width, height,
+                 destx=None, desty=None, lazy=False):
         if destx is None:
             destx = srcx
         if desty is None:
@@ -328,7 +331,8 @@ class IScreenImpl(IScreen):
         #height = min(height, (self.height - 1) - desty)
         #width =  min(width, (self.width - 1) - destx)
         if srcx < 0 or srcy < 0 or height < 0 or width < 0:
-            message = "invalid rect is detected. (%d, %d, %d, %d)" % (srcx, srcy, width, height)
+            template = "invalid rect is detected. (%d, %d, %d, %d)"
+            message = template % (srcx, srcy, width, height)
             raise CanossaRangeException(message)
 
         cursor = Cursor(0, 0, self.cursor.attr)
@@ -382,7 +386,7 @@ class IScreenImpl(IScreen):
             assert col == line.length()
         if self.scroll_top == 0 and self.scroll_bottom == self.height:
             self.scroll_top = 0
-            self.scroll_bottom = row 
+            self.scroll_bottom = row
         self.height = row
         self.width = col
         assert self.height == len(self.lines)
@@ -412,14 +416,14 @@ class IScreenImpl(IScreen):
             cursor.col = self.width - 1
 
         row, col = cursor.row, cursor.col
-        line = self.lines[row] 
+        line = self.lines[row]
 
         width = self.width
         if col >= width:
             if self.decawm:
                 self._wrap()
                 row, col = cursor.row, cursor.col
-                line = self.lines[row] 
+                line = self.lines[row]
             else:
                 col = width - 1
 
@@ -434,43 +438,41 @@ class IScreenImpl(IScreen):
 
     def write(self, c):
         cursor = self.cursor
-        if cursor.row >= self.height:
-            cursor.row = self.height - 1
-        if cursor.col >= self.width:
-            cursor.col = self.width - 1
-
         row, col = cursor.row, cursor.col
-        line = self.lines[row] 
-
+        line = self.lines[row]
         width = self.width
-        if col >= width:
-            if self.decawm:
-                self._wrap()
-                row, col = cursor.row, cursor.col
-                line = self.lines[row] 
-            else:
-                col = width - 1
-                cursor.col = col
-
         if c < 0xff:
+            if col >= width:
+                if self.decawm:
+                    self._wrap()
+                    row, col = cursor.row, cursor.col
+                    line = self.lines[row]
+                else:
+                    col = width - 1
+                    cursor.col = col
             line.write(c, col, cursor.attr)
             cursor.dirty = True
             cursor.col += 1
         else:
             char_width = self._mk_wcwidth(c)
-            if char_width == 1: # normal (narrow) character
+            if col >= width - char_width + 1:
+                if self.decawm:
+                    self._wrap()
+                    row, col = cursor.row, cursor.col
+                    line = self.lines[row]
+                else:
+                    col = width - char_width
+                    cursor.col = col
+            if char_width == 1:  # normal (narrow) character
                 line.write(c, col, cursor.attr)
                 cursor.dirty = True
                 cursor.col += 1
-            elif char_width == 2: # wide character
-                if col >= width - 1:
-                    col = width - 2
-                    cursor.col = col
+            elif char_width == 2:  # wide character
                 line.pad(col)
                 line.write(c, col + 1, cursor.attr)
                 cursor.dirty = True
                 cursor.col += 2
-            elif char_width == 0: # combining character
+            elif char_width == 0:  # combining character
                 if not self._termprop is None:
                     if not self._termprop.has_combine:
                         line.write(c, col, cursor.attr)
@@ -480,6 +482,7 @@ class IScreenImpl(IScreen):
 
     def setlistener(self, listener):
         self._listener = listener
+
 
 class MockScreen():
 
@@ -493,6 +496,7 @@ class MockScreen():
 
     def _setup_lines(self):
         self.lines = [Line(self.width) for line in xrange(0, self.height)]
+
 
 class MockScreenWithCursor(MockScreen):
 
@@ -519,12 +523,13 @@ class Screen(IScreenImpl,
     _saved_pos = None
     _title = u""
 
-    def __init__(self, row=24, col=80, y=0, x=0, termenc="UTF-8", termprop=None):
+    def __init__(self, row=24, col=80, y=0, x=0,
+                 termenc="UTF-8", termprop=None):
         self.height = row
         self.width = col
         self.cursor = Cursor(y, x)
-        self.scroll_top = 0 
-        self.scroll_bottom = self.height 
+        self.scroll_top = 0
+        self.scroll_bottom = self.height
         self._output = codecs.getwriter(termenc)(StringIO())
 
         if termprop is None:
@@ -540,7 +545,7 @@ class Screen(IScreenImpl,
         self._setup_charset()
 
     def _wrap(self):
-        self.cursor.col = 0 
+        self.cursor.col = 0
         self.lf()
 
     def settitle(self, s):
@@ -554,27 +559,28 @@ class Screen(IScreenImpl,
     def bs(self):
         if self.cursor.col >= self.width:
             self.cursor.col = self.width - 1
-
         if self.cursor.col <= 0:
-            pass
+            pass  # TODO: reverse wrap
         else:
             self.cursor.col -= 1
         self.cursor.dirty = True
 
     def lf(self):
-        if self.cursor.col >= self.width:
-            if self.decawm:
-                self._wrap() 
-        self.cursor.row += 1
-        if self.cursor.row >= self.scroll_bottom:
-            bcevalue = self.cursor.attr.getbcevalue()
-            for line in self.lines[self.scroll_top + 1:self.scroll_bottom]:
-                line.dirty = True
-            line = self.lines.pop(self.scroll_top)
-            line.clear(bcevalue)
-            self.lines.insert(self.scroll_bottom - 1, line)
-            self.cursor.row = self.scroll_bottom - 1 
-        self.cursor.dirty = True
+        cursor = self.cursor
+        if cursor.col < self.width:
+            #if self.cursor.col >= self.width:
+            #    if self.decawm:
+            #        self._wrap()
+            cursor.row += 1
+            if cursor.row >= self.scroll_bottom:
+                bcevalue = cursor.attr.getbcevalue()
+                for line in self.lines[self.scroll_top + 1:self.scroll_bottom]:
+                    line.dirty = True
+                line = self.lines.pop(self.scroll_top)
+                line.clear(bcevalue)
+                self.lines.insert(self.scroll_bottom - 1, line)
+                cursor.row = self.scroll_bottom - 1
+            cursor.dirty = True
 
     def ind(self):
         self.lf()
@@ -592,7 +598,7 @@ class Screen(IScreenImpl,
             line = self.lines.pop(self.scroll_bottom - 1)
             line.clear(bcevalue)
             self.lines.insert(self.scroll_top, line)
-            cursor.row = self.scroll_top 
+            cursor.row = self.scroll_top
         else:
             cursor.row -= 1
         cursor.dirty = True
@@ -600,7 +606,7 @@ class Screen(IScreenImpl,
     def cr(self):
         self.cursor.col = 0
         self.cursor.dirty = True
-     
+
     def decstbm(self, top, bottom):
         self.scroll_top = max(0, top)
         self.scroll_bottom = min(bottom + 1, self.height)
@@ -655,7 +661,7 @@ class Screen(IScreenImpl,
         if cursor.col >= self.width:
             cursor.col = self.width - 1
         if ps == 0:
-            line = self.lines[cursor.row] 
+            line = self.lines[cursor.row]
             line.dirty = True
             attr = cursor.attr
             bcevalue = attr.getbcevalue()
@@ -665,7 +671,7 @@ class Screen(IScreenImpl,
                 for line in self.lines[cursor.row + 1:]:
                     line.clear(bcevalue)
         elif ps == 1:
-            line = self.lines[cursor.row] 
+            line = self.lines[cursor.row]
             line.dirty = True
             bcevalue = cursor.attr.getbcevalue()
             for cell in line.cells[:cursor.col]:
@@ -683,9 +689,9 @@ class Screen(IScreenImpl,
         for line in self.lines:
             line.dirty = True
             for cell in line.cells:
-                cell.write(0x45, attr) # E
-        self.scroll_top = 0 
-        self.scroll_bottom = self.height 
+                cell.write(0x45, attr)  # E
+        self.scroll_top = 0
+        self.scroll_bottom = self.height
 
     def ris(self):
         cursor = self.cursor
@@ -693,7 +699,7 @@ class Screen(IScreenImpl,
         for line in self.lines:
             line.clear(defaultvalue)
         self.dectcem = True
-        cursor.clear() 
+        cursor.clear()
         self._setup_tab()
 
     def reset_sgr(self):
@@ -703,7 +709,7 @@ class Screen(IScreenImpl,
         self.cursor.attr.set_sgr(pm)
 
     def ich(self, ps):
-        ''' insert blank character(s) '''    
+        ''' insert blank character(s) '''
         cursor = self.cursor
         if cursor.row >= self.height:
             cursor.row = self.height - 1
@@ -731,27 +737,27 @@ class Screen(IScreenImpl,
     def cuu(self, ps):
         ''' cursor up '''
         if self.cursor.row >= self.scroll_top + ps:
-            self.cursor.row -= ps 
+            self.cursor.row -= ps
         else:
-            self.cursor.row = self.scroll_top 
+            self.cursor.row = self.scroll_top
 
     def cud(self, ps):
         if self.cursor.row < self.scroll_bottom - ps:
-            self.cursor.row += ps 
+            self.cursor.row += ps
         else:
-            self.cursor.row = self.scroll_bottom - 1 
+            self.cursor.row = self.scroll_bottom - 1
 
     def cuf(self, ps):
         if self.cursor.col < self.width - ps:
-            self.cursor.col += ps 
+            self.cursor.col += ps
         else:
-            self.cursor.col = self.width - 1 
+            self.cursor.col = self.width - 1
 
     def cub(self, ps):
         if self.cursor.col >= ps:
-            self.cursor.col -= ps 
+            self.cursor.col -= ps
         else:
-            self.cursor.col = 0 
+            self.cursor.col = 0
 
     def dl(self, ps):
         cursor = self.cursor
@@ -789,7 +795,7 @@ class Screen(IScreenImpl,
             cursor.row = self.height - 1
         if cursor.col >= self.width:
             cursor.col = self.width - 1
-        line = self.lines[cursor.row] 
+        line = self.lines[cursor.row]
         if ps == 0:
             cells = line.cells[cursor.col:]
         elif ps == 1:
@@ -801,7 +807,8 @@ class Screen(IScreenImpl,
         line.dirty = True
         bcevalue = self.cursor.attr.getbcevalue()
         for cell in cells:
-            cell.clear(bcevalue) 
+            cell.clear(bcevalue)
+
 
 def test():
     import doctest
@@ -809,5 +816,3 @@ def test():
 
 if __name__ == "__main__":
     test()
-
-

@@ -27,20 +27,20 @@ _LINE_TYPE_DWL  = 6
 
 '''
     This module exports Line object, that consists of some cell objects.
-    
+
        +-----+-----+-----+-...                   ...-+-----+
        |  A  |  B  |  C  |       ... ... ...         |     |
        +-----+-----+-----+-...                   ...-+-----+
-    
+
     Ordinally, each cell contains a narrow character
-    
+
     A wide character occupies 2 cells, the first cell contains '\0'
-    
+
        +----+---------+-----+-...                   ...-+-----+
        | \0 | \x3042  |  C  |       ... ... ...         |     |
        +----+---------+-----+-...                   ...-+-----+
         <------------> <--->
-         a wide char   char 
+         a wide char   char
 '''
 
 class SupportsDoubleSizedTrait():
@@ -52,7 +52,7 @@ class SupportsDoubleSizedTrait():
     def set_swl(self):
         '''
         >>> line = Line(5)
-        >>> line.set_swl() 
+        >>> line.set_swl()
         >>> line.type() == _LINE_TYPE_SWL
         True
         '''
@@ -62,7 +62,7 @@ class SupportsDoubleSizedTrait():
     def set_dwl(self):
         '''
         >>> line = Line(5)
-        >>> line.set_dwl() 
+        >>> line.set_dwl()
         >>> line.type() == _LINE_TYPE_DWL
         True
         '''
@@ -72,7 +72,7 @@ class SupportsDoubleSizedTrait():
     def set_dhlt(self):
         '''
         >>> line = Line(5)
-        >>> line.set_dhlt() 
+        >>> line.set_dhlt()
         >>> line.type() == _LINE_TYPE_DHLT
         True
         '''
@@ -82,7 +82,7 @@ class SupportsDoubleSizedTrait():
     def set_dhlb(self):
         '''
         >>> line = Line(5)
-        >>> line.set_dhlb() 
+        >>> line.set_dhlb()
         >>> line.type() == _LINE_TYPE_DHLB
         True
         '''
@@ -206,7 +206,7 @@ class Line(SupportsDoubleSizedTrait,
         >>> line.draw(s, 3, 5)
         >>> result = s.getvalue().replace("\x1b", "<ESC>")
         >>> result = result.replace("\x20", "<SP>")
-        >>> print result 
+        >>> print result
         <ESC>#5<ESC>(B<ESC>[0m<SP><SP>
         '''
         cells = self.cells
@@ -262,21 +262,21 @@ class Line(SupportsDoubleSizedTrait,
     def __str__(self):
         '''
         >>> line = Line(5)
-        >>> print line 
+        >>> print line
         <ESC>#5<ESC>(B<ESC>[0m<SP><SP><SP><SP><SP>
         '''
         import StringIO, codecs
         import locale
         language, encoding = locale.getdefaultlocale()
         s = codecs.getwriter(encoding)(StringIO.StringIO())
-        self.draw(s, 0, len(self.cells)) 
+        self.draw(s, 0, len(self.cells))
         result = s.getvalue().replace("\x1b", "<ESC>")
         result = result.replace("\x20", "<SP>")
         result = result.replace("\x00", "<NUL>")
         return result
 
 def test():
-    """ 
+    """
     >>> line = Line(10)
     >>> attr = Attribute()
     >>> print line
