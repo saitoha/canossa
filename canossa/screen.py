@@ -357,7 +357,7 @@ class IScreenImpl(IScreen):
             line.drawall(s, cursor)
         self.cursor.draw(s)
         self.cursor.attr.draw(s)
-        context.writestring(s.getvalue())
+        context.puts(s.getvalue())
         s.truncate(0)
 
     def resize(self, row, col):

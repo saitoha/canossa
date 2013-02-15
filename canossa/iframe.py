@@ -241,7 +241,7 @@ class InnerFrame(tff.DefaultHandler,
     offset_left = 0
     enabled = True
 
-    def __init__(self, session, listener, screen,
+    def __init__(self, session, listener, inputhandler, screen,
                  top, left, row, col,
                  command, termenc, termprop, mousemode, output):
 
@@ -260,6 +260,7 @@ class InnerFrame(tff.DefaultHandler,
         self.innerscreen = innerscreen
         self._outerscreen = screen
         self._listener = listener
+        self._inputhandler = inputhandler
 
         session.add_subtty("xterm", "ja_JP.UTF-8",
                            command, row, col, termenc,
@@ -278,10 +279,13 @@ class InnerFrame(tff.DefaultHandler,
     def handle_char(self, context, c):
         if self._mouse_decoder.handle_char(context, c):
             return True
+        if self._inputhandler.handle_char(context, c):
+            return True
         return False
 
     def close(self):
         self._session.destruct_subprocess()
+        session.switch_input_target()
 
     def draw(self, output):
         if self.enabled:
