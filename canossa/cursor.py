@@ -32,7 +32,7 @@ class Cursor():
         self.col = x
         self.row = y
         self.dirty = True
-        self.attr = attr 
+        self.attr = attr
         self.__backup = None
 
     def clear(self):
@@ -71,7 +71,7 @@ class Cursor():
 
 def test():
     """
-    >>> cursor = Cursor() 
+    >>> cursor = Cursor()
     >>> print cursor
     >>> cursor.clear()
     >>> print cursor

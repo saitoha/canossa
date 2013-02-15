@@ -24,7 +24,7 @@ class Cell():
 
     """
     >>> from attribute import Attribute
-    >>> cell = Cell() 
+    >>> cell = Cell()
     >>> attr = Attribute()
     >>> print cell.get()
     >>> cell.write(0x34, attr)
@@ -49,7 +49,7 @@ class Cell():
     _combine = None
 
     def __init__(self):
-        self._value = 0x20 
+        self._value = 0x20
         self.attr = Attribute()
 
     def write(self, value, attr):
@@ -57,7 +57,7 @@ class Cell():
         self.attr.copyfrom(attr)
 
     def pad(self):
-        self._value = None 
+        self._value = None
 
     def combine(self, value):
         if self._combine:
@@ -71,11 +71,11 @@ class Cell():
         result = unichr(self._value)
         if self._combine is None:
             return result
-        return result + self._combine 
+        return result + self._combine
 
     def clear(self, attrvalue):
-        self._value = 0x20 
-        self._combine = None 
+        self._value = 0x20
+        self._combine = None
         self.attr.setvalue(attrvalue)
 
 def test():

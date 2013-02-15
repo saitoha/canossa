@@ -43,13 +43,13 @@ class IMouseMode():
 
     def getprotocol(self):
         raise NotImplementedError("IMouseMode::getprotocol")
-        
+
     def setprotocol(self, protocol):
         raise NotImplementedError("IMouseMode::setprotocol")
 
     def getencoding(self):
         raise NotImplementedError("IMouseMode::getencoding")
-        
+
     def setencoding(self, encoding):
         raise NotImplementedError("IMouseMode::getencoding")
 
@@ -175,20 +175,20 @@ def _parse_params(params, minimum=0, offset=0, minarg=1):
         if c < 0x3a:
             param = param * 10 + c - 0x30
         elif c < 0x3c:
-            param += offset 
+            param += offset
             if minimum > param:
                 yield minimum
             else:
                 yield param
             minarg -= 1
             param = 0
-    param += offset 
+    param += offset
     if minimum > param:
         yield minimum
     else:
         yield param
     minarg -= 1
-    yield param 
+    yield param
     if minarg > 0:
         yield minimum
 
@@ -325,8 +325,8 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
 class MouseDecoder(tff.DefaultHandler):
 
     _mouse_state = None
-    _x = -1 
-    _y = -1 
+    _x = -1
+    _y = -1
     _lastclick = 0
     _mousedown = False
     _mousedrag = False
@@ -350,17 +350,17 @@ class MouseDecoder(tff.DefaultHandler):
                             self._init_glich_time = None
                             return False
                         self._init_glich_time = None
-                    mode, mouseup, code, x, y = mouse_info 
+                    mode, mouseup, code, x, y = mouse_info
                     if mode == _MOUSE_PROTOCOL_NORMAL:
-                        self._mouse_state = [] 
+                        self._mouse_state = []
                         return True
                     elif self._listener.mouseenabled():
                         if mouseup:
                             code |= 0x3
-                        self._dispatch_mouse(context, code, x, y) 
+                        self._dispatch_mouse(context, code, x, y)
                         return True
                     if self._mouse_mode.getprotocol() == _MOUSE_ENCODING_SGR:
-                        if mode == _MOUSE_ENCODING_SGR: 
+                        if mode == _MOUSE_ENCODING_SGR:
                             return False
                         elif mode == _MOUSE_ENCODING_URXVT:
                             params = (code + 32, x, y)
@@ -372,7 +372,7 @@ class MouseDecoder(tff.DefaultHandler):
                             return True
                         return True
                     if self._mouse_mode.getprotocol() == _MOUSE_ENCODING_URXVT:
-                        if mode == _MOUSE_ENCODING_URXVT: 
+                        if mode == _MOUSE_ENCODING_URXVT:
                             return False
                         elif mode == _MOUSE_ENCODING_SGR:
                             params = (code + 32, x, y)
@@ -394,12 +394,12 @@ class MouseDecoder(tff.DefaultHandler):
         if len(intermediate) == 0:
             if len(parameter) == 0:
                 if final == 0x49: # I
-                    self._listener.onfocusin()                    
+                    self._listener.onfocusin()
                     return True
                 elif final == 0x4f: # O
-                    self._listener.onfocusout()                    
+                    self._listener.onfocusout()
                     return True
-        return False 
+        return False
 
     def initialize_mouse(self, output):
         self._mouse_mode.setenabled(output, True)
@@ -412,7 +412,7 @@ class MouseDecoder(tff.DefaultHandler):
         self._init_glich_flag = None
 
     def handle_char(self, context, c):
-        # xterm's X10/normal mouse encoding could not be handled 
+        # xterm's X10/normal mouse encoding could not be handled
         # by TFF filter because it is not ECMA-48 compatible sequense,
         # so we make custome handler and check 3 bytes after CSI M.
         if not self._mouse_state is None:
@@ -422,7 +422,7 @@ class MouseDecoder(tff.DefaultHandler):
                     code, x, y = self._mouse_state
                     self._mouse_state = None
                     if self._listener.mouseenabled():
-                        self._dispatch_mouse(context, code, x - 1, y - 1) 
+                        self._dispatch_mouse(context, code, x - 1, y - 1)
                     if self._mouse_mode.getprotocol() != 0:
                         params = (code + 0x20, x + 0x20, y + 0x20)
                         context.puts("\x1b[M%c%c%c" % params)
@@ -446,7 +446,7 @@ class MouseDecoder(tff.DefaultHandler):
                     y -= 1
                 except ValueError:
                     return False
-                return _MOUSE_ENCODING_SGR, False, code, x, y 
+                return _MOUSE_ENCODING_SGR, False, code, x, y
             elif final == 0x6d: # m
                 p = ''.join([chr(c) for c in parameter[1:]])
                 try:
@@ -458,7 +458,7 @@ class MouseDecoder(tff.DefaultHandler):
                     y -= 1
                 except ValueError:
                     return None
-                return _MOUSE_ENCODING_SGR, True, code, x, y 
+                return _MOUSE_ENCODING_SGR, True, code, x, y
         elif 0x30 <= parameter[0] and parameter[0] <= 0x39:
             if final == 0x4d: # M
                 p = ''.join([chr(c) for c in parameter])
@@ -472,7 +472,7 @@ class MouseDecoder(tff.DefaultHandler):
                     y -= 1
                 except ValueError:
                     return False
-                return 1015, False, code, x, y 
+                return 1015, False, code, x, y
         return None
 
     def _dispatch_mouse(self, context, code, x, y):

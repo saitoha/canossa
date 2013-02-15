@@ -154,7 +154,7 @@ class IListbox():
     @abc.abstractmethod
     def close(self):
         raise NotImplementedError("IListbox::close")
- 
+
     @abc.abstractmethod
     def isshown(self):
         raise NotImplementedError("IListbox::isshown")

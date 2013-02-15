@@ -29,14 +29,14 @@ def _param_generator(params, minimum=0, offset=0, minarg=1):
         if c < 0x3a:
             param = param * 10 + c - 0x30
         elif c < 0x3c:
-            param += offset 
+            param += offset
             if minimum > param:
                 yield minimum
             else:
                 yield param
             minarg -= 1
             param = 0
-    param += offset 
+    param += offset
     if minimum > param:
         yield minimum
     else:
@@ -50,7 +50,7 @@ def _parse_params(params, minimum=0, offset=0, minarg=1):
 
 def _get_pos_and_size(stdin, stdout):
     import sys, os, termios, select
-    
+
     stdin_fileno = stdin.fileno()
     vdisable = os.fpathconf(stdin_fileno, 'PC_VDISABLE')
     backup = termios.tcgetattr(stdin_fileno)
@@ -62,7 +62,7 @@ def _get_pos_and_size(stdin, stdout):
     try:
         stdout.write("\x1b[6n")
         stdout.flush()
-        
+
         rfd, wfd, xfd = select.select([stdin_fileno], [], [], 2)
         if rfd:
             data = os.read(stdin_fileno, 32)
@@ -87,7 +87,7 @@ def _get_pos_and_size(stdin, stdout):
     finally:
         termios.tcsetattr(stdin_fileno, termios.TCSANOW, backup)
 
-    
+
 _CPR_NONE=0
 _CPR_ANSI=1
 _CPR_DEC=2
@@ -122,7 +122,7 @@ class Canossa(tff.DefaultHandler):
             self._resized = False
             self.screen.adjust_cursor()
         try:
-            if len(intermediate) == 0:
+            if not intermediate:
                 if final == 0x6d: # m
                     ''' SGR - Select Graphics Rendition '''
                     if len(parameter) == 0:
@@ -223,7 +223,7 @@ class Canossa(tff.DefaultHandler):
                     ''' DSR - Device Status Request '''
                     if self.__visibility:
                         if parameter == [0x36]: # n
-                            if intermediate == []: 
+                            if intermediate == []:
                                 if not self._is_frame:
                                     self.__cpr = _CPR_ANSI
                                 return True
@@ -235,7 +235,7 @@ class Canossa(tff.DefaultHandler):
 
                 elif final == 0x70: # p
 
-                    if intermediate == []: 
+                    if intermediate == []:
                         if len(parameter) and parameter[0] == 0x3e: # >h
                             ''' DECRQM - Request DEC Private Mode '''
                     elif intermediate == [0x22]: # "
@@ -274,21 +274,14 @@ class Canossa(tff.DefaultHandler):
                 elif final == 0x78: # x
                     return not self.__visibility
 
-                #else:
-                #    pass
-                #    #mnemonic = '[' + chr(final) + ']'
-                #    #raise Exception(mnemonic)
-            #else:
-            #    pass
-            #    #mnemonic = '[' + str(intermediate) + ':' + chr(final) + ']'
-            #    #raise Exception(mnemonic)
-        #except ValueError:
-        #    pass
-        #except TypeError:
-        #    pass
-        finally:
-            pass
-        return True 
+                else:
+                    mnemonic = '[' + chr(final) + ']'
+                    logging.error("mnemonic: %s" % mnemonic)
+            if intermediate == [ 0x21 ] and final == 0x70:
+                self.screen.decstr()
+        except:
+            logging.exception("handle_csi: %s" % mnemonic)
+        return True
 
     def handle_esc(self, context, intermediate, final):
         if self._resized:
@@ -330,12 +323,12 @@ class Canossa(tff.DefaultHandler):
                 pass
         #elif intermediate == [0x28]: # (
         #    self.screen.set_g0(final)
-        #    return True 
+        #    return True
         #elif intermediate == [0x29]: # )
         #    self.screen.set_g1(final)
-        #    return True 
+        #    return True
         else:
-            return True 
+            return True
         return True
 
     def handle_control_string(self, context, prefix, value):
@@ -343,7 +336,7 @@ class Canossa(tff.DefaultHandler):
             try:
                 pos = value.index(0x3b)
             except ValueError:
-                return 
+                return
             if pos == -1:
                 return
             elif pos == 0:
@@ -352,7 +345,7 @@ class Canossa(tff.DefaultHandler):
                 try:
                     num = value[:pos]
                 except:
-                    num = None 
+                    num = None
             if not num is None:
                 if num == [0x30] or num == [0x32]:
                     arg = value[pos + 1:]
@@ -396,16 +389,16 @@ class Canossa(tff.DefaultHandler):
                 screen.lf()
             elif c == 0x0e: # SO
                 screen.so()
-                return True 
+                return True
             elif c == 0x0f: # SI
                 screen.si()
-                return True 
+                return True
             else:
                 pass
         else:
             screen.write(c)
 
-        return True 
+        return True
 
     def handle_draw(self, context):
         if self.__visibility:

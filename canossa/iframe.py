@@ -18,9 +18,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # ***** END LICENSE BLOCK *****
 
- 
+
 import tff
-from mouse import IFocusListener, IMouseListener, MouseDecoder 
+from mouse import IFocusListener, IMouseListener, MouseDecoder
 from interface import IInnerFrame, IInnerFrameListener
 from output import Canossa
 from screen import Screen
@@ -35,7 +35,7 @@ _HITTEST_FRAME_BOTTOM      = 6
 _HITTEST_FRAME_TOPLEFT     = 7
 _HITTEST_FRAME_TOPRIGHT    = 8
 _HITTEST_FRAME_BOTTOMLEFT  = 9
-_HITTEST_FRAME_BOTTOMRIGHT = 10 
+_HITTEST_FRAME_BOTTOMRIGHT = 10
 
 
 class IFocusListenerImpl(IFocusListener):
@@ -49,24 +49,24 @@ class IFocusListenerImpl(IFocusListener):
 
 class IMouseListenerImpl(IMouseListener):
 
-    _lasthittest = None 
+    _lasthittest = None
     _dragpos = None
 
     """ IMouseListener implementation """
 
     def mouseenabled(self):
-        return True 
+        return True
 
     def onmousedown(self, context, x, y):
         hittest = self._hittest(x, y)
-        if hittest == _HITTEST_CLIENTAREA: 
+        if hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
             y -= self.top + self.offset_top
             context.puts("\x1b[M%c%c%c" % (0 + 32, x + 33, y + 33))
 
     def onmouseup(self, context, x, y):
         hittest = self._hittest(x, y)
-        if hittest == _HITTEST_CLIENTAREA: 
+        if hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
             y -= self.top + self.offset_top
             context.puts("\x1b[M%c%c%c" % (3 + 32, x + 33, y + 33))
@@ -88,7 +88,7 @@ class IMouseListenerImpl(IMouseListener):
 
     def onmousehover(self, context, x, y):
         hittest = self._lasthittest
-        if hittest == _HITTEST_CLIENTAREA: 
+        if hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
             y -= self.top + self.offset_top
             context.puts("\x1b[M%c%c%c" % (32 + 32, x + 33, y + 33))
@@ -96,14 +96,14 @@ class IMouseListenerImpl(IMouseListener):
     """ scroll """
     def onscrolldown(self, context, x, y):
         hittest = self._lasthittest
-        if hittest == _HITTEST_CLIENTAREA: 
+        if hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
             y -= self.top + self.offset_top
             context.puts("\x1b[M%c%c%c" % (64 + 32, x + 33, y + 33))
 
     def onscrollup(self, context, x, y):
         hittest = self._lasthittest
-        if hittest == _HITTEST_CLIENTAREA: 
+        if hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
             y -= self.top + self.offset_top
             context.puts("\x1b[M%c%c%c" % (65 + 32, x + 33, y + 33))
@@ -151,7 +151,7 @@ class IMouseListenerImpl(IMouseListener):
             self.offset_top = offset_y
         else:
             hittest = self._hittest(x, y)
-            if hittest == _HITTEST_CLIENTAREA: 
+            if hittest == _HITTEST_CLIENTAREA:
                 x -= self.left + self.offset_left
                 y -= self.top + self.offset_top
                 context.puts("\x1b[M%c%c%c" % (32 + 32, x + 33, y + 33))
@@ -305,7 +305,7 @@ class InnerFrame(tff.DefaultHandler,
                  title = " " * pad_left + self._title + " " * pad_right
             else:
                  title = self._title[0:width - 3] + "..."
-                       
+
             output.write("\x1b[30;47m")
             output.write("\x1b[%d;%dH" % (top, left))
             output.write(title)
