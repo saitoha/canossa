@@ -25,15 +25,15 @@ __license__ = "GPL v3"
 import tff
 import termprop
 
-from interface import * 
-from canossa import * 
+from interface import *
+from canossa import *
 from popup import *
-from mouse import * 
+from mouse import *
 from iframe import *
 from screen import *
 from output import *
 
 ''' main '''
-if __name__ == '__main__':    
+if __name__ == '__main__':
     main()
 

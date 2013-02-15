@@ -22,7 +22,7 @@ def _printver():
         import __init__
         print '''
 canossa %s
-Copyright (C) 2012 Hayaki Saito <user@zuse.jp>. 
+Copyright (C) 2012 Hayaki Saito <user@zuse.jp>.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -116,9 +116,9 @@ def main():
                   stdout=sys.stdout,
                   outputhandler=outputhandler,
                   buffering=False)
-        
+
 
 ''' main '''
-if __name__ == '__main__':    
+if __name__ == '__main__':
     main()
 

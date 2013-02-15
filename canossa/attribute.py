@@ -42,21 +42,30 @@ for key, value in enumerate(_NRC_REVERSE_MAP):
 class Attribute():
 
     """
-    >>> attr = Attribute() 
+    >>> attr = Attribute()
     >>> print attr
+    <ESC>[0;39;49m
     >>> attr.set_sgr([0])
-    >>> print attr.equeals(Attribute())
+    >>> print attr.equals(Attribute())
+    True
     >>> print attr
+    <ESC>[0;39;49m
     >>> attr.set_charset(0x41)
+    True
     >>> print attr
-    >>> attr.set_sgr((0, 5, 6))
+    <ESC>[0;39;49m
+    >>> attr.set_sgr(x for x in (0, 5, 6))
     >>> print attr
-    >>> attr.set_sgr((7, 8))
+    <ESC>[0;5;39;49m
+    >>> attr.set_sgr(x for x in (7, 8))
     >>> print attr
-    >>> attr.set_sgr((17, 18))
+    <ESC>[0;5;7;8;39;49m
+    >>> attr.set_sgr(x for x in (17, 18))
     >>> print attr
-    >>> attr.set_sgr((38, 5, 200, 48, 5, 100))
+    <ESC>[0;5;7;8;39;49m
+    >>> attr.set_sgr(x for x in (38, 5, 200, 48, 5, 100))
     >>> print attr
+    <ESC>[0;5;7;8;38;5;200;48;5;100m
     """
 
     _attrvalue = _ATTR_DEFAULT
@@ -71,13 +80,13 @@ class Attribute():
     def draw(self, s, attr = None):
         params = [0]
         if attr:
-            value_current = attr._attrvalue 
+            value_current = attr._attrvalue
         else:
-            value_current = _ATTR_DEFAULT 
-        value = self._attrvalue 
+            value_current = _ATTR_DEFAULT
+        value = self._attrvalue
         for i in (1, 4, 5, 7, 8):
             if value & (1 << i) != 0:
-                params.append(i) 
+                params.append(i)
 
         fg = value >> _ATTR_FG & 0x1ff
         if fg == 0x100:
@@ -101,7 +110,8 @@ class Attribute():
 
         charset = value & 0xf << 9
         if charset != value_current & 0xf << _ATTR_NRC:
-            s.write(u'\x1b(%c' % _NRC_REVERSE_MAP[charset])
+            if len(_NRC_REVERSE_MAP) > charset:
+                s.write(u'\x1b(%c' % _NRC_REVERSE_MAP[charset])
         s.write(u'\x1b[%sm' % ';'.join([str(p) for p in params]))
 
     def clear(self):
@@ -114,7 +124,7 @@ class Attribute():
         self._attrvalue = attr._attrvalue
 
     def getbcevalue(self):
-        value = self._attrvalue 
+        value = self._attrvalue
         return value & (0x3ffff << _ATTR_FG)
 
     def getdefaultvalue(self):
@@ -123,7 +133,7 @@ class Attribute():
     def set_charset(self, charset):
         value = self._attrvalue
         try:
-            code = _NRC_MAP[charset] 
+            code = _NRC_MAP[charset]
             self._attrvalue = value & ~(0xf << _ATTR_NRC) | (code << _ATTR_NRC)
         except ValueError:
             return False
@@ -134,19 +144,19 @@ class Attribute():
         value = self._attrvalue
         mode = 0
         for n in pm:
-            if n < 8:
+            if n < 10:
                 if n == 0:
                     value = _ATTR_DEFAULT
                 elif n == 1:
-                    value |= 1 << _ATTR_BOLD 
+                    value |= 1 << _ATTR_BOLD
                 elif n == 4:
-                    value |= 1 << _ATTR_UNDERLINED 
+                    value |= 1 << _ATTR_UNDERLINED
                 elif n == 5:
-                    value |= 1 << _ATTR_BLINK 
+                    value |= 1 << _ATTR_BLINK
                 elif n == 7:
-                    value |= 1 << _ATTR_INVERSE 
+                    value |= 1 << _ATTR_INVERSE
                 elif n == 8:
-                    value |= 1 << _ATTR_INVISIBLE 
+                    value |= 1 << _ATTR_INVISIBLE
             elif n < 30:
                 if n == 21:
                     value &= ~(1 << _ATTR_BOLD)
