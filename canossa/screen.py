@@ -454,7 +454,7 @@ class IScreenImpl(IScreen):
             cursor.dirty = True
             cursor.col += 1
         else:
-            char_width = self._mk_wcwidth(c)
+            char_width = self._wcwidth(c)
             if col >= width - char_width + 1:
                 if self.decawm:
                     self._wrap()
@@ -536,7 +536,7 @@ class Screen(IScreenImpl,
             import termprop as tp
             termprop = tp.Termprop()
 
-        self._mk_wcwidth = termprop.mk_wcwidth
+        self._wcwidth = termprop.wcwidth
         self._termprop = termprop
 
         self._setup_lines()
