@@ -29,6 +29,7 @@ _POPUP_DIR_REVERSE = False
 _POPUP_WIDTH_MAX = 20
 _POPUP_HEIGHT_MAX = 12
 
+
 class IModeListenerImpl(IModeListener):
 
     _has_event = False
@@ -70,31 +71,28 @@ class IModeListenerImpl(IModeListener):
     def getenabled(self):
         return self._imemode
 
+
 class IListboxImpl(IListbox):
 
-    _style_active          = { 'selected'  : u'\x1b[0;1;37;42m',
-                               'unselected': u'\x1b[0;1;37;41m',
-                               'scrollbar' : u'\x1b[0;47m',
-                               'slider'    : u'\x1b[0;44m',
-                             }
+    _style_active = {'selected': u'\x1b[0;1;37;42m',
+                     'unselected': u'\x1b[0;1;37;41m',
+                     'scrollbar': u'\x1b[0;47m',
+                     'slider': u'\x1b[0;44m'}
 
-    _style_scrollbar_hover = { 'selected'  : u'\x1b[0;1;37;42m',
-                               'unselected': u'\x1b[0;1;37;41m',
-                               'scrollbar' : u'\x1b[0;47m',
-                               'slider'    : u'\x1b[0;45m',
-                             }
+    _style_scrollbar_hover = {'selected': u'\x1b[0;1;37;42m',
+                              'unselected': u'\x1b[0;1;37;41m',
+                              'scrollbar': u'\x1b[0;47m',
+                              'slider': u'\x1b[0;45m'}
 
-    _style_scrollbar_drag  = { 'selected'  : u'\x1b[0;1;37;42m',
-                               'unselected': u'\x1b[0;1;37;41m',
-                               'scrollbar' : u'\x1b[0;47m',
-                               'slider'    : u'\x1b[0;46m',
-                             }
+    _style_scrollbar_drag = {'selected': u'\x1b[0;1;37;42m',
+                             'unselected': u'\x1b[0;1;37;41m',
+                             'scrollbar': u'\x1b[0;47m',
+                             'slider': u'\x1b[0;46m'}
 
-    _style_inactive        = { 'selected'  : u'\x1b[0;1;37;41m',
-                               'unselected': u'\x1b[0;1;37;42m',
-                               'scrollbar' : u'',
-                               'slider'    : u'',
-                             }
+    _style_inactive = {'selected': u'\x1b[0;1;37;41m',
+                       'unselected': u'\x1b[0;1;37;42m',
+                       'scrollbar': u'',
+                       'slider': u''}
 
     _style = _style_active
     _show = False
@@ -106,7 +104,7 @@ class IListboxImpl(IListbox):
         self.notifyselection()
 
     def isempty(self):
-        return self._list == None
+        return self._list is None
 
     def reset(self):
         self._width = 8
@@ -164,7 +162,7 @@ class IListboxImpl(IListbox):
         all_length = len(self._list)
         if height < all_length:
             start_pos = round(1.0 * scroll_pos / all_length * height)
-            end_pos = start_pos + round(1.0 * height / all_length * height + 1.0)
+            end_pos = start_pos + round(1.0 * height / all_length * height + 1)
             if start_pos > height - 1:
                 start_pos = height - 1
                 end_pos = height
@@ -173,7 +171,11 @@ class IListboxImpl(IListbox):
 
     def draw(self, s):
         if self._list:
-            l, pos, left, top, width, height = self._getdisplayinfo()
+            display = self._getdisplayinfo()
+            left = display.left
+            top = display.top
+            width = display.width
+            height = display.height
             if self._show:
                 screen = self._screen
                 if self._left < left:
@@ -221,10 +223,10 @@ class IListboxImpl(IListbox):
             scrollbar_info = self._calculate_scrollbar_postion()
             if scrollbar_info:
                 start_pos, end_pos = scrollbar_info
-            for i, value in enumerate(l):
-                if i == pos: # selected line
+            for i, value in enumerate(display.candidates):
+                if i == display.pos:  # selected line
                     s.write(style_selected)
-                else: # unselected lines
+                else:  # unselected lines
                     s.write(style_unselected)
                 s.write(u'\x1b[%d;%dH' % (top + 1 + i, left + 1))
                 s.write(u' ' * (width - 1))
@@ -234,11 +236,12 @@ class IListboxImpl(IListbox):
                     else:
                         s.write(style_scrollbar)
                 s.write(u' ')
-                if i == pos: # selected line
+                if i == display.pos:  # selected line
                     s.write(style_selected)
-                else: # unselected lines
+                else:  # unselected lines
                     s.write(style_unselected)
-                if i == pos: s.write(u'\x1b[1m')
+                if i == display.pos:
+                    s.write(u'\x1b[1m')
                 s.write(u'\x1b[%d;%dH' % (top + 1 + i, left + 1))
                 s.write(value)
                 s.write(u'\x1b[m')
@@ -319,7 +322,7 @@ class IListboxImpl(IListbox):
         else:
             left = x
 
-        return candidates, pos, left, top, width, height
+        return DisplayInfo(candidates, pos, left, top, width, height)
 
     def _getdirection(self, row):
         screen = self._screen
@@ -328,6 +331,7 @@ class IListboxImpl(IListbox):
         else:
             vdirection = _POPUP_DIR_NORMAL
         return vdirection
+
 
 class IFocusListenerImpl(IFocusListener):
 
@@ -338,15 +342,17 @@ class IFocusListenerImpl(IFocusListener):
     def onfocusout(self):
         self._style = self._style_inactive
 
-_HITTEST_NONE            = 0x0
-_HITTEST_BODY_SELECTED   = 0x1
-_HITTEST_BODY_UNSELECTED = 0x2
-_HITTEST_SLIDER_INNER    = 0x3
-_HITTEST_SLIDER_ABOVE    = 0x4
-_HITTEST_SLIDER_BELOW    = 0x5
 
-_DRAGMODE_MOVE   = 0x0
+_HITTEST_NONE = 0x0
+_HITTEST_BODY_SELECTED = 0x1
+_HITTEST_BODY_UNSELECTED = 0x2
+_HITTEST_SLIDER_INNER = 0x3
+_HITTEST_SLIDER_ABOVE = 0x4
+_HITTEST_SLIDER_BELOW = 0x5
+
+_DRAGMODE_MOVE = 0x0
 _DRAGMODE_SCROLL = 0x1
+
 
 class IMouseListenerImpl(IMouseListener):
 
@@ -435,12 +441,12 @@ class IMouseListenerImpl(IMouseListener):
     """ drag and drop """
     def ondragstart(self, s, x, y):
         hittest = self._hittest(x, y)
-        if hittest == _HITTEST_BODY_UNSELECTED or hittest == _HITTEST_BODY_SELECTED:
+        if (hittest == _HITTEST_BODY_UNSELECTED
+                or hittest == _HITTEST_BODY_SELECTED):
             self._dragmode = _DRAGMODE_MOVE
             x -= self._offset_left
             y -= self._offset_top
             self._dragpos = (x, y)
-        #elif hittest == _HITTEST_SLIDER_INNER or hittest == _HITTEST_SLIDER_ABOVE or hittest == _HITTEST_SLIDER_BELOW:
         else:
             self._dragmode = _DRAGMODE_SCROLL
             self._scrollorigin = self._scrollpos
@@ -477,7 +483,7 @@ class IMouseListenerImpl(IMouseListener):
             elif self._dragmode == _DRAGMODE_SCROLL:
                 all_length = len(self._list)
                 origin_x, origin_y = self._dragpos
-                offset_y = int(1.0 * (y - origin_y) / self._height * all_length)
+                offset_y = (y - origin_y) * all_length / self._height
                 #offset_y = y - origin_y
                 self._scrollpos = self._scrollorigin + offset_y
                 if self._scrollpos < 0:
@@ -548,6 +554,23 @@ class IMouseListenerImpl(IMouseListener):
                             self._width,
                             self._offset_top - offset_y)
 
+
+class DisplayInfo():
+    candidates = None
+    pos = None
+    left = None
+    top = None
+    width = None
+    height = None
+
+    def __init__(self, candidates, pos, left, top, width, height):
+        self.candidates = candidates
+        self.left = left
+        self.top = top
+        self.width = width
+        self.height = height
+
+
 class Listbox(tff.DefaultHandler,
               IListboxImpl,
               IFocusListenerImpl,
@@ -573,6 +596,7 @@ class Listbox(tff.DefaultHandler,
     _listener = None
 
     def __init__(self, listener, screen, termprop, mousemode, output):
+        assert isinstance(listener, IListboxListener)
         self._mouse_decoder = MouseDecoder(self, termprop, mousemode)
         self._screen = screen
         self._listener = listener
@@ -582,14 +606,14 @@ class Listbox(tff.DefaultHandler,
 
     def set_offset(self, offset_x, offset_y):
 
-        l, pos, left, top, width, height = self._getdisplayinfo()
+        display = self._getdisplayinfo()
 
         screen = self._screen
 
-        if left + offset_x < 0:
+        if display.left + offset_x < 0:
             offset_x = 0 - self._left
-        elif left + width + offset_x > screen.width - 1:
-            offset_x = screen.width - left - width
+        elif display.left + display.width + offset_x > screen.width - 1:
+            offset_x = screen.width - display.left - display.width
 
         self._offset_left = offset_x
         self._offset_top = offset_y
@@ -605,15 +629,17 @@ class Listbox(tff.DefaultHandler,
 
     def handle_csi(self, context, parameter, intermediate, final):
         if self.isshown():
-            if self._handle_csi_cursor(context, parameter, intermediate, final):
+            if self._handle_csi_cursor(context, parameter,
+                                       intermediate, final):
                 return True
-            if self._mouse_decoder.handle_csi(context, parameter, intermediate, final):
+            if self._mouse_decoder.handle_csi(context, parameter,
+                                              intermediate, final):
                 return True
         return False
 
     def handle_esc(self, context, intermediate, final):
         if self.isshown():
-            if final == 0x76 and len(intermediate) == 0: # C-v
+            if final == 0x76 and len(intermediate) == 0:  # C-v
                 for i in xrange(0, self._height):
                     if self._index <= 0:
                         break
@@ -625,29 +651,30 @@ class Listbox(tff.DefaultHandler,
         if self.isshown():
             if self._handle_ss3_cursor(context, final):
                 return True
-        if final == 0x5b: # [
+        if final == 0x5b:  # [
             self._listener.oncancel(self, context)
             return False
         return False
 
     def _handle_csi_cursor(self, context, parameter, intermediate, final):
         if len(intermediate) == 0:
-            if final == 0x41: # A
+            if final == 0x41:  # A
                 self.moveprev()
                 return True
-            elif final == 0x42: # B
+            elif final == 0x42:  # B
                 self.movenext()
                 return True
         return False
 
     def _handle_ss3_cursor(self, context, final):
-        if final == 0x41: # A
+        if final == 0x41:  # A
             self.moveprev()
             return True
-        elif final == 0x42: # B
+        elif final == 0x42:  # B
             self.movenext()
             return True
         return False
+
 
 def test():
     import doctest
@@ -655,4 +682,3 @@ def test():
 
 if __name__ == "__main__":
     test()
-
