@@ -19,25 +19,26 @@
 # ***** END LICENSE BLOCK *****
 
 
-_ATTR_BOLD       = 1    # 00000000 00000000 00000000 00000010
-_ATTR_UNDERLINED = 4    # 00000000 00000000 00000000 00010000
-_ATTR_BLINK      = 5    # 00000000 00000000 00000000 00100000
-_ATTR_INVERSE    = 7    # 00000000 00000000 00000000 10000000
-_ATTR_INVISIBLE  = 8    # 00000000 00000000 00000001 00000000
-_ATTR_NRC        = 9    # 00000000 00000000 00011110 00000000
-_ATTR_FG         = 13   # 00000000 00111111 11100000 00000000
-_ATTR_BG         = 22   # 01111111 11000000 00000000 00000000
+_ATTR_BOLD = 1        # 00000000 00000000 00000000 00000010
+_ATTR_UNDERLINED = 4  # 00000000 00000000 00000000 00010000
+_ATTR_BLINK = 5       # 00000000 00000000 00000000 00100000
+_ATTR_INVERSE = 7     # 00000000 00000000 00000000 10000000
+_ATTR_INVISIBLE = 8   # 00000000 00000000 00000001 00000000
+_ATTR_NRC = 9         # 00000000 00000000 00011110 00000000
+_ATTR_FG = 13         # 00000000 00111111 11100000 00000000
+_ATTR_BG = 22         # 01111111 11000000 00000000 00000000
 
-_ATTR_DEFAULT    = 0x100 << _ATTR_FG | 0x100 << _ATTR_BG
+_ATTR_DEFAULT = 0x100 << _ATTR_FG | 0x100 << _ATTR_BG
 
-_NRC_REVERSE_MAP = [ 'B', '0', 'A', '4',
-                     'C', 'R', 'Q', 'K',
-                     'Y', 'E', '6', 'Z',
-                     'H', '7', '=', '5' ]
+_NRC_REVERSE_MAP = ['B', '0', 'A', '4',
+                    'C', 'R', 'Q', 'K',
+                    'Y', 'E', '6', 'Z',
+                    'H', '7', '=', '5']
 _NRC_MAP = {}
 
 for key, value in enumerate(_NRC_REVERSE_MAP):
     _NRC_MAP[ord(value)] = key
+
 
 class Attribute():
 
@@ -71,13 +72,13 @@ class Attribute():
     _attrvalue = _ATTR_DEFAULT
     defaultvalue = _ATTR_DEFAULT
 
-    def __init__(self, value = _ATTR_DEFAULT):
+    def __init__(self, value=_ATTR_DEFAULT):
         self._attrvalue = value
 
     def setvalue(self, attrvalue):
         self._attrvalue = attrvalue
 
-    def draw(self, s, attr = None):
+    def draw(self, s, attr=None):
         params = [0]
         if attr:
             value_current = attr._attrvalue
@@ -142,7 +143,6 @@ class Attribute():
     def set_sgr(self, pm):
         i = 0
         value = self._attrvalue
-        mode = 0
         for n in pm:
             if n < 10:
                 if n == 0:
@@ -169,29 +169,36 @@ class Attribute():
                 elif n == 27:
                     value &= ~(1 << _ATTR_INVERSE)
                 elif n == 28:
-                    value &= ~(1 << _ATTR_VISIBLE)
+                    value &= ~(1 << _ATTR_INVISIBLE)
             elif n < 40:
                 if n == 38:
                     if pm.next() == 5:
-                        value = value & ~(0x1ff << _ATTR_FG) | (pm.next() << _ATTR_FG)
+                        value &= ~(0x1ff << _ATTR_FG)
+                        value |= pm.next() << _ATTR_FG
                 elif n == 39:
-                    value = (value & ~(0x1ff << _ATTR_FG)) | (0x100 << _ATTR_FG)
+                    value &= ~(0x1ff << _ATTR_FG)
+                    value |= 0x100 << _ATTR_FG
                 else:
                     assert n != 0
-                    value = (value & ~(0x1ff << _ATTR_FG)) | (n - 30) << _ATTR_FG
+                    value &= ~(0x1ff << _ATTR_FG)
+                    value |= (n - 30) << _ATTR_FG
             elif n < 50:
                 if n == 48:
                     if pm.next() == 5:
-                        value = value & ~(0x1ff << _ATTR_BG) | (pm.next() << _ATTR_BG)
+                        value &= ~(0x1ff << _ATTR_BG)
+                        value |= pm.next() << _ATTR_BG
                 elif n == 49:
-                    value = value & ~(0x1ff << _ATTR_BG) | (0x100 << _ATTR_BG)
+                    value &= ~(0x1ff << _ATTR_BG)
+                    value |= 0x100 << _ATTR_BG
                 else:
-                    value = (value & ~(0x1ff << _ATTR_BG)) | (n - 40) << _ATTR_BG
-
+                    value &= value & ~(0x1ff << _ATTR_BG)
+                    value |= (n - 40) << _ATTR_BG
             elif 90 <= n and n < 98:
-                value = (value & ~(0x1ff << _ATTR_FG)) | (n - 90 + 8) << _ATTR_FG
+                value &= ~(0x1ff << _ATTR_FG)
+                value |= (n - 90 + 8) << _ATTR_FG
             elif 100 <= n and n < 108:
-                value = (value & ~(0x1ff << _ATTR_BG)) | (n - 100 + 8) << _ATTR_BG
+                value &= ~(0x1ff << _ATTR_BG)
+                value |= (n - 100 + 8) << _ATTR_BG
             #logger.writeLine("SGR %d is ignored." % n)
             i += 1
         self._attrvalue = value
@@ -200,8 +207,8 @@ class Attribute():
         return self._attrvalue == other._attrvalue
 
     def __str__(self):
-        import StringIO
-        s = StringIO.StringIO()
+        from StringIO import StringIO
+        s = StringIO()
         self.draw(s)
         return s.getvalue().replace("\x1b", "<ESC>")
 
@@ -213,4 +220,3 @@ def test():
 if __name__ == "__main__":
     print "attribute test."
     test()
-

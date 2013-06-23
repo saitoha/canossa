@@ -284,7 +284,8 @@ class InnerFrame(tff.DefaultHandler,
         return False
 
     def close(self):
-        self._session.destruct_subprocess()
+        session = self._session
+        session.destruct_subprocess()
         session.switch_input_target()
 
     def draw(self, output):
