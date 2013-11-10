@@ -595,7 +595,7 @@ class Listbox(tff.DefaultHandler,
 
     _listener = None
 
-    def __init__(self, listener, screen, termprop, mousemode, output):
+    def __init__(self, listener, screen, termprop, mousemode):
         assert isinstance(listener, IListboxListener)
         self._mouse_decoder = MouseDecoder(self, termprop, mousemode)
         self._screen = screen
