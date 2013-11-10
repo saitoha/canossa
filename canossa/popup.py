@@ -169,7 +169,8 @@ class IListboxImpl(IListbox):
             return start_pos, end_pos
         return None
 
-    def draw(self, s):
+    def draw(self, region):
+        s = self._window
         if self._list:
             display = self._getdisplayinfo()
             left = display.left
@@ -177,35 +178,10 @@ class IListboxImpl(IListbox):
             width = display.width
             height = display.height
             if self._show:
-                screen = self._screen
-                if self._left < left:
-                    screen.copyrect(s,
-                                    self._left + self._offset_left,
-                                    top + self._offset_top,
-                                    left - self._left,
-                                    self._height + self._top - top)
-                if self._left + self._width > left + width:
-                    screen.copyrect(s,
-                                    left + width + self._offset_left,
-                                    top + self._offset_top,
-                                    self._left + self._width - (left + width),
-                                    height)
-                if self._top + self._height > top + height:
-                    screen.copyrect(s,
-                                    left + self._offset_left,
-                                    top + height + self._offset_top,
-                                    self._left + self._width,
-                                    self._height - height)
-                if self._top < top:
-                    screen.copyrect(s,
-                                    self._left + self._offset_left,
-                                    self._top + self._offset_top,
-                                    self._width,
-                                    top - self._top)
-
+                pass
             elif not self._mousemode is None:
                 self._style = self._style_active
-                self._mouse_decoder.initialize_mouse(self._output)
+                self._mouse_decoder.initialize_mouse(self._window)
 
             self._left = left
             self._top = top
@@ -214,6 +190,14 @@ class IListboxImpl(IListbox):
 
             left += self._offset_left
             top += self._offset_top
+
+            if self._show:
+                self._window.realloc(left, top, width, height)
+            else:
+                self._show = True
+                self._window.alloc(left, top, width, height)
+
+            dirtyregion = region.add(left, top, width, height)
 
             style_selected = self._style['selected']
             style_unselected = self._style['unselected']
@@ -224,48 +208,59 @@ class IListboxImpl(IListbox):
             if scrollbar_info:
                 start_pos, end_pos = scrollbar_info
             for i, value in enumerate(display.candidates):
-                if i == display.pos:  # selected line
-                    s.write(style_selected)
-                else:  # unselected lines
-                    s.write(style_unselected)
-                s.write(u'\x1b[%d;%dH' % (top + 1 + i, left + 1))
-                s.write(u' ' * (width - 1))
-                if scrollbar_info:
-                    if i >= start_pos and i < end_pos:
-                        s.write(style_slider)
-                    else:
-                        s.write(style_scrollbar)
-                s.write(u' ')
-                if i == display.pos:  # selected line
-                    s.write(style_selected)
-                else:  # unselected lines
-                    s.write(style_unselected)
-                if i == display.pos:
-                    s.write(u'\x1b[1m')
-                s.write(u'\x1b[%d;%dH' % (top + 1 + i, left + 1))
-                s.write(value)
-                s.write(u'\x1b[m')
+                dirtyrange = dirtyregion[top + i]
+                if dirtyrange:
+                    dirty_left = min(dirtyrange)
+                    dirty_right = max(dirtyrange) + 1
 
-            y, x = self._screen.getyx()
-            s.write(u'\x1b[%d;%dH' % (y + 1, x + 1))
-            self._show = True
+                    s.write(u'\x1b[%d;%dH' % (top + 1 + i, dirty_left + 1))
+
+                    if i == display.pos: # selected line
+                        s.write(style_selected)
+                    else: # unselected lines
+                        s.write(style_unselected)
+
+                    wcwidth = self._termprop.wcwidth
+                    n = left
+                    for c in value:
+                        length = wcwidth(ord(c))
+                        if n + length > dirty_right:
+                            break
+                        if n >= dirty_left:
+                            s.write(c)
+                        n += length
+                    for char_pos in xrange(n, left + width - 1):
+                        if char_pos < dirty_left:
+                            continue
+                        if char_pos == dirty_right:
+                            break
+                        s.write(u' ')
+                    else:
+                        if scrollbar_info:
+                            if i >= start_pos and i < end_pos:
+                                s.write(style_slider)
+                            else:
+                                s.write(style_scrollbar)
+                        s.write(u' ')
+
+                    s.write(u'\x1b[m')
+
             return True
         return False
 
     def close(self):
         if self.isshown():
-            s = self._output
-            y, x = self._screen.getyx()
-            s.write(u"\x1b[%d;%dH" % (y + 1, x + 1))
+            window = self._window
             self._show = False
-            self._screen.copyrect(s,
+            self._screen.copyrect(window,
                                   self._left + self._offset_left,
                                   self._top + self._offset_top,
                                   self._width,
                                   self._height)
-            s.write(u"\x1b[%d;%dH" % (y + 1, x + 1))
+            #window.write(u"\x1b[%d;%dH" % (y + 1, x + 1))
             if not self._mousemode is None:
-                self._mouse_decoder.uninitialize_mouse(self._output)
+                self._mouse_decoder.uninitialize_mouse(window)
+            window.dealloc()
 
         self.reset()
 
@@ -277,11 +272,16 @@ class IListboxImpl(IListbox):
             return s[:length] + u"..."
         return s
 
+    def setposition(self, x, y):
+        self._x = x
+        self._y = y
+
     def _getdisplayinfo(self):
         width = 0
         candidates = self._list
 
-        y, x = self._screen.getyx()
+        x = self._x
+        y = self._y
 
         vdirection = self._getdirection(y)
         if vdirection == _POPUP_DIR_NORMAL:
@@ -474,10 +474,6 @@ class IMouseListenerImpl(IMouseListener):
                 elif self._top + self._height + offset_y > screen.height:
                     offset_y = screen.height - self._top - self._height
 
-                s = self._output
-                self._clearDeltaX(s, offset_x)
-                self._clearDeltaY(s, offset_y)
-
                 self._offset_left = offset_x
                 self._offset_top = offset_y
             elif self._dragmode == _DRAGMODE_SCROLL:
@@ -524,35 +520,6 @@ class IMouseListenerImpl(IMouseListener):
             return _HITTEST_BODY_SELECTED
         return _HITTEST_BODY_UNSELECTED
 
-    def _clearDeltaX(self, s, offset_x):
-        screen = self._screen
-        if self._offset_left < offset_x:
-            screen.copyrect(s,
-                            self._left + self._offset_left,
-                            self._top + self._offset_top,
-                            offset_x - self._offset_left,
-                            self._height)
-        elif self._offset_left > offset_x:
-            screen.copyrect(s,
-                            self._left + self._width + offset_x,
-                            self._top + self._offset_top,
-                            self._offset_left - offset_x,
-                            self._height)
-
-    def _clearDeltaY(self, s, offset_y):
-        screen = self._screen
-        if self._offset_top < offset_y:
-            screen.copyrect(s,
-                            self._left + self._offset_left,
-                            self._top + self._offset_top,
-                            self._width,
-                            offset_y - self._offset_top)
-        elif self._offset_top > offset_y:
-            screen.copyrect(s,
-                            self._left + self._offset_left,
-                            self._top + self._height + offset_y,
-                            self._width,
-                            self._offset_top - offset_y)
 
 
 class DisplayInfo():
@@ -565,6 +532,7 @@ class DisplayInfo():
 
     def __init__(self, candidates, pos, left, top, width, height):
         self.candidates = candidates
+        self.pos = pos
         self.left = left
         self.top = top
         self.width = width
@@ -576,33 +544,29 @@ class Listbox(tff.DefaultHandler,
               IFocusListenerImpl,
               IMouseListenerImpl):
 
-    _left = None
-    _top = None
-    _width = 10
-    _height = _POPUP_HEIGHT_MAX
-    _offset_left = 0
-    _offset_top = 0
-
-    _output = None
-
-    _show = False
-    _mousemode = None
-    _dragpos = None
-
-    _list = None
-    _index = 0
-    _scrollpos = 0
-
-    _listener = None
-
-    def __init__(self, listener, screen, termprop, mousemode, output):
+    def __init__(self, listener, screen, termprop, mousemode):
         assert isinstance(listener, IListboxListener)
         self._mouse_decoder = MouseDecoder(self, termprop, mousemode)
         self._screen = screen
         self._listener = listener
         self._termprop = termprop
         self._mousemode = mousemode
-        self._output = output
+        self._window = screen.create_window(self)
+        self._left = None
+        self._top = None
+        self._width = 10
+        self._height = _POPUP_HEIGHT_MAX
+        self._offset_left = 0
+        self._offset_top = 0
+        self._show = False
+        self._dragpos = None
+        self._list = None
+        self._index = 0
+        self._scrollpos = 0
+
+    """ IWidget implementation """
+    def id(self):
+        self._window.id
 
     def set_offset(self, offset_x, offset_y):
 

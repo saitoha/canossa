@@ -19,6 +19,7 @@
 # ***** END LICENSE BLOCK *****
 
 from canossa import *
-import canossa.tff as tff
-import canossa.termprop as termprop
+
+#import canossa.tff as tff
+#import canossa.termprop as termprop
 

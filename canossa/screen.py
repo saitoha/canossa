@@ -333,7 +333,7 @@ class IScreenImpl(IScreen):
         if srcx < 0 or srcy < 0 or height < 0 or width < 0:
             template = "invalid rect is detected. (%d, %d, %d, %d)"
             message = template % (srcx, srcy, width, height)
-            raise CanossaRangeException(message)
+            #raise CanossaRangeException(message)
 
         cursor = Cursor(0, 0, self.cursor.attr)
         cursor.attr.draw(s)
@@ -363,6 +363,19 @@ class IScreenImpl(IScreen):
         self.cursor.attr.draw(s)
         context.puts(s.getvalue())
         s.truncate(0)
+
+    def drawwindows(self, context):
+        for window in self._trash:
+            window.dealloc()
+            window.draw(context)
+        region = Region()
+        for window in self._layouts:
+            widget = self._widgets[window.id]
+            widget.draw(region)
+        for window in reversed(self._layouts):
+            widget = self._widgets[window.id]
+            window.draw(context)
+        self._trash = []
 
     def resize(self, row, col):
         lines = self.lines
@@ -510,6 +523,115 @@ class MockScreenWithCursor(MockScreen):
         self._setup_lines()
 
 
+class Window():
+
+    _counter = 0
+
+    def __init__(self, screen):
+        self._buffer = codecs.getwriter(screen.termenc)(StringIO(), errors='ignore')
+        self.left = 0
+        self.top = 0
+        self.width = 0
+        self.height = 0
+        self._show = False
+        self.__class__._counter += 1
+        self.id = self.__class__._counter
+        self._screen = screen
+
+    def alloc(self, left, top, width, height):
+        self._show = True
+        self.left = left
+        self.top = top
+        self.width = width
+        self.height = height
+
+    def realloc(self, left, top, width, height):
+        screen = self._screen
+        if self.left < left:
+            screen.copyrect(self,
+                            self.left,
+                            self.top,
+                            left - self.left,
+                            self.height)
+        if self.left + self.width > left + width:
+            screen.copyrect(self,
+                            left + width,
+                            self.top,
+                            (self.left + self.width) - (left + width),
+                            self.height)
+        if self.top + self.height > top + height:
+            screen.copyrect(self,
+                            self.left,
+                            top + height,
+                            self.width,
+                            self.top + self.height - (top + height))
+        if self.top < top:
+            screen.copyrect(self,
+                            self.left,
+                            self.top,
+                            self.width,
+                            top - self.top)
+
+        self.left = left
+        self.top = top
+        self.width = width
+        self.height = height
+
+    def dealloc(self):
+        self._show = False
+
+        screen = self._screen
+        screen.copyrect(self,
+			self.left, self.top,
+			self.width, self.height)
+        self.left = 0
+        self.top = 0
+        self.width = 0
+        self.height = 0
+
+    def write(self, s):
+        self._buffer.write(s)
+
+    def draw(self, context):
+        context.puts(self._buffer.getvalue())
+        self._buffer.truncate(0)
+
+    def close(self):
+        self._screen.destruct_window(self)
+
+
+class Ranges():
+
+    def __init__(self):
+        self._ranges = set()
+
+    def add(self, start, end):
+        ranges = self._ranges
+        newrange = set(xrange(start, end))
+        dirtyrange = newrange.difference(ranges)
+        ranges.update(newrange)
+        return dirtyrange
+
+
+class Region():
+
+    def __init__(self):
+        self._lines = {}
+
+    def add(self, left, top, width, height):
+        lines = self._lines
+        result = {}
+        for index in xrange(top, top + height):
+            if not index in lines:
+                line = Ranges()
+                lines[index] = line
+            else:
+                line = lines[index]
+            dirtyrange = line.add(left, left + width)
+            result[index] = dirtyrange
+        return result
+        
+
 class Screen(IScreenImpl,
              MockScreenWithCursor,
              SupportsAnsiModeTrait,
@@ -520,16 +642,19 @@ class Screen(IScreenImpl,
              SuuportsAlternateScreenTrait,
              SuuportsISO2022DesignationTrait):
 
-    _saved_pos = None
-    _title = u""
-
     def __init__(self, row=24, col=80, y=0, x=0,
                  termenc="UTF-8", termprop=None):
+
+        self._saved_pos = None
+        self._title = u""
+        self._widgets = None
+
         self.height = row
         self.width = col
         self.cursor = Cursor(y, x)
         self.scroll_top = 0
         self.scroll_bottom = self.height
+        self.termenc = termenc
         self._output = codecs.getwriter(termenc)(StringIO())
 
         if termprop is None:
@@ -543,6 +668,25 @@ class Screen(IScreenImpl,
         self._setup_altbuf()
         self._setup_tab()
         self._setup_charset()
+
+        self._widgets = {} 
+        self._layouts = []
+        self._trash = []
+
+    def create_window(self, widget):
+        window = Window(self)
+        self._widgets[window.id] = widget
+        self._layouts.insert(0, window)
+        return window 
+
+    def destruct_window(self, window):
+        widgets = self._widgets
+        layouts = self._layouts
+        if window.id in widgets:
+            del widgets[window.id]
+        if window in layouts:
+            layouts.remove(window)
+        self._trash.append(window)
 
     def _wrap(self):
         self.cursor.col = 0
