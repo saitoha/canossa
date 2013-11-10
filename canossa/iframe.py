@@ -276,8 +276,6 @@ class InnerFrame(tff.DefaultHandler,
                     if dirty_left == left - 1:
                         dirty_left = left
                     dirty_right = max(dirtyrange)
-                    if dirty_right == left + width:
-                        dirty_right = left + width - 1
                     dirty_width = dirty_right - dirty_left
                     screen.copyrect(window, 0, index, dirty_width, 1,
                                     dirty_left, top + index, lazy=True)
