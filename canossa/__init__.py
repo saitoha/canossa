@@ -22,8 +22,8 @@ __author__  = "Hayaki Saito (user@zuse.jp)"
 __version__ = "0.0.16"
 __license__ = "GPL v3"
 
-import tff
-import termprop
+from tff import tff
+from termprop import termprop
 
 from interface import *
 from canossa import *

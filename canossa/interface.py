@@ -37,7 +37,7 @@ import abc
 #     - IListbox
 #     - IListboxListener
 #
-#   + IInnerFrame
+#   + InnerFrame
 #     - IInnerFrame
 #     - IInnerFrameListener
 #
@@ -119,7 +119,17 @@ class IModeListener():
     def getenabled(self):
         raise NotImplementedError("IModeListener::getenabled")
 
-class IListbox():
+
+class IWidget():
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def id(self):
+        raise NotImplementedError("IWidget::id")
+
+
+class IListbox(IWidget):
 
     __metaclass__ = abc.ABCMeta
 
@@ -183,7 +193,8 @@ class IListboxListener():
     def onrepeat(self, popup, context):
         raise NotImplementedError("IListboxListener::onrepeat")
 
-class IInnerFrame():
+
+class IInnerFrame(IWidget):
 
     __metaclass__ = abc.ABCMeta
 
@@ -195,6 +206,7 @@ class IInnerFrame():
     def draw(self, output):
         raise NotImplementedError("IInnerFrame::draw")
 
+
 class IInnerFrameListener():
 
     __metaclass__ = abc.ABCMeta
@@ -203,9 +215,11 @@ class IInnerFrameListener():
     def onclose(self, iframe, context):
         raise NotImplementedError("IInnerFrameListener::onclose")
 
+
 def test():
     import doctest
     doctest.testmod()
+
 
 if __name__ == "__main__":
     test()

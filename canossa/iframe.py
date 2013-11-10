@@ -47,6 +47,7 @@ class IFocusListenerImpl(IFocusListener):
     def onfocusout(self):
         self.close()
 
+
 class IMouseListenerImpl(IMouseListener):
 
     _lasthittest = None
@@ -62,14 +63,14 @@ class IMouseListenerImpl(IMouseListener):
         if hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
             y -= self.top + self.offset_top
-            context.puts("\x1b[M%c%c%c" % (0 + 32, x + 33, y + 33))
+            context.puts(u"\x1b[M%c%c%c" % (0 + 32, x + 33, y + 33))
 
     def onmouseup(self, context, x, y):
         hittest = self._hittest(x, y)
         if hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
             y -= self.top + self.offset_top
-            context.puts("\x1b[M%c%c%c" % (3 + 32, x + 33, y + 33))
+            context.puts(u"\x1b[M%c%c%c" % (3 + 32, x + 33, y + 33))
 
     def onclick(self, context, x, y):
         hittest = self._hittest(x, y)
@@ -91,7 +92,7 @@ class IMouseListenerImpl(IMouseListener):
         if hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
             y -= self.top + self.offset_top
-            context.puts("\x1b[M%c%c%c" % (32 + 32, x + 33, y + 33))
+            context.puts(u"\x1b[M%c%c%c" % (32 + 32, x + 33, y + 33))
 
     """ scroll """
     def onscrolldown(self, context, x, y):
@@ -99,14 +100,14 @@ class IMouseListenerImpl(IMouseListener):
         if hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
             y -= self.top + self.offset_top
-            context.puts("\x1b[M%c%c%c" % (64 + 32, x + 33, y + 33))
+            context.puts(u"\x1b[M%c%c%c" % (64 + 32, x + 33, y + 33))
 
     def onscrollup(self, context, x, y):
         hittest = self._lasthittest
         if hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
             y -= self.top + self.offset_top
-            context.puts("\x1b[M%c%c%c" % (65 + 32, x + 33, y + 33))
+            context.puts(u"\x1b[M%c%c%c" % (65 + 32, x + 33, y + 33))
 
     """ drag and drop """
     def ondragstart(self, s, x, y):
@@ -125,6 +126,10 @@ class IMouseListenerImpl(IMouseListener):
         self.offset_top = 0
         self._dragpos = None
 
+    def moveTo(self, left, top):
+        self.left = left
+        self.top = top
+
     def ondragmove(self, context, x, y):
         if self._dragpos:
             origin_x, origin_y = self._dragpos
@@ -133,8 +138,10 @@ class IMouseListenerImpl(IMouseListener):
 
             screen = self._outerscreen
             innerscreen = self.innerscreen
+
             width = innerscreen.width + 2
             height = innerscreen.height + 2
+
             if self.left + offset_x - 1 < 0:
                 offset_x = 1 - self.left
             elif self.left + width + offset_x - 1 > screen.width:
@@ -144,11 +151,14 @@ class IMouseListenerImpl(IMouseListener):
             elif self.top + height + offset_y - 1 > screen.height:
                 offset_y = screen.height - self.top - height + 1
 
-            s = self._output
-            self._clearDeltaX(s, offset_x)
-            self._clearDeltaY(s, offset_y)
             self.offset_left = offset_x
             self.offset_top = offset_y
+
+            left = self.left + self.offset_left - 1
+            top = self.top + self.offset_top - 1
+            width = innerscreen.width + 2
+            height = innerscreen.height + 2
+            self._window.realloc(left, top, width, height)
         else:
             hittest = self._hittest(x, y)
             if hittest == _HITTEST_CLIENTAREA:
@@ -184,51 +194,6 @@ class IMouseListenerImpl(IMouseListener):
             return _HITTEST_NONE
         return _HITTEST_CLIENTAREA
 
-    def clear(self):
-        screen = self._outerscreen
-        innerscreen = self.innerscreen
-        screen.copyrect(self._output,
-                        self.left + self.offset_left - 1,
-                        self.top + self.offset_top - 1,
-                        innerscreen.width + 2,
-                        innerscreen.height + 2,
-                        lazy=True)
-
-    def _clearDeltaX(self, s, offset_x):
-        screen = self._outerscreen
-        innerscreen = self.innerscreen
-        width = innerscreen.width + 2
-        height = innerscreen.height + 2
-        if self.offset_left < offset_x:
-            screen.copyrect(s,
-                            self.left + self.offset_left - 1,
-                            self.top + self.offset_top - 1,
-                            offset_x - self.offset_left,
-                            height)
-        elif self.offset_left > offset_x:
-            screen.copyrect(s,
-                            self.left + width + offset_x - 1,
-                            self.top + self.offset_top - 1,
-                            self.offset_left - offset_x,
-                            height)
-
-    def _clearDeltaY(self, s, offset_y):
-        screen = self._outerscreen
-        innerscreen = self.innerscreen
-        width = innerscreen.width + 2
-        height = innerscreen.height + 2
-        if self.offset_top < offset_y:
-            screen.copyrect(s,
-                            self.left + self.offset_left - 1,
-                            self.top + self.offset_top - 1,
-                            width,
-                            offset_y - self.offset_top)
-        elif self.offset_top > offset_y:
-            screen.copyrect(s,
-                            self.left + self.offset_left - 1,
-                            self.top + height + offset_y - 1,
-                            width,
-                            self.offset_top - offset_y)
 
 class InnerFrame(tff.DefaultHandler,
                  IInnerFrame,
@@ -243,14 +208,18 @@ class InnerFrame(tff.DefaultHandler,
 
     def __init__(self, session, listener, inputhandler, screen,
                  top, left, row, col,
-                 command, termenc, termprop, mousemode, output):
+                 command, termenc, termprop, mousemode):
 
         innerscreen = Screen(row, col, 0, 0, termenc, termprop)
         canossa = Canossa(innerscreen, visibility=False)
 
         self._mouse_decoder = MouseDecoder(self, termprop, mousemode)
         self._session = session
-        self._output = output
+
+        window = screen.create_window(self)
+        window.alloc(left - 1, top - 1, col + 2, row + 2)
+
+        self._window = window
 
         self.top = top
         self.left = left
@@ -266,9 +235,13 @@ class InnerFrame(tff.DefaultHandler,
                            command, row, col, termenc,
                            self, canossa, self)
         self._title = command
-        session.switch_input_target()
+
+    """ IWidget implementation """
+    def id(self):
+        self._id
 
     def handle_end(self, context):
+        self._window.close()
         self._listener.onclose(self, context)
 
     def handle_csi(self, context, parameter, intermediate, final):
@@ -285,18 +258,29 @@ class InnerFrame(tff.DefaultHandler,
 
     def close(self):
         self._session.destruct_subprocess()
-        session.switch_input_target()
 
-    def draw(self, output):
+    def draw(self, region):
         if self.enabled:
+            window = self._window
             screen = self.innerscreen
             left = self.left + self.offset_left
             top = self.top + self.offset_top
+            width = screen.width
+            height = screen.height
 
-            screen.copyrect(output,
-                            0, 0,
-                            screen.width, screen.height,
-                            left, top)
+            dirtyregion = region.add(left - 1, top - 1, width + 2, height + 2)
+            for index in xrange(0, height):
+                dirtyrange = dirtyregion[top + index]
+                if dirtyrange:
+                    dirty_left = min(dirtyrange)
+                    if dirty_left == left - 1:
+                        dirty_left = left
+                    dirty_right = max(dirtyrange)
+                    if dirty_right == left + width:
+                        dirty_right = left + width - 1
+                    dirty_width = dirty_right - dirty_left
+                    screen.copyrect(window, 0, index, dirty_width, 1,
+                                    dirty_left, top + index, lazy=True)
             title_length = self._termprop.wcswidth(self._title)
             width = screen.width + 2
             if title_length < width:
@@ -306,20 +290,23 @@ class InnerFrame(tff.DefaultHandler,
             else:
                  title = self._title[0:width - 3] + "..."
 
-            output.write("\x1b[30;47m")
-            output.write("\x1b[%d;%dH" % (top, left))
-            output.write(title)
-            output.write("\x1b[m")
+            if self._dragpos:
+                window.write("\x1b[30;43m")
+            else:
+                window.write("\x1b[30;47m")
+            window.write("\x1b[%d;%dH" % (top, left))
+            window.write(title)
+            window.write("\x1b[m")
             for i in xrange(1, screen.height + 1):
-                output.write("\x1b[%d;%dH|" % (top + i, left))
-                output.write("\x1b[%d;%dH|" % (top + i, left + screen.width + 1))
-            output.write("\x1b[%d;%dH" % (top + screen.height + 1, left))
-            output.write("+")
-            output.write("-" * (screen.width))
-            output.write("+")
+                window.write("\x1b[%d;%dH|" % (top + i, left))
+                window.write("\x1b[%d;%dH|" % (top + i, left + screen.width + 1))
+            window.write("\x1b[%d;%dH" % (top + screen.height + 1, left))
+            window.write("+")
+            window.write("-" * (screen.width))
+            window.write("+")
             cursor = screen.cursor
-            output.write("\x1b[?25h")
-            output.write("\x1b[%d;%dH" % (cursor.row + top + 1, cursor.col + left + 1))
+            window.write("\x1b[?25h")
+            window.write("\x1b[%d;%dH" % (cursor.row + top + 1, cursor.col + left + 1))
 
 def test():
     import doctest
