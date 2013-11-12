@@ -125,8 +125,12 @@ class IWidget():
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def id(self):
-        raise NotImplementedError("IWidget::id")
+    def close(self):
+        raise NotImplementedError("IWidget::close")
+
+    @abc.abstractmethod
+    def draw(self, output):
+        raise NotImplementedError("IWidget::draw")
 
 
 class IListbox(IWidget):
@@ -156,14 +160,6 @@ class IListbox(IWidget):
     @abc.abstractmethod
     def jumpnext(self):
         raise NotImplementedError("IListbox::jumpnext")
-
-    @abc.abstractmethod
-    def draw(self, s):
-        raise NotImplementedError("IListbox::draw")
-
-    @abc.abstractmethod
-    def close(self):
-        raise NotImplementedError("IListbox::close")
 
     @abc.abstractmethod
     def isshown(self):
@@ -197,14 +193,6 @@ class IListboxListener():
 class IInnerFrame(IWidget):
 
     __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
-    def close(self):
-        raise NotImplementedError("IInnerFrame::close")
-
-    @abc.abstractmethod
-    def draw(self, output):
-        raise NotImplementedError("IInnerFrame::draw")
 
 
 class IInnerFrameListener():
