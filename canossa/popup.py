@@ -564,10 +564,6 @@ class Listbox(tff.DefaultHandler,
         self._index = 0
         self._scrollpos = 0
 
-    """ IWidget implementation """
-    def id(self):
-        self._window.id
-
     def set_offset(self, offset_x, offset_y):
 
         display = self._getdisplayinfo()

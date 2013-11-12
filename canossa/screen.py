@@ -295,31 +295,32 @@ class IScreenImpl(IScreen):
 
     _listener = None
 
-    def copyline(self, s, x, y, length):
-        cursor = Cursor(0, 0)
-        cursor.attr.draw(s)
-        if y > self.height - 1:
-            y = self.height - 1
-        elif y < 0:
-            y = 0
-        assert self.height == len(self.lines)
-        assert y < self.height
-        while True:
-            s.write("\x1b[%d;%dH" % (y + 1, x + 1))
-            line = self.lines[y]
-            if x + length < self.width:
-                line.drawrange(s, x, x + length, cursor)
-                break
-            line.drawrange(s, x, self.width - x, cursor)
-            length -= self.width - x
-            if length <= 0:
-                break
-            if y < self.height - 1:
-                break
-            x = 0
-            if self.decawm:
-                y += 1
-        self.cursor.attr.draw(s)
+    def copyline(self, s, x, y, length, lazy=False):
+        if not lazy or line.dirty:
+            cursor = Cursor(0, 0)
+            cursor.attr.draw(s)
+            if y > self.height - 1:
+                y = self.height - 1
+            elif y < 0:
+                y = 0
+            assert self.height == len(self.lines)
+            assert y < self.height
+            while True:
+                s.write("\x1b[%d;%dH" % (y + 1, x + 1))
+                line = self.lines[y]
+                if x + length < self.width:
+                    line.drawrange(s, x, x + length, cursor)
+                    break
+                line.drawrange(s, x, self.width - x, cursor)
+                length -= self.width - x
+                if length <= 0:
+                    break
+                if y < self.height - 1:
+                    break
+                x = 0
+                if self.decawm:
+                    y += 1
+            self.cursor.attr.draw(s)
 
     def copyrect(self, s, srcx, srcy, width, height,
                  destx=None, desty=None, lazy=False):
@@ -333,7 +334,7 @@ class IScreenImpl(IScreen):
         if srcx < 0 or srcy < 0 or height < 0 or width < 0:
             template = "invalid rect is detected. (%d, %d, %d, %d)"
             message = template % (srcx, srcy, width, height)
-            #raise CanossaRangeException(message)
+            raise CanossaRangeException(message)
 
         cursor = Cursor(0, 0, self.cursor.attr)
         cursor.attr.draw(s)

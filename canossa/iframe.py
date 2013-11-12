@@ -182,15 +182,15 @@ class IMouseListenerImpl(IMouseListener):
         screen = self.innerscreen
         left = self._get_left()
         top = self._get_top()
-        if y == self._get_top() and x >= self._get_left() and x <= self._get_right():
+        if y == top and x >= left and x <= self._get_right():
             return _HITTEST_TITLEBAR
-        if x < self._get_left():
+        if x < left:
             return _HITTEST_NONE
         elif x > self._get_right():
             return _HITTEST_NONE
-        if y < self._get_top():
+        if y < top:
             return _HITTEST_NONE
-        elif y > self._get_right():
+        elif y > self._get_bottom():
             return _HITTEST_NONE
         return _HITTEST_CLIENTAREA
 
@@ -198,7 +198,7 @@ class IMouseListenerImpl(IMouseListener):
 class InnerFrame(tff.DefaultHandler,
                  IInnerFrame,
                  IMouseListenerImpl,
-                 IFocusListenerImpl):
+                 IFocusListenerImpl): # aggregate mouse and focus listener
 
     top = 0
     left = 0
@@ -236,10 +236,7 @@ class InnerFrame(tff.DefaultHandler,
                            self, canossa, self)
         self._title = command
 
-    """ IWidget implementation """
-    def id(self):
-        self._id
-
+    """ tff.EventObserver override """
     def handle_end(self, context):
         self._window.close()
         self._listener.onclose(self, context)
@@ -256,6 +253,7 @@ class InnerFrame(tff.DefaultHandler,
             return True
         return False
 
+    """ IWidget override """
     def close(self):
         self._session.destruct_subprocess()
 
