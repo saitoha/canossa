@@ -199,7 +199,7 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
         self._termprop = termprop
 
     def handle_esc(self, context, intermediate, final):
-        if final == 0x63 and len(intermediate) == 0: # RIS
+        if final == 0x63 and not intermediate: # RIS
             self.setprotocol(0)
             self.setencoding(0)
             self.setfocusmode(0)
@@ -226,16 +226,16 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
 
     def _handle_mode(self, context, parameter, intermediate, final):
         if len(parameter) >= 5:
-            if parameter[0] == 0x3f and len(intermediate) == 0:
+            if parameter[0] == 0x3f and not intermediate:
                 params = _parse_params(parameter[1:])
                 if final == 0x68: # 'h'
                     modes = self._set_modes(params)
-                    if len(modes) > 0:
+                    if modes:
                         context.puts("\x1b[?%sh" % ";".join(modes))
                     return True
                 elif final == 0x6c: # 'l'
                     modes = self._reset_modes(params)
-                    if len(modes) > 0:
+                    if modes:
                         context.puts("\x1b[?%sl" % ";".join(modes))
                     return True
         return False
@@ -322,18 +322,19 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
                 modes.append(str(param))
         return modes
 
+
 class MouseDecoder(tff.DefaultHandler):
 
-    _mouse_state = None
-    _x = -1
-    _y = -1
-    _lastclick = 0
-    _mousedown = False
-    _mousedrag = False
-    _mouse_mode = None
-    _init_glich_time = None
+    always_handle = True
 
     def __init__(self, listener, termprop, mousemode):
+        self._mouse_state = None
+        self._x = -1
+        self._y = -1
+        self._lastclick = 0
+        self._mousedown = False
+        self._mousedrag = False
+        self._init_glich_time = None
         self._mouse_mode = mousemode
         self._termprop = termprop
         self._listener = listener
@@ -354,7 +355,7 @@ class MouseDecoder(tff.DefaultHandler):
                     if mode == _MOUSE_PROTOCOL_NORMAL:
                         self._mouse_state = []
                         return True
-                    elif self._listener.mouseenabled():
+                    elif self.always_handle or self._listener.mouseenabled():
                         if mouseup:
                             code |= 0x3
                         self._dispatch_mouse(context, code, x, y)
@@ -391,8 +392,8 @@ class MouseDecoder(tff.DefaultHandler):
                 # TODO: logging
                 pass
 
-        if len(intermediate) == 0:
-            if len(parameter) == 0:
+        if not intermediate:
+            if not parameter:
                 if final == 0x49: # I
                     self._listener.onfocusin()
                     return True
@@ -421,7 +422,7 @@ class MouseDecoder(tff.DefaultHandler):
                 if len(self._mouse_state) == 3:
                     code, x, y = self._mouse_state
                     self._mouse_state = None
-                    if self._listener.mouseenabled():
+                    if self.always_handle or self._listener.mouseenabled():
                         self._dispatch_mouse(context, code, x - 1, y - 1)
                     if self._mouse_mode.getprotocol() != 0:
                         params = (code + 0x20, x + 0x20, y + 0x20)
@@ -430,7 +431,7 @@ class MouseDecoder(tff.DefaultHandler):
         return False
 
     def _decode_mouse(self, context, parameter, intermediate, final):
-        if len(parameter) == 0:
+        if not parameter:
             if final == 0x4d: # M
                 return _MOUSE_PROTOCOL_NORMAL, None, None, None, None
             return None
