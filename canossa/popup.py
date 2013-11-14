@@ -207,11 +207,13 @@ class IListboxImpl(IListbox):
             scrollbar_info = self._calculate_scrollbar_postion()
             if scrollbar_info:
                 start_pos, end_pos = scrollbar_info
+
+            screen = self._screen
             for i, value in enumerate(display.candidates):
                 dirtyrange = dirtyregion[top + i]
                 if dirtyrange:
-                    dirty_left = min(dirtyrange)
-                    dirty_right = max(dirtyrange) + 1
+                    dirty_left = max(min(dirtyrange), 0)
+                    dirty_right = min(max(dirtyrange) + 1, screen.width)
 
                     s.write(u'\x1b[%d;%dH' % (top + 1 + i, dirty_left + 1))
 
@@ -224,6 +226,8 @@ class IListboxImpl(IListbox):
                     n = left
                     for c in value:
                         length = wcwidth(ord(c))
+                        if n + length > screen.width:
+                            break
                         if n + length > dirty_right:
                             break
                         if n >= dirty_left:
@@ -231,7 +235,9 @@ class IListboxImpl(IListbox):
                         n += length
                         if length == 2 and n == dirty_left + 1:
                             s.write(u' ')
-                    for char_pos in xrange(n, left + width - 1):
+                    for char_pos in xrange(n, left + width):
+                        if char_pos > screen.width - 1:
+                            break
                         if char_pos < dirty_left:
                             continue
                         if char_pos == dirty_right:
@@ -239,13 +245,15 @@ class IListboxImpl(IListbox):
                         s.write(u' ')
                     else:
                         if scrollbar_info:
+                            if n > screen.width - 1:
+                                break
+                            if n > dirty_left:
+                                break
                             if i >= start_pos and i < end_pos:
                                 s.write(style_slider)
                             else:
                                 s.write(style_scrollbar)
-                        s.write(u' ')
-
-                s.write(u'\x1b[m')
+                            s.write(u' ')
 
             return True
         return False
@@ -491,14 +499,14 @@ class IMouseListenerImpl(IMouseListener):
             offset_y = y - origin_y
 
             screen = self._screen
-            if self._left + offset_x < 0:
-                offset_x = 0 - self._left
-            elif self._left + self._width + offset_x > screen.width:
-                offset_x = screen.width - self._left - self._width
-            if self._top + offset_y < 0:
-                offset_y = 0 - self._top
-            elif self._top + self._height + offset_y > screen.height:
-                offset_y = screen.height - self._top - self._height
+            if self._left + self._width + offset_x < 1:
+                offset_x = 1 - self._left - self._width
+            elif self._left + offset_x > screen.width - 1:
+                offset_x = screen.width - self._left - 1
+            if self._top + self._height + offset_y < 1:
+                offset_y = 1 - self._top - self._height
+            elif self._top + offset_y > screen.height - 1:
+                offset_y = screen.height - self._top - 1
 
             self._offset_left = offset_x
             self._offset_top = offset_y
