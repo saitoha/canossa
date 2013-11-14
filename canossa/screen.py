@@ -33,6 +33,112 @@ from interface import IScreen
 #
 from cursor import Cursor
 from line import Line
+from mouse import IFocusListener, IMouseListener
+
+
+class IFocusListenerImpl(IFocusListener):
+
+    def __init__(self):
+        pass
+
+    """ IFocusListener implementation """
+    def onfocusin(self):
+        pass
+
+    def onfocusout(self):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            widget.onfocusout()
+
+
+class IMouseListenerImpl(IMouseListener):
+
+    def __init__(self):
+        pass
+
+    """ IMouseListener implementation """
+    def onmousedown(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.onmousedown(context, x, y):
+                return True
+        return False
+
+    def onmouseup(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.onmouseup(context, x, y):
+                return True
+        return False
+
+    def onclick(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.onclick(context, x, y):
+                return True
+        return False
+
+    def ondoubleclick(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.ondoubleclick(context, x, y):
+                return True
+        return False
+
+    def onmousehover(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.onmousehover(context, x, y):
+                return True
+        return False
+
+    """ scroll """
+    def onscrolldown(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.onscrolldown(context, x, y):
+                return True
+        return False
+
+    def onscrollup(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.onscrollup(context, x, y):
+                return True
+        return False
+
+    """ drag and drop """
+    def ondragstart(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.ondragstart(context, x, y):
+                return True
+        return False
+
+    def ondragend(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.ondragend(context, x, y):
+                return True
+        return False
+
+    def ondragmove(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.ondragmove(context, x, y):
+                return True
+        return False
 
 
 class SupportsDoubleSizedTrait():
@@ -329,12 +435,20 @@ class IScreenImpl(IScreen):
         if desty is None:
             desty = srcy
 
+        #if destx < 0:
+        #    destx = 0
+        #if desty < 0:
+        #    desty = 0
         #height = min(height, (self.height - 1) - desty)
         #width =  min(width, (self.width - 1) - destx)
-        if srcx < 0 or srcy < 0 or height < 0 or width < 0:
-            template = "invalid rect is detected. (%d, %d, %d, %d)"
-            message = template % (srcx, srcy, width, height)
-            raise CanossaRangeException(message)
+        #if srcx < 0:
+        #    srcx = 0
+        #if srcy < 0:
+        #    srcy = 0
+        #if srcx < 0 or srcy < 0 or height < 0 or width < 0:
+        #    template = "invalid rect is detected. (%d, %d, %d, %d)"
+        #    message = template % (srcx, srcy, width, height)
+        #    raise CanossaRangeException(message)
 
         cursor = Cursor(0, 0, self.cursor.attr)
         cursor.attr.draw(s)
@@ -370,11 +484,12 @@ class IScreenImpl(IScreen):
             window.dealloc()
             window.draw(context)
         region = Region()
+        widgets = self._widgets
         for window in self._layouts:
-            widget = self._widgets[window.id]
+            widget = widgets[window.id]
             widget.draw(region)
         for window in reversed(self._layouts):
-            widget = self._widgets[window.id]
+            widget = widgets[window.id]
             window.draw(context)
         self._trash = []
 
@@ -529,7 +644,9 @@ class Window():
     _counter = 0
 
     def __init__(self, screen):
-        self._buffer = codecs.getwriter(screen.termenc)(StringIO(), errors='ignore')
+        writer = codecs.getwriter(screen.termenc)
+        stream = StringIO()
+        self._buffer = writer(stream, errors='ignore')
         self.left = 0
         self.top = 0
         self.width = 0
@@ -549,30 +666,31 @@ class Window():
     def realloc(self, left, top, width, height):
         screen = self._screen
         if self.left < left:
-            screen.copyrect(self,
-                            self.left,
-                            self.top,
-                            left - self.left,
-                            self.height)
+            x = max(self.left, 0)
+            y = max(self.top, 0)
+            w = left - self.left
+            h = self.height
+            screen.copyrect(self, x, y, w, h)
         if self.left + self.width > left + width:
-            screen.copyrect(self,
-                            left + width,
-                            self.top,
-                            (self.left + self.width) - (left + width),
-                            self.height)
+            if screen.width > left + width:
+                x = left + width
+                y = max(self.top, 0)
+                w = (self.left + self.width) - (left + width)
+                h = self.height
+                screen.copyrect(self, x, y, w, h)
         if self.top + self.height > top + height:
-            screen.copyrect(self,
-                            self.left,
-                            top + height,
-                            self.width,
-                            self.top + self.height - (top + height))
+            if screen.height > top + height:
+                x = max(self.left, 0)
+                y = top + height
+                w = self.width
+                h = self.top + self.height - (top + height)
+                screen.copyrect(self, x, y, w, h)
         if self.top < top:
-            screen.copyrect(self,
-                            self.left,
-                            self.top,
-                            self.width,
-                            top - self.top)
-
+            x = max(self.left, 0)
+            y = max(self.top, 0)
+            w = self.width
+            h = top - self.top
+            screen.copyrect(self, x, y, w, h)
         self.left = left
         self.top = top
         self.width = width
@@ -583,8 +701,8 @@ class Window():
 
         screen = self._screen
         screen.copyrect(self,
-			self.left, self.top,
-			self.width, self.height)
+                        self.left, self.top,
+                        self.width, self.height)
         self.left = 0
         self.top = 0
         self.width = 0
@@ -594,8 +712,20 @@ class Window():
         self._buffer.write(s)
 
     def draw(self, context):
-        context.puts(self._buffer.getvalue())
-        self._buffer.truncate(0)
+        buffer = self._buffer
+        s = self._buffer.getvalue()
+        if s:
+            context.puts(s)
+            buffer.truncate(0)
+
+    def focus(self):
+        self._screen.focus(self)
+
+    def blur(self):
+        self._screen.blur(self)
+
+    def is_active(self):
+        self._screen.is_active(self)
 
     def close(self):
         self._screen.destruct_window(self)
@@ -631,9 +761,11 @@ class Region():
             dirtyrange = line.add(left, left + width)
             result[index] = dirtyrange
         return result
-        
+
 
 class Screen(IScreenImpl,
+             IFocusListenerImpl,
+             IMouseListenerImpl,
              MockScreenWithCursor,
              SupportsAnsiModeTrait,
              SupportsExtendedModeTrait,
@@ -659,8 +791,8 @@ class Screen(IScreenImpl,
         self._output = codecs.getwriter(termenc)(StringIO())
 
         if termprop is None:
-            import termprop as tp
-            termprop = tp.Termprop()
+            from termprop import Termprop
+            termprop = Termprop()
 
         self._wcwidth = termprop.wcwidth
         self._termprop = termprop
@@ -670,7 +802,7 @@ class Screen(IScreenImpl,
         self._setup_tab()
         self._setup_charset()
 
-        self._widgets = {} 
+        self._widgets = {}
         self._layouts = []
         self._trash = []
 
@@ -678,7 +810,23 @@ class Screen(IScreenImpl,
         window = Window(self)
         self._widgets[window.id] = widget
         self._layouts.insert(0, window)
-        return window 
+        return window
+
+    def focus(self, window):
+        layouts = self._layouts
+        layouts.remove(window)
+        layouts.insert(0, window)
+
+    def blur(self, window):
+        layouts = self._layouts
+        layouts.remove(window)
+        layouts.append(window)
+
+    def is_active(self, window):
+        layouts = self._layouts
+        if layouts:
+            return layouts[0].id == window.id
+        return False
 
     def destruct_window(self, window):
         widgets = self._widgets

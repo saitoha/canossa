@@ -213,8 +213,9 @@ class Line(SupportsDoubleSizedTrait,
         attr = cursor.attr
         attr.draw(s)
         c = None
-        if left > 0:
-            c = cells[left - 1].get()
+        if left > 0 and left - 1 in cells:
+            cell = cells[left - 1]
+            c = cell.get()
             if c is None:
                 s.write(u'\x08') # BS
                 left -= 1
