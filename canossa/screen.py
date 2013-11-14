@@ -33,6 +33,112 @@ from interface import IScreen
 #
 from cursor import Cursor
 from line import Line
+from mouse import IFocusListener, IMouseListener
+
+
+class IFocusListenerImpl(IFocusListener):
+
+    def __init__(self):
+        pass
+
+    """ IFocusListener implementation """
+    def onfocusin(self):
+        pass
+
+    def onfocusout(self):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            widget.onfocusout()
+
+
+class IMouseListenerImpl(IMouseListener):
+
+    def __init__(self):
+        pass
+
+    """ IMouseListener implementation """
+    def onmousedown(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.onmousedown(context, x, y):
+                return True
+        return False
+
+    def onmouseup(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.onmouseup(context, x, y):
+                return True
+        return False
+
+    def onclick(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.onclick(context, x, y):
+                return True
+        return False
+
+    def ondoubleclick(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.ondoubleclick(context, x, y):
+                return True
+        return False
+
+    def onmousehover(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.onmousehover(context, x, y):
+                return True
+        return False
+
+    """ scroll """
+    def onscrolldown(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.onscrolldown(context, x, y):
+                return True
+        return False
+
+    def onscrollup(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.onscrollup(context, x, y):
+                return True
+        return False
+
+    """ drag and drop """
+    def ondragstart(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.ondragstart(context, x, y):
+                return True
+        return False
+
+    def ondragend(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.ondragend(context, x, y):
+                return True
+        return False
+
+    def ondragmove(self, context, x, y):
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            if widget.ondragmove(context, x, y):
+                return True
+        return False
 
 
 class SupportsDoubleSizedTrait():
@@ -583,8 +689,8 @@ class Window():
 
         screen = self._screen
         screen.copyrect(self,
-			self.left, self.top,
-			self.width, self.height)
+                        self.left, self.top,
+                        self.width, self.height)
         self.left = 0
         self.top = 0
         self.width = 0
@@ -594,8 +700,20 @@ class Window():
         self._buffer.write(s)
 
     def draw(self, context):
-        context.puts(self._buffer.getvalue())
-        self._buffer.truncate(0)
+        buffer = self._buffer
+        s = self._buffer.getvalue()
+        if s:
+            context.puts(s)
+            buffer.truncate(0)
+
+    def focus(self):
+        self._screen.focus(self)
+
+    def blur(self):
+        self._screen.blur(self)
+
+    def is_active(self):
+        self._screen.is_active(self)
 
     def close(self):
         self._screen.destruct_window(self)
@@ -631,9 +749,11 @@ class Region():
             dirtyrange = line.add(left, left + width)
             result[index] = dirtyrange
         return result
-        
+
 
 class Screen(IScreenImpl,
+             IFocusListenerImpl,
+             IMouseListenerImpl,
              MockScreenWithCursor,
              SupportsAnsiModeTrait,
              SupportsExtendedModeTrait,
@@ -670,7 +790,7 @@ class Screen(IScreenImpl,
         self._setup_tab()
         self._setup_charset()
 
-        self._widgets = {} 
+        self._widgets = {}
         self._layouts = []
         self._trash = []
 
@@ -678,7 +798,23 @@ class Screen(IScreenImpl,
         window = Window(self)
         self._widgets[window.id] = widget
         self._layouts.insert(0, window)
-        return window 
+        return window
+
+    def focus(self, window):
+        layouts = self._layouts
+        layouts.remove(window)
+        layouts.insert(0, window)
+
+    def blur(self, window):
+        layouts = self._layouts
+        layouts.remove(window)
+        layouts.append(window)
+
+    def is_active(self, window):
+        layouts = self._layouts
+        if layouts:
+            return layouts[0].id == window.id
+        return False
 
     def destruct_window(self, window):
         widgets = self._widgets
