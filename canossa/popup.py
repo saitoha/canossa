@@ -118,6 +118,8 @@ class IListboxImpl(IListbox):
         self._scrollpos = 0
 
     def notifyselection(self):
+        if self._index == -1:
+            return
         value = self._list[self._index]
 
         pos = value.find(u";")
@@ -235,20 +237,20 @@ class IListboxImpl(IListbox):
                         n += length
                         if length == 2 and n == dirty_left + 1:
                             s.write(u' ')
-                    for char_pos in xrange(n, left + width):
-                        if char_pos > screen.width - 1:
+                    for char_pos in xrange(n, left + width - 1):
+                        if char_pos >= screen.width:
                             break
                         if char_pos < dirty_left:
                             continue
-                        if char_pos == dirty_right:
+                        if char_pos == dirty_right - 1:
                             break
                         s.write(u' ')
                     else:
                         if scrollbar_info:
-                            if n > screen.width - 1:
-                                break
-                            if n > dirty_left:
-                                break
+                            if n >= screen.width:
+                                continue
+                            if n >= dirty_left + width - 1:
+                                continue
                             if i >= start_pos and i < end_pos:
                                 s.write(style_slider)
                             else:
