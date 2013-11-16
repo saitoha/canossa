@@ -474,7 +474,7 @@ class IScreenImpl(IScreen):
                 s.write("\x1b[%d;%dH" % (desty - srcy + i + 1, destx + 1))
                 line.drawrange(s, srcx, srcx + width, cursor)
 
-        self.cursor.attr.draw(s)
+        self._region.sub(srcx, srcy, width, height)
 
     def getyx(self):
         cursor = self.cursor
@@ -497,7 +497,8 @@ class IScreenImpl(IScreen):
         for window in self._trash:
             window.dealloc()
             window.draw(context)
-        region = Region()
+        region = self._region
+        region.reset()
         widgets = self._widgets
         for window in self._layouts:
             widget = widgets[window.id]
@@ -760,6 +761,11 @@ class Ranges():
         ranges.update(newrange)
         return dirtyrange
 
+    def sub(self, start, end):
+        ranges = self._ranges
+        newrange = set(xrange(start, end))
+        ranges.difference_update(newrange)
+
 
 class Region():
 
@@ -778,6 +784,16 @@ class Region():
             dirtyrange = line.add(left, left + width)
             result[index] = dirtyrange
         return result
+
+    def sub(self, left, top, width, height):
+        lines = self._lines
+        for index in xrange(top, top + height):
+            if index in lines:
+                line = lines[index]
+                dirtyrange = line.sub(left, left + width)
+
+    def reset(self):
+        self._lines = {}
 
 
 class Screen(IScreenImpl,
@@ -822,6 +838,8 @@ class Screen(IScreenImpl,
         self._widgets = {}
         self._layouts = []
         self._trash = []
+
+        self._region = Region()
 
     def create_window(self, widget):
         window = Window(self)
