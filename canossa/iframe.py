@@ -707,7 +707,7 @@ class InnerFrame(tff.DefaultHandler,
             self.moveto(row, col)
 
     def close(self):
-        self._session.destruct_subprocess()
+        self._session.destruct_subprocess(self._tty.fileno())
 
 
 def test():
