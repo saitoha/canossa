@@ -228,7 +228,9 @@ class IListboxImpl(IListbox):
                     continue
                 if top + i >= screen.height:
                     break
+
                 dirtyrange = dirtyregion[top + i]
+
                 if dirtyrange:
 
                     dirty_left = min(dirtyrange)
@@ -239,6 +241,11 @@ class IListboxImpl(IListbox):
                     if dirty_right > screen.width:
                         dirty_right = screen.width
 
+                    if dirty_left > dirty_right:
+                        continue
+
+                    dirtyrange.difference_update(xrange(left, left + width))
+
                     self.moveto(top + 1 + i, dirty_left + 1)
 
                     if i == display.pos: # selected line
@@ -248,6 +255,7 @@ class IListboxImpl(IListbox):
 
                     wcwidth = self._termprop.wcwidth
                     n = left
+
                     for c in value:
                         length = wcwidth(ord(c))
                         if n + length > dirty_right:
@@ -258,6 +266,7 @@ class IListboxImpl(IListbox):
                         if length == 2 and n == dirty_left + 1:
                             window.write(u' ')
                             n += 1
+
                     while True:
                         if n >= dirty_right:
                             break
