@@ -67,15 +67,10 @@ class IFocusListenerImpl(IFocusListener):
 
     """ IFocusListener implementation """
     def onfocusin(self):
-        #self._session.focus_subprocess()
-        #self._window.focus()
         self._titlestyle = _TITLESTYLE_ACTIVE
 
     def onfocusout(self):
-        #self._session.blur_subprocess()
-        #self._window.blur()
         self._titlestyle = _TITLESTYLE_INACTIVE
-        #self.close()
 
 
 class IMouseListenerImpl(IMouseListener):
@@ -94,11 +89,13 @@ class IMouseListenerImpl(IMouseListener):
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
             self._window.blur()
-            self._session.blur_subprocess()
+            self._session.blur_subprocess(self._tty)
             return False
         if not self._window.is_active():
             self._window.focus()
-            self._session.focus_subprocess()
+            self._session.focus_subprocess(self._tty)
+            self._titlestyle = _TITLESTYLE_ACTIVE
+            return True
         if hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
             y -= self.top + self.offset_top
@@ -241,9 +238,9 @@ class IMouseListenerImpl(IMouseListener):
         hittest = self._lasthittest
         if hittest == _HITTEST_NONE:
             return False
-        if not self._window.is_active():
-            return True
         if self._dragtype == _DRAGTYPE_NONE:
+            return True
+        if not self._window.is_active():
             return True
         self.left += self.offset_left
         self.top += self.offset_top
@@ -259,11 +256,11 @@ class IMouseListenerImpl(IMouseListener):
         hittest = self._lasthittest
         if hittest == _HITTEST_NONE:
             return False
-        if not self._window.is_active():
-            return True
         if self._dragtype == _DRAGTYPE_NONE:
             return False
-        elif self._dragtype == _DRAGTYPE_TITLEBAR:
+        if not self._window.is_active():
+            return True
+        if self._dragtype == _DRAGTYPE_TITLEBAR:
 
             assert self._dragpos
 
@@ -316,7 +313,7 @@ class IMouseListenerImpl(IMouseListener):
             col = max(x - left, 8)
 
             screen.resize(row, col)
-            self._session.subtty.resize(row, col)
+            self._tty.resize(row, col)
 
             left -= 1
             top -= 1
@@ -336,7 +333,7 @@ class IMouseListenerImpl(IMouseListener):
             col = self.left + screen.width - left + 1
 
             screen.resize(row, col)
-            self._session.subtty.resize(row, col)
+            self._tty.resize(row, col)
 
             left -= 2
             top -= 1
@@ -358,7 +355,7 @@ class IMouseListenerImpl(IMouseListener):
             col = screen.width
 
             screen.resize(row, col)
-            self._session.subtty.resize(row, col)
+            self._tty.resize(row, col)
 
             left -= 1
             top -= 1
@@ -378,7 +375,7 @@ class IMouseListenerImpl(IMouseListener):
             col = self.left + screen.width - left + 1
 
             screen.resize(row, col)
-            self._session.subtty.resize(row, col)
+            self._tty.resize(row, col)
 
             left -= 2
             top -= 1
@@ -401,7 +398,7 @@ class IMouseListenerImpl(IMouseListener):
             col = max(x - left, 8)
 
             screen.resize(row, col)
-            self._session.subtty.resize(row, col)
+            self._tty.resize(row, col)
 
             left -= 1
             top -= 1
@@ -502,9 +499,9 @@ class InnerFrame(tff.DefaultHandler,
         self._listener = listener
         self._inputhandler = inputhandler
 
-        session.add_subtty('xterm', 'ja_JP.UTF-8',
-                           command, row, col, termenc,
-                           self, canossa, self)
+        self._tty = session.add_subtty('xterm', 'ja_JP.UTF-8',
+                                       command, row, col, termenc,
+                                       self, canossa, self)
         self._title = command
 
     """ tff.EventObserver override """
