@@ -21,8 +21,11 @@ test:
 	$(PYTHON) setup.py test
 
 update: clean test
+	$(PYTHON) -c "import setuptools" || curl http://peak.telecommunity.com/dist/ez_setup.py | python
 	$(PYTHON) setup.py register
 	$(PYTHON) setup.py sdist upload
+	python2.6 -c "import setuptools" || curl http://peak.telecommunity.com/dist/ez_setup.py | python2.6
 	python2.6 setup.py bdist_egg upload
+	python2.7 -c "import setuptools" || curl http://peak.telecommunity.com/dist/ez_setup.py | python2.7
 	python2.7 setup.py bdist_egg upload
 
