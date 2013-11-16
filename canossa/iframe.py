@@ -207,6 +207,9 @@ class IMouseListenerImpl(IMouseListener):
         elif hittest == _HITTEST_FRAME_LEFT:
             self._dragtype = _DRAGTYPE_LEFT
             self._titlestyle = _TITLESTYLE_DRAG
+        elif hittest == _HITTEST_FRAME_RIGHT:
+            self._dragtype = _DRAGTYPE_RIGHT
+            self._titlestyle = _TITLESTYLE_DRAG
         return True
 
     def ondragend(self, s, x, y):
@@ -348,6 +351,27 @@ class IMouseListenerImpl(IMouseListener):
             height = row + 2
 
             self.left = left + 1
+
+            window.realloc(left, top, width, height)
+
+
+        elif self._dragtype == _DRAGTYPE_RIGHT:
+
+            screen = self.innerscreen
+            window = self._window
+
+            left = self.left
+            top = self.top
+            row = screen.height
+            col = max(x - left, 8)
+
+            screen.resize(row, col)
+            self._session.subtty.resize(row, col)
+
+            left -= 1
+            top -= 1
+            width = col + 2
+            height = row + 2
 
             window.realloc(left, top, width, height)
 
@@ -580,7 +604,13 @@ class InnerFrame(tff.DefaultHandler,
                             if col <= dirty_right and col < outerscreen.width:
                                 row = top + index
                                 self.moveto(row + 1, col + 1)
+
+                                if self._titlestyle == _TITLESTYLE_HOVER:
+                                    window.write('\x1b[43m')
+                                elif self._dragtype == _DRAGTYPE_RIGHT:
+                                    window.write('\x1b[41m')
                                 window.write('|')
+                                window.write('\x1b[m')
 
             # フレーム下部の描画
             if top + height < outerscreen.height:
