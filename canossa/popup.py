@@ -244,7 +244,7 @@ class IListboxImpl(IListbox):
                     if dirty_left > dirty_right:
                         continue
 
-                    dirtyrange.difference_update(xrange(left, left + width))
+#                    dirtyrange.difference_update(xrange(left, left + width))
 
                     self.moveto(top + 1 + i, dirty_left + 1)
 

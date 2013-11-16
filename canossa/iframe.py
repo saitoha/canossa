@@ -36,6 +36,7 @@ _HITTEST_FRAME_TOPLEFT     = 7
 _HITTEST_FRAME_TOPRIGHT    = 8
 _HITTEST_FRAME_BOTTOMLEFT  = 9
 _HITTEST_FRAME_BOTTOMRIGHT = 10
+_HITTEST_BUTTON_CLOSE      = 11
 
 _TITLESTYLE_INACTIVE       = '\x1b[30;47m'
 _TITLESTYLE_ACTIVE         = '\x1b[30;42m'
@@ -273,6 +274,30 @@ class IMouseListenerImpl(IMouseListener):
             self.height = height
 
             window.realloc(left, top, width, height)
+
+        elif self._dragtype == _DRAGTYPE_BOTTOMLEFT:
+
+            screen = self.innerscreen
+            window = self._window
+
+            left = min(max(x, 0), self.left + screen.width - 10)
+            top = self.top
+            row = max(y - top, 5)
+            col = self.left + screen.width - left + 1
+
+            screen.resize(row, col)
+            self._session.subtty.resize(row, col)
+
+            left -= 2
+            top -= 1
+            width = col + 2
+            height = row + 2
+
+            self.left = left + 1
+            self.width = width
+            self.height = height
+
+            window.realloc(left, top, width, height)
         else:
             hittest = self._hittest(x, y)
             self._lasthittest = hittest
@@ -283,8 +308,8 @@ class IMouseListenerImpl(IMouseListener):
                 y -= self.top + self.offset_top
                 x += 33
                 y += 33
-#                if x < 0x80 and y < 0x80:
-#                    context.puts("\x1b[M%c%c%c" % (32 + 32, x, y))
+                if x < 0x80 and y < 0x80:
+                    context.puts("\x1b[M%c%c%c" % (32 + 32, x, y))
         return True
 
     def _get_left(self):
@@ -509,14 +534,17 @@ class InnerFrame(tff.DefaultHandler,
                         dirty_right = outerscreen.width
 
                     window.write('\x1b[m')
+                    self.moveto(top + height + 1, dirty_left + 1)
 
                     n = left - 1
                     if n >= 0 and n >= dirty_left:
-                        self.moveto(top + height + 1, dirty_left + 1)
-                        window.write('+')
+                        if self._titlestyle == _TITLESTYLE_HOVER:
+                            window.write('\x1b[43m+\x1b[m')
+                        elif self._dragtype == _DRAGTYPE_BOTTOMLEFT:
+                            window.write('\x1b[41m+\x1b[m')
+                        else:
+                            window.write('+')
                         n += 1
-                    else:
-                        self.moveto(top + height + 1, dirty_left)
 
                     while True:
                         if n >= dirty_right - 1:
@@ -530,7 +558,7 @@ class InnerFrame(tff.DefaultHandler,
                         if n >= outerscreen.width:
                             break
                         n += 1
-                        if n < dirty_left:
+                        if n < dirty_left + 1:
                             continue
                         window.write('-')
 
