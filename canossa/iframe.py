@@ -384,9 +384,9 @@ class InnerFrame(tff.DefaultHandler,
         if row >= self._outerscreen.height + 1:
             raise Exception("range error row=%s" % row)
         if row < 1:
-            raise Exception("range error")
+            raise Exception("range error row=%s" % row)
         if col < 1:
-            raise Exception("range error")
+            raise Exception("range error col=%s" % col)
         self._window.write('\x1b[%d;%dH' % (row, col))
 
     """ IWidget override """
@@ -409,9 +409,9 @@ class InnerFrame(tff.DefaultHandler,
             if title_length < width - 10:
                 pad_left = (width - title_length) / 2
                 pad_right = width - title_length - pad_left
-                title = ' ' * pad_left + self._title + ' ' * (pad_right - 2) + u'凶'
+                title = ' ' * pad_left + self._title + ' ' * (pad_right - 2) + u' x'
             elif width > 10:
-                title = '  ' + self._title[0:width - 2 - 8] + u'...   凶'
+                title = '  ' + self._title[0:width - 2 - 8] + u'...    x'
             else:
                 title = ' ' * width
 
@@ -440,11 +440,13 @@ class InnerFrame(tff.DefaultHandler,
                         dirtyrange = dirtyregion[top + index]
                         if dirtyrange:
                             dirty_left = max(min(dirtyrange), 0)
-                            if dirty_left == left - 1:
+                            if dirty_left < left:
                                 dirty_left = left
-                            dirty_right = min(max(dirtyrange) + 1, outerscreen.width)
+                            dirty_right = min(max(dirtyrange), outerscreen.width)
+                            if dirty_right >= left + width:
+                                dirty_right = left + width
                             dirty_width = dirty_right - dirty_left
-                            if left - 1 >= dirty_left - 1:
+                            if left > 0 and left >= dirty_left:
                                 row = top + index + 1
                                 col = left
                                 self.moveto(row, col)
@@ -460,14 +462,24 @@ class InnerFrame(tff.DefaultHandler,
             if top + height < outerscreen.height:
                 if top + index >= 0:
                     dirtyrange = dirtyregion[top + height]
-                    dirty_left = max(max(min(dirtyrange), left - 1), 0)
-                    dirty_right = min(min(max(dirtyrange) + 1, left + width + 1), outerscreen.width)
+                    dirty_left = min(dirtyrange)
+                    if dirty_left < left - 1:
+                        dirty_left = left - 1
+                    if dirty_left < 0:
+                        dirty_left = 0
+                    dirty_right = max(dirtyrange) + 1
+                    if dirty_right > left + width + 1:
+                        dirty_right = left + width + 1
+                    if dirty_right > outerscreen.width:
+                        dirty_right = outerscreen.width
                     window.write('\x1b[m')
-                    window.write('\x1b[%d;%dH' % (top + height + 1, left))
-                    if left >= dirty_left:
+                    self.moveto(top + height + 1, dirty_left + 1)
+                    if left >= 0 and left >= dirty_left:
                         window.write('+')
                     for i in xrange(dirty_left, left + width - 3):
-                        if i >= dirty_right:
+                        if i <= 0:
+                            continue
+                        if i >= dirty_right + 1:
                             break
                         if i >= outerscreen.width:
                             break
@@ -479,11 +491,23 @@ class InnerFrame(tff.DefaultHandler,
                             window.write('\x1b[41m')
                         window.write('+')
 
+            window.write('\x1b[?25h')
             cursor = screen.cursor
-            cursor.draw(window)
 
-            window.write('\x1b[?25h'
-                         '\x1b[%d;%dH' % (cursor.row + top + 1, cursor.col + left + 1))
+            row = cursor.row + top + 1
+            if row < 1:
+                return
+            elif row > outerscreen.width:
+                return
+
+            col = cursor.col + left + 1
+            if col < 1:
+                return
+            elif col > outerscreen.height:
+                return
+
+            #cursor.draw(window)
+            self.moveto(row, col)
 
     def close(self):
         self._session.destruct_subprocess()

@@ -104,7 +104,8 @@ class SupportsWideTrait():
     ''' provides pad method. it makes the cell at specified position contain '\0'. '''
 
     def pad(self, pos):
-        self.cells[pos].pad()
+        cell = self.cells[pos]
+        cell.pad()
 
 class SupportsCombiningTrait():
     ''' provides combine method. it combines specified character to the cell at specified position. '''
@@ -213,12 +214,12 @@ class Line(SupportsDoubleSizedTrait,
         attr = cursor.attr
         attr.draw(s)
         c = None
-        if left > 0 and left - 1 in cells:
+        if left > 0:
             cell = cells[left - 1]
             c = cell.get()
             if c is None:
-                s.write(u'\x08') # BS
-                left -= 1
+                s.write(' ')
+                left += 1
         for cell in cells[left:right]:
             c = cell.get()
             if not c is None:
@@ -227,14 +228,16 @@ class Line(SupportsDoubleSizedTrait,
                     attr.copyfrom(cell.attr)
                 s.write(c)
         if c is None:
-            for cell in cells[right:]:
-                c = cell.get()
-                if not c is None:
-                    if not attr.equals(cell.attr):
-                        cell.attr.draw(s, attr)
-                        attr.copyfrom(cell.attr)
-                    s.write(c)
-                    break
+            s.write(' ')
+#        if c is None:
+#            for cell in cells[right:]:
+#                c = cell.get()
+#                if not c is None:
+#                    if not attr.equals(cell.attr):
+#                        cell.attr.draw(s, attr)
+#                        attr.copyfrom(cell.attr)
+#                    s.write(c)
+#                    break
 
     def drawall(self, s, cursor):
         self.dirty = False
