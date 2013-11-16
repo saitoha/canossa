@@ -714,9 +714,12 @@ class Window():
         self._show = False
 
         screen = self._screen
-        screen.copyrect(self,
-                        self.left, self.top,
-                        self.width, self.height)
+        left = max(self.left, 0)
+        top = max(self.top, 0)
+        width = min(self.width, screen.width - left)
+        height = min(self.height, screen.height - top)
+        screen.copyrect(self, left, top, width, height)
+
         self.left = 0
         self.top = 0
         self.width = 0

@@ -406,21 +406,35 @@ class InnerFrame(tff.DefaultHandler,
             termprop = self._termprop
             title_length = termprop.wcswidth(self._title)
             width = screen.width + 2
-            if title_length < width - 10:
+            if title_length < width - 11:
                 pad_left = (width - title_length) / 2
                 pad_right = width - title_length - pad_left
-                title = ' ' * pad_left + self._title + ' ' * (pad_right - 2) + u' x'
+                title = ' ' * pad_left + self._title + ' ' * (pad_right - 3) + u'|x|'
             elif width > 10:
-                title = '  ' + self._title[0:width - 2 - 8] + u'...    x'
+                title = '  ' + self._title[0:width - 2 - 9] + u'...   |x|'
             else:
                 title = ' ' * width
 
             window.write('\x1b[?25l')
             window.write(self._titlestyle)
             dirtyrange = dirtyregion[top - 1]
-            dirty_left = max(max(min(dirtyrange), left - 1), 0)
-            dirty_right = min(min(max(dirtyrange) + 1, left + width + 1), outerscreen.width)
+            if not dirtyrange:
+                return
+
+            dirty_left = min(dirtyrange)
+            if dirty_left < left - 1:
+                dirty_left = left - 1
+            if dirty_left < 0:
+                dirty_left = 0
+
+            dirty_right = max(dirtyrange) + 1
+            if dirty_right > left + width + 1:
+                dirty_right = left + width + 1
+            if dirty_right > outerscreen.width:
+                dirty_right = outerscreen.width
+
             n = left - 1
+
             for c in title:
                 length = termprop.wcwidth(c)
                 if n >= dirty_right:
@@ -428,7 +442,10 @@ class InnerFrame(tff.DefaultHandler,
                 if n == dirty_left:
                     self.moveto(top, n + 1)
                 if n >= dirty_left:
-                    window.write(c)
+                    if n in dirtyrange:
+                        window.write(c)
+                    else:
+                        window.write("\x1b[C")
                 n += length
 
             window.write('\x1b[m')
@@ -453,12 +470,15 @@ class InnerFrame(tff.DefaultHandler,
                                 window.write('|')
                             screen.copyrect(window, dirty_left - left, index, dirty_width, 1,
                                             dirty_left, top + index, lazy=True)
-                            if left + screen.width < outerscreen.width - 1:
-                                row = top + index + 1
-                                col = left + screen.width + 1
-                                self.moveto(row, col)
+
+                            # フレーム右辺の描画
+                            col = left + screen.width
+                            if col <= dirty_right:
+                                row = top + index
+                                self.moveto(row + 1, col + 1)
                                 window.write('|')
 
+            # フレーム下部の描画
             if top + height < outerscreen.height:
                 if top + index >= 0:
                     dirtyrange = dirtyregion[top + height]
