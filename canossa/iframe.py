@@ -51,6 +51,15 @@ _DRAGTYPE_BOTTOM           = 4
 _DRAGTYPE_LEFT             = 5
 _DRAGTYPE_RIGHT            = 6
 
+_HOVERTYPE_NONE            = 0
+_HOVERTYPE_TITLEBAR        = 1
+_HOVERTYPE_BOTTOMRIGHT     = 2
+_HOVERTYPE_BOTTOMLEFT      = 3
+_HOVERTYPE_BOTTOM          = 4
+_HOVERTYPE_LEFT            = 5
+_HOVERTYPE_RIGHT           = 6
+
+
 class IFocusListenerImpl(IFocusListener):
 
     def __init__(self):
@@ -74,6 +83,7 @@ class IMouseListenerImpl(IMouseListener):
     def __init__(self):
         self._lasthittest = None
         self._dragtype = _DRAGTYPE_NONE
+        self._hovertype = _HOVERTYPE_NONE
         self._dragpos = None
         self._titlestyle = _TITLESTYLE_INACTIVE
 
@@ -130,6 +140,7 @@ class IMouseListenerImpl(IMouseListener):
         hittest = self._hittest(x, y)
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
+            self._hovertype = _HOVERTYPE_NONE
             return False
         elif hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
@@ -139,20 +150,28 @@ class IMouseListenerImpl(IMouseListener):
             #if x < 0x80 and y < 0x80:
             #    context.puts(u"\x1b[M%c%c%c" % (32 + 32, x, y))
             self._titlestyle = _TITLESTYLE_ACTIVE
+            self._hovertype = _HOVERTYPE_NONE
         elif hittest == _HITTEST_TITLEBAR:
             self._titlestyle = _TITLESTYLE_HOVER
+            self._hovertype = _HOVERTYPE_TITLEBAR
         elif hittest == _HITTEST_FRAME_BOTTOMLEFT:
             self._titlestyle = _TITLESTYLE_HOVER
+            self._hovertype = _HOVERTYPE_BOTTOMLEFT
         elif hittest == _HITTEST_FRAME_BOTTOMRIGHT:
             self._titlestyle = _TITLESTYLE_HOVER
+            self._hovertype = _HOVERTYPE_BOTTOMRIGHT
         elif hittest == _HITTEST_FRAME_BOTTOM:
             self._titlestyle = _TITLESTYLE_HOVER
+            self._hovertype = _HOVERTYPE_BOTTOM
         elif hittest == _HITTEST_FRAME_LEFT:
             self._titlestyle = _TITLESTYLE_HOVER
+            self._hovertype = _HOVERTYPE_LEFT
         elif hittest == _HITTEST_FRAME_RIGHT:
             self._titlestyle = _TITLESTYLE_HOVER
+            self._hovertype = _HOVERTYPE_RIGHT
         else:
             self._titlestyle = _TITLESTYLE_ACTIVE
+            self._hovertype = _HOVERTYPE_NONE
         return True
 
     """ scroll """
@@ -588,10 +607,10 @@ class InnerFrame(tff.DefaultHandler,
                                 col = left
                                 self.moveto(row, col)
 
-                                if self._titlestyle == _TITLESTYLE_HOVER:
-                                    window.write('\x1b[43m')
-                                elif self._dragtype == _DRAGTYPE_LEFT:
+                                if self._dragtype == _DRAGTYPE_LEFT:
                                     window.write('\x1b[41m')
+                                elif self._hovertype == _HOVERTYPE_LEFT:
+                                    window.write('\x1b[43m')
                                 window.write('|')
                                 window.write('\x1b[m')
 
@@ -605,10 +624,10 @@ class InnerFrame(tff.DefaultHandler,
                                 row = top + index
                                 self.moveto(row + 1, col + 1)
 
-                                if self._titlestyle == _TITLESTYLE_HOVER:
-                                    window.write('\x1b[43m')
-                                elif self._dragtype == _DRAGTYPE_RIGHT:
+                                if self._dragtype == _DRAGTYPE_RIGHT:
                                     window.write('\x1b[41m')
+                                elif self._hovertype == _HOVERTYPE_RIGHT:
+                                    window.write('\x1b[43m')
                                 window.write('|')
                                 window.write('\x1b[m')
 
@@ -634,28 +653,28 @@ class InnerFrame(tff.DefaultHandler,
 
                     n = left - 1
                     if n >= 0 and n >= dirty_left:
-                        if self._titlestyle == _TITLESTYLE_HOVER:
-                            window.write('\x1b[43m')
-                        elif self._dragtype == _DRAGTYPE_BOTTOMLEFT:
+                        if self._dragtype == _DRAGTYPE_BOTTOMLEFT:
                             window.write('\x1b[41m')
+                        elif self._hovertype == _HOVERTYPE_BOTTOMLEFT:
+                            window.write('\x1b[43m')
                         else:
                             window.write('\x1b[m')
                         window.write('+')
                         n += 1
 
-                    if self._titlestyle == _TITLESTYLE_HOVER:
-                        window.write('\x1b[43m')
-                    elif self._dragtype == _DRAGTYPE_BOTTOM:
+                    if self._dragtype == _DRAGTYPE_BOTTOM:
                         window.write('\x1b[41m')
+                    elif self._hovertype == _HOVERTYPE_BOTTOM:
+                        window.write('\x1b[43m')
                     else:
                         window.write('\x1b[m')
                     while True:
                         if n >= dirty_right - 1:
                             if n == left + screen.width:
-                                if self._titlestyle == _TITLESTYLE_HOVER:
-                                    window.write('\x1b[43m')
-                                elif self._dragtype == _DRAGTYPE_BOTTOMRIGHT:
+                                if self._dragtype == _DRAGTYPE_BOTTOMRIGHT:
                                     window.write('\x1b[41m')
+                                elif self._hovertype == _HOVERTYPE_BOTTOMRIGHT:
+                                    window.write('\x1b[43m')
                                 else:
                                     window.write('\x1b[m')
                                 window.write('+')
