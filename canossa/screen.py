@@ -405,12 +405,18 @@ class IScreenImpl(IScreen):
         if not lazy or line.dirty:
             cursor = Cursor(0, 0)
             cursor.attr.draw(s)
-            if y > self.height - 1:
-                y = self.height - 1
+            if x + length > self.width:
+                raise CanossaRangeException("x + length = %d" % (x + length))
+            elif x < 0:
+                raise CanossaRangeException("x = %d" % x)
+            if y >= self.height:
+                raise CanossaRangeException("y = %d" % y)
             elif y < 0:
-                y = 0
+                raise CanossaRangeException("y = %d" % y)
+
             assert self.height == len(self.lines)
             assert y < self.height
+
             while True:
                 s.write("\x1b[%d;%dH" % (y + 1, x + 1))
                 line = self.lines[y]
@@ -445,10 +451,18 @@ class IScreenImpl(IScreen):
         #    srcx = 0
         #if srcy < 0:
         #    srcy = 0
-        #if srcx < 0 or srcy < 0 or height < 0 or width < 0:
-        #    template = "invalid rect is detected. (%d, %d, %d, %d)"
-        #    message = template % (srcx, srcy, width, height)
-        #    raise CanossaRangeException(message)
+        if srcx < 0 or srcy < 0 or height < 0 or width < 0:
+            template = "invalid rect is detected. (%d, %d, %d, %d)"
+            message = template % (srcx, srcy, width, height)
+            raise CanossaRangeException(message)
+        if srcx + width > self.width:
+            raise CanossaRangeException("srcx + width = %d; self.width = %d" % (srcx + width, self.width))
+        elif srcx < 0:
+            raise CanossaRangeException("srcx = %d" % x)
+        if srcy + height > self.height:
+            raise CanossaRangeException("srcy + height = %d; self.height = %d" % (srcy + height, self.height))
+        elif srcy < 0:
+            raise CanossaRangeException("srcy = %d" % y)
 
         cursor = Cursor(0, 0, self.cursor.attr)
         cursor.attr.draw(s)
@@ -669,26 +683,26 @@ class Window():
             x = max(self.left, 0)
             y = max(self.top, 0)
             w = left - self.left
-            h = self.height
+            h = min(self.height, screen.height - y)
             screen.copyrect(self, x, y, w, h)
         if self.left + self.width > left + width:
             if screen.width > left + width:
                 x = left + width
                 y = max(self.top, 0)
-                w = (self.left + self.width) - (left + width)
-                h = self.height
+                w = min((self.left + self.width) - (left + width), screen.width - x)
+                h = min(self.height, screen.height - y)
                 screen.copyrect(self, x, y, w, h)
         if self.top + self.height > top + height:
             if screen.height > top + height:
                 x = max(self.left, 0)
                 y = top + height
-                w = self.width
-                h = self.top + self.height - (top + height)
+                w = min(self.width, screen.width - x)
+                h = min(self.top + self.height - (top + height), screen.height - y)
                 screen.copyrect(self, x, y, w, h)
         if self.top < top:
             x = max(self.left, 0)
             y = max(self.top, 0)
-            w = self.width
+            w = min(self.width, screen.width - x)
             h = top - self.top
             screen.copyrect(self, x, y, w, h)
         self.left = left
