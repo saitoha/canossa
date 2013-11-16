@@ -743,7 +743,7 @@ class Window():
         self._screen.blur(self)
 
     def is_active(self):
-        self._screen.is_active(self)
+        return self._screen.is_active(self)
 
     def close(self):
         self._screen.destruct_window(self)
@@ -860,7 +860,7 @@ class Screen(IScreenImpl,
     def is_active(self, window):
         layouts = self._layouts
         if layouts:
-            return layouts[0].id == window.id
+            return layouts[0] == window
         return False
 
     def destruct_window(self, window):
