@@ -67,15 +67,10 @@ class IFocusListenerImpl(IFocusListener):
 
     """ IFocusListener implementation """
     def onfocusin(self):
-        #self._session.focus_subprocess()
-        #self._window.focus()
         self._titlestyle = _TITLESTYLE_ACTIVE
 
     def onfocusout(self):
-        #self._session.blur_subprocess()
-        #self._window.blur()
         self._titlestyle = _TITLESTYLE_INACTIVE
-        #self.close()
 
 
 class IMouseListenerImpl(IMouseListener):
@@ -94,11 +89,13 @@ class IMouseListenerImpl(IMouseListener):
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
             self._window.blur()
-            self._session.blur_subprocess()
+            self._session.blur_subprocess(self._tty)
             return False
         if not self._window.is_active():
             self._window.focus()
-            self._session.focus_subprocess()
+            self._session.focus_subprocess(self._tty)
+            self._titlestyle = _TITLESTYLE_ACTIVE
+            return True
         if hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
             y -= self.top + self.offset_top
@@ -241,9 +238,9 @@ class IMouseListenerImpl(IMouseListener):
         hittest = self._lasthittest
         if hittest == _HITTEST_NONE:
             return False
-        if not self._window.is_active():
-            return True
         if self._dragtype == _DRAGTYPE_NONE:
+            return True
+        if not self._window.is_active():
             return True
         self.left += self.offset_left
         self.top += self.offset_top
@@ -259,13 +256,11 @@ class IMouseListenerImpl(IMouseListener):
         hittest = self._lasthittest
         if hittest == _HITTEST_NONE:
             return False
-        if not self._window.is_active():
-            return True
         if self._dragtype == _DRAGTYPE_NONE:
             return False
-        elif self._dragtype == _DRAGTYPE_TITLEBAR:
-
-            assert self._dragpos
+        if not self._window.is_active():
+            return True
+        if self._dragtype == _DRAGTYPE_TITLEBAR:
 
             origin_x, origin_y = self._dragpos
             offset_x = x - origin_x
@@ -276,15 +271,6 @@ class IMouseListenerImpl(IMouseListener):
 
             width = innerscreen.width + 2
             height = innerscreen.height + 2
-
-#            if self.left + offset_x - 1 < 0:
-#                offset_x = 1 - self.left
-#            elif self.left + width + offset_x - 1 > screen.width:
-#                offset_x = screen.width - self.left - width + 1
-#            if self.top + offset_y - 1 < 0:
-#                offset_y = 1 - self.top
-#            elif self.top + height + offset_y - 1 > screen.height:
-#                offset_y = screen.height - self.top - height + 1
 
             if self.left + width + offset_x < 1:
                 offset_x = 1 - self.left - width
@@ -316,7 +302,7 @@ class IMouseListenerImpl(IMouseListener):
             col = max(x - left, 8)
 
             screen.resize(row, col)
-            self._session.subtty.resize(row, col)
+            self._tty.resize(row, col)
 
             left -= 1
             top -= 1
@@ -336,7 +322,7 @@ class IMouseListenerImpl(IMouseListener):
             col = self.left + screen.width - left + 1
 
             screen.resize(row, col)
-            self._session.subtty.resize(row, col)
+            self._tty.resize(row, col)
 
             left -= 2
             top -= 1
@@ -358,7 +344,7 @@ class IMouseListenerImpl(IMouseListener):
             col = screen.width
 
             screen.resize(row, col)
-            self._session.subtty.resize(row, col)
+            self._tty.resize(row, col)
 
             left -= 1
             top -= 1
@@ -378,7 +364,7 @@ class IMouseListenerImpl(IMouseListener):
             col = self.left + screen.width - left + 1
 
             screen.resize(row, col)
-            self._session.subtty.resize(row, col)
+            self._tty.resize(row, col)
 
             left -= 2
             top -= 1
@@ -401,7 +387,7 @@ class IMouseListenerImpl(IMouseListener):
             col = max(x - left, 8)
 
             screen.resize(row, col)
-            self._session.subtty.resize(row, col)
+            self._tty.resize(row, col)
 
             left -= 1
             top -= 1
@@ -502,9 +488,9 @@ class InnerFrame(tff.DefaultHandler,
         self._listener = listener
         self._inputhandler = inputhandler
 
-        session.add_subtty('xterm', 'ja_JP.UTF-8',
-                           command, row, col, termenc,
-                           self, canossa, self)
+        self._tty = session.add_subtty('xterm', 'ja_JP.UTF-8',
+                                       command, row, col, termenc,
+                                       self, canossa, self)
         self._title = command
 
     """ tff.EventObserver override """
