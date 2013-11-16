@@ -409,11 +409,11 @@ class InnerFrame(tff.DefaultHandler,
             if title_length < width - 11:
                 pad_left = (width - title_length) / 2
                 pad_right = width - title_length - pad_left
-                title = ' ' * pad_left + self._title + ' ' * (pad_right - 3) + u'|x|'
+                title = ' ' * pad_left + self._title + ' ' * (pad_right - 3) + u'[x]'
             elif width > 10:
-                title = '  ' + self._title[0:width - 2 - 9] + u'...   |x|'
+                title = '  ' + self._title[0:width - 2 - 9] + u'...   [x]'
             else:
-                title = ' ' * width
+                title = ' ' * (width - 3) + '[x]'
 
             window.write('\x1b[?25l')
             window.write(self._titlestyle)
@@ -428,8 +428,8 @@ class InnerFrame(tff.DefaultHandler,
                 dirty_left = 0
 
             dirty_right = max(dirtyrange) + 1
-            if dirty_right > left + width + 1:
-                dirty_right = left + width + 1
+            if dirty_right > left + screen.width + 1:
+                dirty_right = left + screen.width + 1
             if dirty_right > outerscreen.width:
                 dirty_right = outerscreen.width
 
@@ -437,6 +437,8 @@ class InnerFrame(tff.DefaultHandler,
 
             for c in title:
                 length = termprop.wcwidth(c)
+                if n >= outerscreen.width:
+                    break
                 if n >= dirty_right:
                     break
                 if n == dirty_left:
@@ -456,24 +458,35 @@ class InnerFrame(tff.DefaultHandler,
                     if top + index >= 0:
                         dirtyrange = dirtyregion[top + index]
                         if dirtyrange:
-                            dirty_left = max(min(dirtyrange), 0)
+
+                            dirty_left = min(dirtyrange)
+                            if dirty_left < 0:
+                                dirty_left = 0
                             if dirty_left < left:
                                 dirty_left = left
-                            dirty_right = min(max(dirtyrange), outerscreen.width)
-                            if dirty_right >= left + width:
-                                dirty_right = left + width
+
+                            dirty_right = max(dirtyrange)
+                            if dirty_right > outerscreen.width:
+                                dirty_right = outerscreen.width
+                            if dirty_right > left + screen.width + 1:
+                                dirty_right = left + screen.width + 1
+
                             dirty_width = dirty_right - dirty_left
+
+                            # フレーム左辺の描画
                             if left > 0 and left >= dirty_left:
                                 row = top + index + 1
                                 col = left
                                 self.moveto(row, col)
                                 window.write('|')
+
+                            # フレーム内容の描画
                             screen.copyrect(window, dirty_left - left, index, dirty_width, 1,
                                             dirty_left, top + index, lazy=True)
 
                             # フレーム右辺の描画
                             col = left + screen.width
-                            if col <= dirty_right:
+                            if col <= dirty_right and col < outerscreen.width:
                                 row = top + index
                                 self.moveto(row + 1, col + 1)
                                 window.write('|')
@@ -482,34 +495,44 @@ class InnerFrame(tff.DefaultHandler,
             if top + height < outerscreen.height:
                 if top + index >= 0:
                     dirtyrange = dirtyregion[top + height]
+
                     dirty_left = min(dirtyrange)
                     if dirty_left < left - 1:
                         dirty_left = left - 1
                     if dirty_left < 0:
                         dirty_left = 0
+
                     dirty_right = max(dirtyrange) + 1
-                    if dirty_right > left + width + 1:
-                        dirty_right = left + width + 1
+                    if dirty_right > left + screen.width + 1:
+                        dirty_right = left + screen.width + 1
                     if dirty_right > outerscreen.width:
                         dirty_right = outerscreen.width
+
                     window.write('\x1b[m')
-                    self.moveto(top + height + 1, dirty_left + 1)
-                    if left >= 0 and left >= dirty_left:
+
+                    n = left - 1
+                    if n >= 0 and n >= dirty_left:
+                        self.moveto(top + height + 1, dirty_left + 1)
                         window.write('+')
-                    for i in xrange(dirty_left, left + width - 3):
-                        if i <= 0:
-                            continue
-                        if i >= dirty_right + 1:
-                            break
-                        if i >= outerscreen.width:
-                            break
-                        window.write('-')
+                        n += 1
                     else:
-                        if self._titlestyle == _TITLESTYLE_HOVER:
-                            window.write('\x1b[43m')
-                        elif self._dragtype == _DRAGTYPE_BOTTOMRIGHT:
-                            window.write('\x1b[41m')
-                        window.write('+')
+                        self.moveto(top + height + 1, dirty_left)
+
+                    while True:
+                        if n >= dirty_right - 1:
+                            if n == left + screen.width:
+                                if self._titlestyle == _TITLESTYLE_HOVER:
+                                    window.write('\x1b[43m')
+                                elif self._dragtype == _DRAGTYPE_BOTTOMRIGHT:
+                                    window.write('\x1b[41m')
+                                window.write('+')
+                            break
+                        if n >= outerscreen.width:
+                            break
+                        n += 1
+                        if n < dirty_left:
+                            continue
+                        window.write('-')
 
             window.write('\x1b[?25h')
             cursor = screen.cursor
