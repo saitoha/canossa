@@ -47,6 +47,9 @@ _DRAGTYPE_NONE             = 0
 _DRAGTYPE_TITLEBAR         = 1
 _DRAGTYPE_BOTTOMRIGHT      = 2
 _DRAGTYPE_BOTTOMLEFT       = 3
+_DRAGTYPE_BOTTOM           = 4
+_DRAGTYPE_LEFT             = 5
+_DRAGTYPE_RIGHT            = 6
 
 class IFocusListenerImpl(IFocusListener):
 
@@ -142,6 +145,8 @@ class IMouseListenerImpl(IMouseListener):
             self._titlestyle = _TITLESTYLE_HOVER
         elif hittest == _HITTEST_FRAME_BOTTOMRIGHT:
             self._titlestyle = _TITLESTYLE_HOVER
+        elif hittest == _HITTEST_FRAME_BOTTOM:
+            self._titlestyle = _TITLESTYLE_HOVER
         else:
             self._titlestyle = _TITLESTYLE_ACTIVE
         return True
@@ -191,6 +196,9 @@ class IMouseListenerImpl(IMouseListener):
             self._titlestyle = _TITLESTYLE_DRAG
         elif hittest == _HITTEST_FRAME_BOTTOMRIGHT:
             self._dragtype = _DRAGTYPE_BOTTOMRIGHT
+            self._titlestyle = _TITLESTYLE_DRAG
+        elif hittest == _HITTEST_FRAME_BOTTOM:
+            self._dragtype = _DRAGTYPE_BOTTOM
             self._titlestyle = _TITLESTYLE_DRAG
         return True
 
@@ -270,9 +278,6 @@ class IMouseListenerImpl(IMouseListener):
             width = col + 2
             height = row + 2
 
-            self.width = width
-            self.height = height
-
             window.realloc(left, top, width, height)
 
         elif self._dragtype == _DRAGTYPE_BOTTOMLEFT:
@@ -294,10 +299,29 @@ class IMouseListenerImpl(IMouseListener):
             height = row + 2
 
             self.left = left + 1
-            self.width = width
-            self.height = height
 
             window.realloc(left, top, width, height)
+
+        elif self._dragtype == _DRAGTYPE_BOTTOM:
+
+            screen = self.innerscreen
+            window = self._window
+
+            left = self.left
+            top = self.top
+            row = max(y - top, 5)
+            col = screen.width
+
+            screen.resize(row, col)
+            self._session.subtty.resize(row, col)
+
+            left -= 1
+            top -= 1
+            width = col + 2
+            height = row + 2
+
+            window.realloc(left, top, width, height)
+
         else:
             hittest = self._hittest(x, y)
             self._lasthittest = hittest
@@ -346,6 +370,8 @@ class IMouseListenerImpl(IMouseListener):
                 return _HITTEST_FRAME_BOTTOMLEFT
             elif x == right - 1:
                 return _HITTEST_FRAME_BOTTOMRIGHT
+            else:
+                return _HITTEST_FRAME_BOTTOM
         return _HITTEST_CLIENTAREA
 
 
@@ -539,13 +565,20 @@ class InnerFrame(tff.DefaultHandler,
                     n = left - 1
                     if n >= 0 and n >= dirty_left:
                         if self._titlestyle == _TITLESTYLE_HOVER:
-                            window.write('\x1b[43m+\x1b[m')
+                            window.write('\x1b[43m')
                         elif self._dragtype == _DRAGTYPE_BOTTOMLEFT:
-                            window.write('\x1b[41m+\x1b[m')
+                            window.write('\x1b[41m')
                         else:
-                            window.write('+')
+                            window.write('\x1b[m')
+                        window.write('+')
                         n += 1
 
+                    if self._titlestyle == _TITLESTYLE_HOVER:
+                        window.write('\x1b[43m')
+                    elif self._dragtype == _DRAGTYPE_BOTTOM:
+                        window.write('\x1b[41m')
+                    else:
+                        window.write('\x1b[m')
                     while True:
                         if n >= dirty_right - 1:
                             if n == left + screen.width:
@@ -553,6 +586,8 @@ class InnerFrame(tff.DefaultHandler,
                                     window.write('\x1b[43m')
                                 elif self._dragtype == _DRAGTYPE_BOTTOMRIGHT:
                                     window.write('\x1b[41m')
+                                else:
+                                    window.write('\x1b[m')
                                 window.write('+')
                             break
                         if n >= outerscreen.width:
