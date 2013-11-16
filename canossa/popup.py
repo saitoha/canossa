@@ -282,6 +282,13 @@ class IListboxImpl(IListbox):
         self._x = x
         self._y = y
 
+    def is_moved(self):
+        if self._offset_left == 0:
+            return True
+        if self._offset_top == 0:
+            return True
+        return False
+
     def _getdisplayinfo(self):
         width = 0
         candidates = self._list
