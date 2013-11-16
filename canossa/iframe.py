@@ -36,16 +36,29 @@ _HITTEST_FRAME_TOPLEFT     = 7
 _HITTEST_FRAME_TOPRIGHT    = 8
 _HITTEST_FRAME_BOTTOMLEFT  = 9
 _HITTEST_FRAME_BOTTOMRIGHT = 10
+_HITTEST_BUTTON_CLOSE      = 11
 
-_TITLESTYLE_INACTIVE       = "\x1b[30;47m"
-_TITLESTYLE_ACTIVE         = "\x1b[30;42m"
-_TITLESTYLE_HOVER          = "\x1b[30;46m"
-_TITLESTYLE_DRAG           = "\x1b[30;43m"
+_TITLESTYLE_INACTIVE       = '\x1b[30;47m'
+_TITLESTYLE_ACTIVE         = '\x1b[30;42m'
+_TITLESTYLE_HOVER          = '\x1b[30;46m'
+_TITLESTYLE_DRAG           = '\x1b[30;43m'
 
 _DRAGTYPE_NONE             = 0
 _DRAGTYPE_TITLEBAR         = 1
 _DRAGTYPE_BOTTOMRIGHT      = 2
 _DRAGTYPE_BOTTOMLEFT       = 3
+_DRAGTYPE_BOTTOM           = 4
+_DRAGTYPE_LEFT             = 5
+_DRAGTYPE_RIGHT            = 6
+
+_HOVERTYPE_NONE            = 0
+_HOVERTYPE_TITLEBAR        = 1
+_HOVERTYPE_BOTTOMRIGHT     = 2
+_HOVERTYPE_BOTTOMLEFT      = 3
+_HOVERTYPE_BOTTOM          = 4
+_HOVERTYPE_LEFT            = 5
+_HOVERTYPE_RIGHT           = 6
+
 
 class IFocusListenerImpl(IFocusListener):
 
@@ -70,6 +83,7 @@ class IMouseListenerImpl(IMouseListener):
     def __init__(self):
         self._lasthittest = None
         self._dragtype = _DRAGTYPE_NONE
+        self._hovertype = _HOVERTYPE_NONE
         self._dragpos = None
         self._titlestyle = _TITLESTYLE_INACTIVE
 
@@ -92,7 +106,7 @@ class IMouseListenerImpl(IMouseListener):
             x += 33
             y += 33
             if x < 0x80 and y < 0x80:
-                context.puts(u"\x1b[M%c%c%c" % (0 + 32, x, y))
+                context.puts(u'\x1b[M%c%c%c' % (0 + 32, x, y))
         return True
 
     def onmouseup(self, context, x, y):
@@ -106,7 +120,7 @@ class IMouseListenerImpl(IMouseListener):
             x += 33
             y += 33
             if x < 0x80 and y < 0x80:
-                context.puts(u"\x1b[M%c%c%c" % (3 + 32, x, y))
+                context.puts(u'\x1b[M%c%c%c' % (3 + 32, x, y))
         return True
 
     def onclick(self, context, x, y):
@@ -126,6 +140,7 @@ class IMouseListenerImpl(IMouseListener):
         hittest = self._hittest(x, y)
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
+            self._hovertype = _HOVERTYPE_NONE
             return False
         elif hittest == _HITTEST_CLIENTAREA:
             x -= self.left + self.offset_left
@@ -135,14 +150,28 @@ class IMouseListenerImpl(IMouseListener):
             #if x < 0x80 and y < 0x80:
             #    context.puts(u"\x1b[M%c%c%c" % (32 + 32, x, y))
             self._titlestyle = _TITLESTYLE_ACTIVE
+            self._hovertype = _HOVERTYPE_NONE
         elif hittest == _HITTEST_TITLEBAR:
             self._titlestyle = _TITLESTYLE_HOVER
+            self._hovertype = _HOVERTYPE_TITLEBAR
         elif hittest == _HITTEST_FRAME_BOTTOMLEFT:
             self._titlestyle = _TITLESTYLE_HOVER
+            self._hovertype = _HOVERTYPE_BOTTOMLEFT
         elif hittest == _HITTEST_FRAME_BOTTOMRIGHT:
             self._titlestyle = _TITLESTYLE_HOVER
+            self._hovertype = _HOVERTYPE_BOTTOMRIGHT
+        elif hittest == _HITTEST_FRAME_BOTTOM:
+            self._titlestyle = _TITLESTYLE_HOVER
+            self._hovertype = _HOVERTYPE_BOTTOM
+        elif hittest == _HITTEST_FRAME_LEFT:
+            self._titlestyle = _TITLESTYLE_HOVER
+            self._hovertype = _HOVERTYPE_LEFT
+        elif hittest == _HITTEST_FRAME_RIGHT:
+            self._titlestyle = _TITLESTYLE_HOVER
+            self._hovertype = _HOVERTYPE_RIGHT
         else:
             self._titlestyle = _TITLESTYLE_ACTIVE
+            self._hovertype = _HOVERTYPE_NONE
         return True
 
     """ scroll """
@@ -157,7 +186,7 @@ class IMouseListenerImpl(IMouseListener):
             x += 33
             y += 33
             if x < 0x80 and y < 0x80:
-                context.puts(u"\x1b[M%c%c%c" % (64 + 32, x, y))
+                context.puts(u'\x1b[M%c%c%c' % (64 + 32, x, y))
         return True
 
     def onscrollup(self, context, x, y):
@@ -171,7 +200,7 @@ class IMouseListenerImpl(IMouseListener):
             x += 33
             y += 33
             if x < 0x80 and y < 0x80:
-                context.puts(u"\x1b[M%c%c%c" % (65 + 32, x, y))
+                context.puts(u'\x1b[M%c%c%c' % (65 + 32, x, y))
         return True
 
     """ drag and drop """
@@ -190,6 +219,15 @@ class IMouseListenerImpl(IMouseListener):
             self._titlestyle = _TITLESTYLE_DRAG
         elif hittest == _HITTEST_FRAME_BOTTOMRIGHT:
             self._dragtype = _DRAGTYPE_BOTTOMRIGHT
+            self._titlestyle = _TITLESTYLE_DRAG
+        elif hittest == _HITTEST_FRAME_BOTTOM:
+            self._dragtype = _DRAGTYPE_BOTTOM
+            self._titlestyle = _TITLESTYLE_DRAG
+        elif hittest == _HITTEST_FRAME_LEFT:
+            self._dragtype = _DRAGTYPE_LEFT
+            self._titlestyle = _TITLESTYLE_DRAG
+        elif hittest == _HITTEST_FRAME_RIGHT:
+            self._dragtype = _DRAGTYPE_RIGHT
             self._titlestyle = _TITLESTYLE_DRAG
         return True
 
@@ -223,14 +261,23 @@ class IMouseListenerImpl(IMouseListener):
             width = innerscreen.width + 2
             height = innerscreen.height + 2
 
-            if self.left + offset_x - 1 < 0:
-                offset_x = 1 - self.left
-            elif self.left + width + offset_x - 1 > screen.width:
-                offset_x = screen.width - self.left - width + 1
-            if self.top + offset_y - 1 < 0:
-                offset_y = 1 - self.top
-            elif self.top + height + offset_y - 1 > screen.height:
-                offset_y = screen.height - self.top - height + 1
+#            if self.left + offset_x - 1 < 0:
+#                offset_x = 1 - self.left
+#            elif self.left + width + offset_x - 1 > screen.width:
+#                offset_x = screen.width - self.left - width + 1
+#            if self.top + offset_y - 1 < 0:
+#                offset_y = 1 - self.top
+#            elif self.top + height + offset_y - 1 > screen.height:
+#                offset_y = screen.height - self.top - height + 1
+
+            if self.left + width + offset_x < 1:
+                offset_x = 1 - self.left - width
+            elif self.left + offset_x > screen.width - 1:
+                offset_x = screen.width - self.left - 1
+            if self.top + height + offset_y < 1:
+                offset_y = 1 - self.top - height
+            elif self.top + offset_y > screen.height - 1:
+                offset_y = screen.height - self.top - 1
 
             self.offset_left = offset_x
             self.offset_top = offset_y
@@ -260,10 +307,94 @@ class IMouseListenerImpl(IMouseListener):
             width = col + 2
             height = row + 2
 
-            self.width = width
-            self.height = height
+            window.realloc(left, top, width, height)
+
+        elif self._dragtype == _DRAGTYPE_BOTTOMLEFT:
+
+            screen = self.innerscreen
+            window = self._window
+
+            left = min(max(x, 0), self.left + screen.width - 10)
+            top = self.top
+            row = max(y - top, 5)
+            col = self.left + screen.width - left + 1
+
+            screen.resize(row, col)
+            self._session.subtty.resize(row, col)
+
+            left -= 2
+            top -= 1
+            width = col + 2
+            height = row + 2
+
+            self.left = left + 1
 
             window.realloc(left, top, width, height)
+
+        elif self._dragtype == _DRAGTYPE_BOTTOM:
+
+            screen = self.innerscreen
+            window = self._window
+
+            left = self.left
+            top = self.top
+            row = max(y - top, 5)
+            col = screen.width
+
+            screen.resize(row, col)
+            self._session.subtty.resize(row, col)
+
+            left -= 1
+            top -= 1
+            width = col + 2
+            height = row + 2
+
+            window.realloc(left, top, width, height)
+
+        elif self._dragtype == _DRAGTYPE_LEFT:
+
+            screen = self.innerscreen
+            window = self._window
+
+            left = min(max(x, 0), self.left + screen.width - 10)
+            top = self.top
+            row = screen.height
+            col = self.left + screen.width - left + 1
+
+            screen.resize(row, col)
+            self._session.subtty.resize(row, col)
+
+            left -= 2
+            top -= 1
+            width = col + 2
+            height = row + 2
+
+            self.left = left + 1
+
+            window.realloc(left, top, width, height)
+
+
+        elif self._dragtype == _DRAGTYPE_RIGHT:
+
+            screen = self.innerscreen
+            window = self._window
+
+            left = self.left
+            top = self.top
+            row = screen.height
+            col = max(x - left, 8)
+
+            screen.resize(row, col)
+            self._session.subtty.resize(row, col)
+
+            left -= 1
+            top -= 1
+            width = col + 2
+            height = row + 2
+
+            window.realloc(left, top, width, height)
+
+
         else:
             hittest = self._hittest(x, y)
             self._lasthittest = hittest
@@ -274,8 +405,8 @@ class IMouseListenerImpl(IMouseListener):
                 y -= self.top + self.offset_top
                 x += 33
                 y += 33
-#                if x < 0x80 and y < 0x80:
-#                    context.puts("\x1b[M%c%c%c" % (32 + 32, x, y))
+                if x < 0x80 and y < 0x80:
+                    context.puts("\x1b[M%c%c%c" % (32 + 32, x, y))
         return True
 
     def _get_left(self):
@@ -312,6 +443,12 @@ class IMouseListenerImpl(IMouseListener):
                 return _HITTEST_FRAME_BOTTOMLEFT
             elif x == right - 1:
                 return _HITTEST_FRAME_BOTTOMRIGHT
+            else:
+                return _HITTEST_FRAME_BOTTOM
+        elif x == left:
+            return _HITTEST_FRAME_LEFT
+        elif x == right - 1:
+            return _HITTEST_FRAME_RIGHT
         return _HITTEST_CLIENTAREA
 
 
@@ -349,7 +486,7 @@ class InnerFrame(tff.DefaultHandler,
         self._listener = listener
         self._inputhandler = inputhandler
 
-        session.add_subtty("xterm", "ja_JP.UTF-8",
+        session.add_subtty('xterm', 'ja_JP.UTF-8',
                            command, row, col, termenc,
                            self, canossa, self)
         self._title = command
@@ -369,11 +506,23 @@ class InnerFrame(tff.DefaultHandler,
             return True
         return False
 
+    def moveto(self, row, col):
+        if col >= self._outerscreen.width + 1:
+            raise Exception("range error col=%s" % col)
+        if row >= self._outerscreen.height + 1:
+            raise Exception("range error row=%s" % row)
+        if row < 1:
+            raise Exception("range error row=%s" % row)
+        if col < 1:
+            raise Exception("range error col=%s" % col)
+        self._window.write('\x1b[%d;%dH' % (row, col))
+
     """ IWidget override """
     def draw(self, region):
         if self.enabled:
             window = self._window
             screen = self.innerscreen
+            outerscreen = self._outerscreen
             left = self.left + self.offset_left
             top = self.top + self.offset_top
             width = screen.width
@@ -381,51 +530,179 @@ class InnerFrame(tff.DefaultHandler,
 
             dirtyregion = region.add(left - 1, top - 1, width + 2, height + 2)
 
-            title_length = self._termprop.wcswidth(self._title)
+            # タイトルの描画
+            termprop = self._termprop
+            title_length = termprop.wcswidth(self._title)
             width = screen.width + 2
-            if title_length < width:
+            if title_length < width - 11:
                 pad_left = (width - title_length) / 2
                 pad_right = width - title_length - pad_left
-                title = " " * pad_left + self._title + " " * pad_right
-            elif width > 7:
-                title = "  " + self._title[0:width - 2 - 5] + "...  "
+                title = ' ' * pad_left + self._title + ' ' * (pad_right - 3) + u'[x]'
+            elif width > 10:
+                title = '  ' + self._title[0:width - 2 - 9] + u'...   [x]'
             else:
-                title = ' ' * width
+                title = ' ' * (width - 3) + '[x]'
 
-            window.write("\x1b[?25l")
-            window.write("\x1b[%d;%dH" % (top, left))
+            window.write('\x1b[?25l')
             window.write(self._titlestyle)
-            window.write(title)
-            window.write("\x1b[m")
-            window.write("\x1b[%d;%dH" % (top + screen.height + 1, left))
-            window.write("+")
-            window.write("-" * (screen.width))
-            if self._titlestyle == _TITLESTYLE_HOVER:
-                window.write("\x1b[43m")
-            elif self._dragtype == _DRAGTYPE_BOTTOMRIGHT:
-                window.write("\x1b[41m")
-            window.write("+")
-            window.write("\x1b[m")
+            dirtyrange = dirtyregion[top - 1]
+            if not dirtyrange:
+                return
 
+            dirty_left = min(dirtyrange)
+            if dirty_left < left - 1:
+                dirty_left = left - 1
+            if dirty_left < 0:
+                dirty_left = 0
+
+            dirty_right = max(dirtyrange) + 1
+            if dirty_right > left + screen.width + 1:
+                dirty_right = left + screen.width + 1
+            if dirty_right > outerscreen.width:
+                dirty_right = outerscreen.width
+
+            n = left - 1
+
+            for c in title:
+                length = termprop.wcwidth(c)
+                if n >= outerscreen.width:
+                    break
+                if n >= dirty_right:
+                    break
+                if n == dirty_left:
+                    self.moveto(top, n + 1)
+                if n >= dirty_left:
+                    if n in dirtyrange:
+                        window.write(c)
+                    else:
+                        window.write("\x1b[C")
+                n += length
+
+            window.write('\x1b[m')
+
+            # フレーム内容の描画
             for index in xrange(0, height):
-                dirtyrange = dirtyregion[top + index]
-                if dirtyrange:
-                    dirty_left = min(dirtyrange)
-                    if dirty_left == left - 1:
-                        dirty_left = left
-                    dirty_right = max(dirtyrange)
-                    dirty_width = dirty_right - dirty_left
-                    if left - 1 in dirtyrange:
-                        window.write("\x1b[%d;%dH\x1b[m|" % (top + index + 1, left))
-                    screen.copyrect(window, dirty_left - left, index, dirty_width, 1,
-                                    dirty_left, top + index, lazy=True)
-                    if left + screen.width in dirtyrange:
-                        window.write("\x1b[%d;%dH\x1b[m|" % (top + index + 1, left + screen.width + 1))
+                if top + index < outerscreen.height:
+                    if top + index >= 0:
+                        dirtyrange = dirtyregion[top + index]
+                        if dirtyrange:
 
+                            dirty_left = min(dirtyrange)
+                            if dirty_left < 0:
+                                dirty_left = 0
+                            if dirty_left < left:
+                                dirty_left = left
+
+                            dirty_right = max(dirtyrange)
+                            if dirty_right > outerscreen.width:
+                                dirty_right = outerscreen.width
+                            if dirty_right > left + screen.width + 1:
+                                dirty_right = left + screen.width + 1
+
+                            dirty_width = dirty_right - dirty_left
+
+                            # フレーム左辺の描画
+                            if left > 0 and left >= dirty_left:
+                                row = top + index + 1
+                                col = left
+                                self.moveto(row, col)
+
+                                if self._dragtype == _DRAGTYPE_LEFT:
+                                    window.write('\x1b[41m')
+                                elif self._hovertype == _HOVERTYPE_LEFT:
+                                    window.write('\x1b[43m')
+                                window.write('|')
+                                window.write('\x1b[m')
+
+                            # フレーム内容の描画
+                            screen.copyrect(window, dirty_left - left, index, dirty_width, 1,
+                                            dirty_left, top + index, lazy=True)
+
+                            # フレーム右辺の描画
+                            col = left + screen.width
+                            if col <= dirty_right and col < outerscreen.width:
+                                row = top + index
+                                self.moveto(row + 1, col + 1)
+
+                                if self._dragtype == _DRAGTYPE_RIGHT:
+                                    window.write('\x1b[41m')
+                                elif self._hovertype == _HOVERTYPE_RIGHT:
+                                    window.write('\x1b[43m')
+                                window.write('|')
+                                window.write('\x1b[m')
+
+            # フレーム下部の描画
+            if top + height < outerscreen.height:
+                if top + index >= 0:
+                    dirtyrange = dirtyregion[top + height]
+
+                    dirty_left = min(dirtyrange)
+                    if dirty_left < left - 1:
+                        dirty_left = left - 1
+                    if dirty_left < 0:
+                        dirty_left = 0
+
+                    dirty_right = max(dirtyrange) + 1
+                    if dirty_right > left + screen.width + 1:
+                        dirty_right = left + screen.width + 1
+                    if dirty_right > outerscreen.width:
+                        dirty_right = outerscreen.width
+
+                    window.write('\x1b[m')
+                    self.moveto(top + height + 1, dirty_left + 1)
+
+                    n = left - 1
+                    if n >= 0 and n >= dirty_left:
+                        if self._dragtype == _DRAGTYPE_BOTTOMLEFT:
+                            window.write('\x1b[41m')
+                        elif self._hovertype == _HOVERTYPE_BOTTOMLEFT:
+                            window.write('\x1b[43m')
+                        else:
+                            window.write('\x1b[m')
+                        window.write('+')
+                        n += 1
+
+                    if self._dragtype == _DRAGTYPE_BOTTOM:
+                        window.write('\x1b[41m')
+                    elif self._hovertype == _HOVERTYPE_BOTTOM:
+                        window.write('\x1b[43m')
+                    else:
+                        window.write('\x1b[m')
+                    while True:
+                        if n >= dirty_right - 1:
+                            if n == left + screen.width:
+                                if self._dragtype == _DRAGTYPE_BOTTOMRIGHT:
+                                    window.write('\x1b[41m')
+                                elif self._hovertype == _HOVERTYPE_BOTTOMRIGHT:
+                                    window.write('\x1b[43m')
+                                else:
+                                    window.write('\x1b[m')
+                                window.write('+')
+                            break
+                        if n >= outerscreen.width:
+                            break
+                        n += 1
+                        if n < dirty_left + 1:
+                            continue
+                        window.write('-')
+
+            window.write('\x1b[?25h')
             cursor = screen.cursor
-            cursor.draw(window)
-            window.write("\x1b[?25h"
-                         "\x1b[%d;%dH" % (cursor.row + top + 1, cursor.col + left + 1))
+
+            row = cursor.row + top + 1
+            if row < 1:
+                return
+            elif row > outerscreen.width:
+                return
+
+            col = cursor.col + left + 1
+            if col < 1:
+                return
+            elif col > outerscreen.height:
+                return
+
+            #cursor.draw(window)
+            self.moveto(row, col)
 
     def close(self):
         self._session.destruct_subprocess()

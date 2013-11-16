@@ -118,6 +118,8 @@ class IListboxImpl(IListbox):
         self._scrollpos = 0
 
     def notifyselection(self):
+        if self._index == -1:
+            return
         value = self._list[self._index]
 
         pos = value.find(u";")
@@ -169,8 +171,20 @@ class IListboxImpl(IListbox):
             return start_pos, end_pos
         return None
 
+    def moveto(self, row, col):
+        screen = self._screen
+        if col >= screen.width + 1:
+            raise Exception("range error col=%s" % col)
+        if row >= screen.height + 1:
+            raise Exception("range error row=%s" % row)
+        if row < 1:
+            raise Exception("range error row=%s" % row)
+        if col < 1:
+            raise Exception("range error col=%s" % col)
+        self._window.write('\x1b[%d;%dH' % (row, col))
+
     def draw(self, region):
-        s = self._window
+        window = self._window
         if self._list:
             display = self._getdisplayinfo()
             left = display.left
@@ -181,7 +195,7 @@ class IListboxImpl(IListbox):
                 pass
             elif not self._mousemode is None:
                 self._style = self._style_active
-                self._mouse_decoder.initialize_mouse(self._window)
+                self._mouse_decoder.initialize_mouse(window)
 
             self._left = left
             self._top = top
@@ -192,10 +206,10 @@ class IListboxImpl(IListbox):
             top += self._offset_top
 
             if self._show:
-                self._window.realloc(left, top, width, height)
+                window.realloc(left, top, width, height)
             else:
                 self._show = True
-                self._window.alloc(left, top, width, height)
+                window.alloc(left, top, width, height)
 
             dirtyregion = region.add(left, top, width, height)
 
@@ -210,50 +224,64 @@ class IListboxImpl(IListbox):
 
             screen = self._screen
             for i, value in enumerate(display.candidates):
-                dirtyrange = dirtyregion[top + i]
-                if dirtyrange:
-                    dirty_left = max(min(dirtyrange), 0)
-                    dirty_right = min(max(dirtyrange) + 1, screen.width)
+                if top + i < 0:
+                    continue
+                if top + i >= screen.height:
+                    break
 
-                    s.write(u'\x1b[%d;%dH' % (top + 1 + i, dirty_left + 1))
+                dirtyrange = dirtyregion[top + i]
+
+                if dirtyrange:
+
+                    dirty_left = min(dirtyrange)
+                    if dirty_left < 0:
+                        dirty_left = 0
+
+                    dirty_right = max(dirtyrange) + 1
+                    if dirty_right > screen.width:
+                        dirty_right = screen.width
+
+                    if dirty_left > dirty_right:
+                        continue
+
+#                    dirtyrange.difference_update(xrange(left, left + width))
+
+                    self.moveto(top + 1 + i, dirty_left + 1)
 
                     if i == display.pos: # selected line
-                        s.write(style_selected)
+                        window.write(style_selected)
                     else: # unselected lines
-                        s.write(style_unselected)
+                        window.write(style_unselected)
 
                     wcwidth = self._termprop.wcwidth
                     n = left
+
                     for c in value:
                         length = wcwidth(ord(c))
-                        if n + length > screen.width:
-                            break
                         if n + length > dirty_right:
                             break
                         if n >= dirty_left:
-                            s.write(c)
+                            window.write(c)
                         n += length
                         if length == 2 and n == dirty_left + 1:
-                            s.write(u' ')
-                    for char_pos in xrange(n, left + width):
-                        if char_pos > screen.width - 1:
+                            window.write(u' ')
+                            n += 1
+
+                    while True:
+                        if n >= dirty_right:
                             break
-                        if char_pos < dirty_left:
+                        if n >= left + width - 1:
+                            if scrollbar_info:
+                                if i >= start_pos and i < end_pos:
+                                    window.write(style_slider)
+                                else:
+                                    window.write(style_scrollbar)
+                            window.write(u' ')
+                            break
+                        n += 1
+                        if n < dirty_left + 1:
                             continue
-                        if char_pos == dirty_right:
-                            break
-                        s.write(u' ')
-                    else:
-                        if scrollbar_info:
-                            if n > screen.width - 1:
-                                break
-                            if n > dirty_left:
-                                break
-                            if i >= start_pos and i < end_pos:
-                                s.write(style_slider)
-                            else:
-                                s.write(style_scrollbar)
-                            s.write(u' ')
+                        window.write(u' ')
 
             return True
         return False
@@ -279,6 +307,13 @@ class IListboxImpl(IListbox):
     def setposition(self, x, y):
         self._x = x
         self._y = y
+
+    def is_moved(self):
+        if self._offset_left == 0:
+            return True
+        if self._offset_top == 0:
+            return True
+        return False
 
     def _getdisplayinfo(self):
         width = 0
