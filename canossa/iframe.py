@@ -147,6 +147,10 @@ class IMouseListenerImpl(IMouseListener):
             self._titlestyle = _TITLESTYLE_HOVER
         elif hittest == _HITTEST_FRAME_BOTTOM:
             self._titlestyle = _TITLESTYLE_HOVER
+        elif hittest == _HITTEST_FRAME_LEFT:
+            self._titlestyle = _TITLESTYLE_HOVER
+        elif hittest == _HITTEST_FRAME_RIGHT:
+            self._titlestyle = _TITLESTYLE_HOVER
         else:
             self._titlestyle = _TITLESTYLE_ACTIVE
         return True
@@ -199,6 +203,9 @@ class IMouseListenerImpl(IMouseListener):
             self._titlestyle = _TITLESTYLE_DRAG
         elif hittest == _HITTEST_FRAME_BOTTOM:
             self._dragtype = _DRAGTYPE_BOTTOM
+            self._titlestyle = _TITLESTYLE_DRAG
+        elif hittest == _HITTEST_FRAME_LEFT:
+            self._dragtype = _DRAGTYPE_LEFT
             self._titlestyle = _TITLESTYLE_DRAG
         return True
 
@@ -322,6 +329,29 @@ class IMouseListenerImpl(IMouseListener):
 
             window.realloc(left, top, width, height)
 
+        elif self._dragtype == _DRAGTYPE_LEFT:
+
+            screen = self.innerscreen
+            window = self._window
+
+            left = min(max(x, 0), self.left + screen.width - 10)
+            top = self.top
+            row = screen.height
+            col = self.left + screen.width - left + 1
+
+            screen.resize(row, col)
+            self._session.subtty.resize(row, col)
+
+            left -= 2
+            top -= 1
+            width = col + 2
+            height = row + 2
+
+            self.left = left + 1
+
+            window.realloc(left, top, width, height)
+
+
         else:
             hittest = self._hittest(x, y)
             self._lasthittest = hittest
@@ -372,6 +402,10 @@ class IMouseListenerImpl(IMouseListener):
                 return _HITTEST_FRAME_BOTTOMRIGHT
             else:
                 return _HITTEST_FRAME_BOTTOM
+        elif x == left:
+            return _HITTEST_FRAME_LEFT
+        elif x == right - 1:
+            return _HITTEST_FRAME_RIGHT
         return _HITTEST_CLIENTAREA
 
 
@@ -529,7 +563,13 @@ class InnerFrame(tff.DefaultHandler,
                                 row = top + index + 1
                                 col = left
                                 self.moveto(row, col)
+
+                                if self._titlestyle == _TITLESTYLE_HOVER:
+                                    window.write('\x1b[43m')
+                                elif self._dragtype == _DRAGTYPE_LEFT:
+                                    window.write('\x1b[41m')
                                 window.write('|')
+                                window.write('\x1b[m')
 
                             # フレーム内容の描画
                             screen.copyrect(window, dirty_left - left, index, dirty_width, 1,
