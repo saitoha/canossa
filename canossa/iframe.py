@@ -262,8 +262,6 @@ class IMouseListenerImpl(IMouseListener):
             return True
         if self._dragtype == _DRAGTYPE_TITLEBAR:
 
-            assert self._dragpos
-
             origin_x, origin_y = self._dragpos
             offset_x = x - origin_x
             offset_y = y - origin_y
@@ -273,15 +271,6 @@ class IMouseListenerImpl(IMouseListener):
 
             width = innerscreen.width + 2
             height = innerscreen.height + 2
-
-#            if self.left + offset_x - 1 < 0:
-#                offset_x = 1 - self.left
-#            elif self.left + width + offset_x - 1 > screen.width:
-#                offset_x = screen.width - self.left - width + 1
-#            if self.top + offset_y - 1 < 0:
-#                offset_y = 1 - self.top
-#            elif self.top + height + offset_y - 1 > screen.height:
-#                offset_y = screen.height - self.top - height + 1
 
             if self.left + width + offset_x < 1:
                 offset_x = 1 - self.left - width
