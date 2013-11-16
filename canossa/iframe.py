@@ -717,7 +717,7 @@ class InnerFrame(tff.DefaultHandler,
             elif col > outerscreen.height:
                 return
 
-            #cursor.draw(window)
+            cursor.draw(window)
             self.moveto(row, col)
 
     def close(self):
