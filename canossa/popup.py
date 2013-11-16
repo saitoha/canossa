@@ -230,8 +230,14 @@ class IListboxImpl(IListbox):
                     break
                 dirtyrange = dirtyregion[top + i]
                 if dirtyrange:
-                    dirty_left = max(min(dirtyrange), 0)
-                    dirty_right = min(max(dirtyrange) + 1, screen.width)
+
+                    dirty_left = min(dirtyrange)
+                    if dirty_left < 0:
+                        dirty_left = 0
+
+                    dirty_right = max(dirtyrange) + 1
+                    if dirty_right > screen.width:
+                        dirty_right = screen.width
 
                     self.moveto(top + 1 + i, dirty_left + 1)
 
@@ -244,8 +250,6 @@ class IListboxImpl(IListbox):
                     n = left
                     for c in value:
                         length = wcwidth(ord(c))
-                        if n + length > screen.width:
-                            break
                         if n + length > dirty_right:
                             break
                         if n >= dirty_left:
@@ -255,13 +259,9 @@ class IListboxImpl(IListbox):
                             window.write(u' ')
                             n += 1
                     while True:
-                        if n < dirty_left:
-                            continue
-                        if n == screen.width:
+                        if n >= dirty_right:
                             break
-                        if n == dirty_right:
-                            break
-                        if n == left + width - 1:
+                        if n >= left + width - 1:
                             if scrollbar_info:
                                 if i >= start_pos and i < end_pos:
                                     window.write(style_slider)
@@ -270,6 +270,8 @@ class IListboxImpl(IListbox):
                             window.write(u' ')
                             break
                         n += 1
+                        if n < dirty_left + 1:
+                            continue
                         window.write(u' ')
 
             return True
