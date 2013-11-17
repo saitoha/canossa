@@ -58,6 +58,7 @@ _HOVERTYPE_BOTTOMLEFT      = 3
 _HOVERTYPE_BOTTOM          = 4
 _HOVERTYPE_LEFT            = 5
 _HOVERTYPE_RIGHT           = 6
+_HOVERTYPE_BUTTON_CLOSE    = 7
 
 
 class IFocusListenerImpl(IFocusListener):
@@ -126,6 +127,11 @@ class IMouseListenerImpl(IMouseListener):
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
             return False
+        if hittest == _HITTEST_BUTTON_CLOSE:
+            self._window.close()
+            self._listener.onclose(self, context)
+            self.close()
+            return True
         return True
 
     def ondoubleclick(self, context, x, y):
@@ -168,6 +174,9 @@ class IMouseListenerImpl(IMouseListener):
         elif hittest == _HITTEST_FRAME_RIGHT:
             self._titlestyle = _TITLESTYLE_HOVER
             self._hovertype = _HOVERTYPE_RIGHT
+        elif hittest == _HITTEST_BUTTON_CLOSE:
+            self._titlestyle = _TITLESTYLE_HOVER
+            self._hovertype = _HOVERTYPE_BUTTON_CLOSE
         else:
             self._titlestyle = _TITLESTYLE_ACTIVE
             self._hovertype = _HOVERTYPE_NONE
@@ -435,25 +444,26 @@ class IMouseListenerImpl(IMouseListener):
         bottom = self._get_bottom()
         if x < left:
             return _HITTEST_NONE
-        elif x > right - 1:
+        if x > right - 1:
             return _HITTEST_NONE
         if y < top:
             return _HITTEST_NONE
-        elif y > bottom - 1:
+        if y > bottom - 1:
             return _HITTEST_NONE
-        elif y == top:
+        if y == top:
+            if x == right - 2:
+                return _HITTEST_BUTTON_CLOSE
             if x >= left and x <= right:
                 return _HITTEST_TITLEBAR
-        elif y == bottom - 1:
+        if y == bottom - 1:
             if x == left:
                 return _HITTEST_FRAME_BOTTOMLEFT
-            elif x == right - 1:
+            if x == right - 1:
                 return _HITTEST_FRAME_BOTTOMRIGHT
-            else:
-                return _HITTEST_FRAME_BOTTOM
-        elif x == left:
+            return _HITTEST_FRAME_BOTTOM
+        if x == left:
             return _HITTEST_FRAME_LEFT
-        elif x == right - 1:
+        if x == right - 1:
             return _HITTEST_FRAME_RIGHT
         return _HITTEST_CLIENTAREA
 
@@ -543,11 +553,12 @@ class InnerFrame(tff.DefaultHandler,
             if title_length < width - 11:
                 pad_left = (width - title_length) / 2
                 pad_right = width - title_length - pad_left
-                title = ' ' * pad_left + self._title + ' ' * (pad_right - 3) + u'[x]'
+                title = ' ' * pad_left + self._title + ' ' * (pad_right - 3) + '[x]'
             elif width > 10:
                 title = '  ' + self._title[0:width - 2 - 9] + u'...   [x]'
             else:
                 title = ' ' * (width - 3) + '[x]'
+
 
             window.write('\x1b[?25l')
             window.write(self._titlestyle)
@@ -579,6 +590,8 @@ class InnerFrame(tff.DefaultHandler,
                     self.moveto(top, n + 1)
                 if n >= dirty_left:
                     if n in dirtyrange:
+                        if n == left + width - 4 and self._hovertype == _HOVERTYPE_BUTTON_CLOSE:
+                            window.write('\x1b[37m')
                         window.write(c)
                     else:
                         window.write("\x1b[C")
