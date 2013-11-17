@@ -472,7 +472,7 @@ class IScreenImpl(IScreen):
             line = self.lines[i]
             if not lazy or line.dirty:
                 s.write("\x1b[%d;%dH" % (desty - srcy + i + 1, destx + 1))
-                line.drawrange(s, srcx, srcx + width, cursor)
+                line.drawrange(s, srcx, srcx + width, cursor, lazy)
 
         self._region.sub(srcx, srcy, width, height)
 

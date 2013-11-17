@@ -199,7 +199,7 @@ class Line(SupportsDoubleSizedTrait,
             self.dirty = True
         self.cells[pos].write(value, attr)
 
-    def drawrange(self, s, left, right, cursor):
+    def drawrange(self, s, left, right, cursor, lazy=False):
         '''
         >>> line = Line(5)
         >>> import StringIO
@@ -218,8 +218,12 @@ class Line(SupportsDoubleSizedTrait,
             cell = cells[left - 1]
             c = cell.get()
             if c is None:
-                s.write(' ')
-                left += 1
+                if False and lazy:
+                    s.write(' ')
+                    left += 1
+                else:
+                    s.write(u'\x08') # BS
+
         for cell in cells[left:right]:
             c = cell.get()
             if not c is None:
@@ -227,17 +231,17 @@ class Line(SupportsDoubleSizedTrait,
                     cell.attr.draw(s, attr)
                     attr.copyfrom(cell.attr)
                 s.write(c)
-        if c is None:
-            s.write(' ')
-#        if c is None:
-#            for cell in cells[right:]:
-#                c = cell.get()
-#                if not c is None:
-#                    if not attr.equals(cell.attr):
-#                        cell.attr.draw(s, attr)
-#                        attr.copyfrom(cell.attr)
-#                    s.write(c)
-#                    break
+
+        if not lazy:
+            if c is None:
+                for cell in cells[right:]:
+                    c = cell.get()
+                    if not c is None:
+                        if not attr.equals(cell.attr):
+                            cell.attr.draw(s, attr)
+                            attr.copyfrom(cell.attr)
+                        s.write(c)
+                        break
 
     def drawall(self, s, cursor):
         self.dirty = False
