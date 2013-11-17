@@ -202,7 +202,8 @@ class Canossa(tff.DefaultHandler):
 
                 elif final == 0x63: # c DA2
                     ''' DA2 - Secondary Device Attribute '''
-                    return not self.__visibility
+                    #return not self.__visibility
+                    return False
 
                 elif final == 0x64: # d
                     ''' VPA - Vertical Position Absolute '''
