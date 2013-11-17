@@ -120,8 +120,12 @@ class IMouseListenerImpl(IMouseListener):
                     b += 32
                     context.puts(u"\x1b[M%c%c%c" % (unichr(b), unichr(x), unichr(y)))
                 elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
+                    x += 1
+                    y += 1
                     context.puts(u"\x1b[<%d;%d;%dM" % (b, x, y))
                 elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
+                    x += 1
+                    y += 1
                     b += 32
                     context.puts(u"\x1b[%d;%d;%dM" % (b, x, y))
         return True
@@ -154,8 +158,12 @@ class IMouseListenerImpl(IMouseListener):
                     b += 32
                     context.puts(u"\x1b[M%c%c%c" % (unichr(b), unichr(x), unichr(y)))
                 elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
+                    x += 1
+                    y += 1
                     context.puts(u"\x1b[<%d;%d;%dm" % (b, x, y))
                 elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
+                    x += 1
+                    y += 1
                     b += 32
                     context.puts(u"\x1b[%d;%d;%dM" % (b, x, y))
         return True
@@ -201,8 +209,12 @@ class IMouseListenerImpl(IMouseListener):
                         b += 32
                         context.puts(u"\x1b[M%c%c%c" % (unichr(b), unichr(x), unichr(y)))
                     elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
+                        x += 1
+                        y += 1
                         context.puts(u"\x1b[<%d;%d;%dM" % (b, x, y))
                     elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
+                        x += 1
+                        y += 1
                         b += 32
                         context.puts(u"\x1b[%d;%d;%dM" % (b, x, y))
                     self._titlestyle = _TITLESTYLE_ACTIVE
@@ -261,8 +273,12 @@ class IMouseListenerImpl(IMouseListener):
                     b += 32
                     context.puts(u"\x1b[M%c%c%c" % (unichr(b), unichr(x), unichr(y)))
                 elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
+                    x += 1
+                    y += 1
                     context.puts(u"\x1b[<%d;%d;%dM" % (b, x, y))
                 elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
+                    x += 1
+                    y += 1
                     b += 32
                     context.puts(u"\x1b[%d;%d;%dM" % (b, x, y))
         return True
@@ -294,8 +310,12 @@ class IMouseListenerImpl(IMouseListener):
                     b += 32
                     context.puts(u"\x1b[M%c%c%c" % (unichr(b), unichr(x), unichr(y)))
                 elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
+                    x += 1
+                    y += 1
                     context.puts(u"\x1b[<%d;%d;%dM" % (b, x, y))
                 elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
+                    x += 1
+                    y += 1
                     b += 32
                     context.puts(u"\x1b[%d;%d;%dM" % (b, x, y))
         return True
@@ -517,8 +537,12 @@ class IMouseListenerImpl(IMouseListener):
                         b += 32
                         context.puts(u"\x1b[M%c%c%c" % (unichr(b), unichr(x), unichr(y)))
                     elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
+                        x += 1
+                        y += 1
                         context.puts(u"\x1b[<%d;%d;%dM" % (b, x, y))
                     elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
+                        x += 1
+                        y += 1
                         b += 32
                         context.puts(u"\x1b[%d;%d;%dM" % (b, x, y))
         return True
