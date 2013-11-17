@@ -581,7 +581,7 @@ class InnerFrame(tff.DefaultHandler,
             n = left - 1
 
             for c in title:
-                length = termprop.wcwidth(c)
+                length = termprop.wcwidth(ord(c))
                 if n >= outerscreen.width:
                     break
                 if n >= dirty_right:
@@ -594,7 +594,7 @@ class InnerFrame(tff.DefaultHandler,
                             window.write('\x1b[37m')
                         window.write(c)
                     else:
-                        window.write("\x1b[C")
+                        window.write("\x1b[%dC" % length)
                 n += length
 
             window.write('\x1b[m')
