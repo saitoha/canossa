@@ -91,8 +91,8 @@ class IMouseListenerImpl(IMouseListener):
         hittest = self._hittest(x, y)
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
-            self._window.blur()
-            self._session.blur_subprocess(self._tty)
+            #self._window.blur()
+            self._session.blur_subprocess()
             return False
         if not self._window.is_active():
             self._window.focus()
@@ -120,8 +120,12 @@ class IMouseListenerImpl(IMouseListener):
                     b += 32
                     context.puts(u"\x1b[M%c%c%c" % (unichr(b), unichr(x), unichr(y)))
                 elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
+                    x += 1
+                    y += 1
                     context.puts(u"\x1b[<%d;%d;%dM" % (b, x, y))
                 elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
+                    x += 1
+                    y += 1
                     b += 32
                     context.puts(u"\x1b[%d;%d;%dM" % (b, x, y))
         return True
@@ -154,8 +158,12 @@ class IMouseListenerImpl(IMouseListener):
                     b += 32
                     context.puts(u"\x1b[M%c%c%c" % (unichr(b), unichr(x), unichr(y)))
                 elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
+                    x += 1
+                    y += 1
                     context.puts(u"\x1b[<%d;%d;%dm" % (b, x, y))
                 elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
+                    x += 1
+                    y += 1
                     b += 32
                     context.puts(u"\x1b[%d;%d;%dM" % (b, x, y))
         return True
@@ -201,8 +209,12 @@ class IMouseListenerImpl(IMouseListener):
                         b += 32
                         context.puts(u"\x1b[M%c%c%c" % (unichr(b), unichr(x), unichr(y)))
                     elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
+                        x += 1
+                        y += 1
                         context.puts(u"\x1b[<%d;%d;%dM" % (b, x, y))
                     elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
+                        x += 1
+                        y += 1
                         b += 32
                         context.puts(u"\x1b[%d;%d;%dM" % (b, x, y))
                     self._titlestyle = _TITLESTYLE_ACTIVE
@@ -261,8 +273,12 @@ class IMouseListenerImpl(IMouseListener):
                     b += 32
                     context.puts(u"\x1b[M%c%c%c" % (unichr(b), unichr(x), unichr(y)))
                 elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
+                    x += 1
+                    y += 1
                     context.puts(u"\x1b[<%d;%d;%dM" % (b, x, y))
                 elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
+                    x += 1
+                    y += 1
                     b += 32
                     context.puts(u"\x1b[%d;%d;%dM" % (b, x, y))
         return True
@@ -294,8 +310,12 @@ class IMouseListenerImpl(IMouseListener):
                     b += 32
                     context.puts(u"\x1b[M%c%c%c" % (unichr(b), unichr(x), unichr(y)))
                 elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
+                    x += 1
+                    y += 1
                     context.puts(u"\x1b[<%d;%d;%dM" % (b, x, y))
                 elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
+                    x += 1
+                    y += 1
                     b += 32
                     context.puts(u"\x1b[%d;%d;%dM" % (b, x, y))
         return True
@@ -517,8 +537,12 @@ class IMouseListenerImpl(IMouseListener):
                         b += 32
                         context.puts(u"\x1b[M%c%c%c" % (unichr(b), unichr(x), unichr(y)))
                     elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
+                        x += 1
+                        y += 1
                         context.puts(u"\x1b[<%d;%d;%dM" % (b, x, y))
                     elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
+                        x += 1
+                        y += 1
                         b += 32
                         context.puts(u"\x1b[%d;%d;%dM" % (b, x, y))
         return True
@@ -614,7 +638,8 @@ class InnerFrame(tff.DefaultHandler,
     def handle_end(self, context):
         self._window.close()
         self._listener.onclose(self, context)
-        if self._outerscreen.has_windows():
+
+        if not self._outerscreen.has_visible_windows():
             self._mousedecoder.uninitialize_mouse(self._window)
 
     def handle_csi(self, context, parameter, intermediate, final):
@@ -737,6 +762,8 @@ class InnerFrame(tff.DefaultHandler,
                                     window.write('\x1b[41m')
                                 elif self._hovertype == _HOVERTYPE_LEFT:
                                     window.write('\x1b[43m')
+                                else:
+                                    window.write('\x1b[m')
                                 window.write('|')
                                 window.write('\x1b[m')
 
@@ -754,6 +781,8 @@ class InnerFrame(tff.DefaultHandler,
                                     window.write('\x1b[41m')
                                 elif self._hovertype == _HOVERTYPE_RIGHT:
                                     window.write('\x1b[43m')
+                                else:
+                                    window.write('\x1b[m')
                                 window.write('|')
                                 window.write('\x1b[m')
 
@@ -817,13 +846,13 @@ class InnerFrame(tff.DefaultHandler,
             window.write('\x1b[?25h')
             cursor = screen.cursor
 
-            row = cursor.row + top + 1
+            row = cursor.row + top
             if row < 1:
                 return
             elif row > outerscreen.width:
                 return
 
-            col = cursor.col + left + 1
+            col = cursor.col + left
             if col < 1:
                 return
             elif col > outerscreen.width:
@@ -833,15 +862,24 @@ class InnerFrame(tff.DefaultHandler,
             elif row > outerscreen.height:
                 return
 
-            cursor.draw(window)
-            self.moveto(row, col)
+#            cursor.draw(window)
+            self.moveto(row + 1, col + 1)
+
+        #    cursor = screen.cursor
+        #    try:
+        #        screen.cursor = Cursor(/frame.top + iframe.innerscreen.cursor.row,
+        #                               iframe.left + iframe.innerscreen.cursor.col)
+        #        self._inputhandler.handle_draw(context)
+        #    finally:
+        #        # restore cursor
+        #        screen.cursor = cursor
 
     def close(self):
         session = self._session
         fd = self._tty.fileno()
         session.destruct_subprocess(fd)
 
-        if self._outerscreen.has_windows():
+        if not self._outerscreen.has_visible_windows():
             self._mousedecoder.uninitialize_mouse(self._window)
 
 

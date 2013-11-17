@@ -291,9 +291,8 @@ class IListboxImpl(IListbox):
             window.dealloc()
 
             self._show = False
-
             if not self._mousemode is None:
-                if self._screen.has_windows():
+                if not self._screen.has_visible_windows():
                     self._mouse_decoder.uninitialize_mouse(window)
 
         self.reset()

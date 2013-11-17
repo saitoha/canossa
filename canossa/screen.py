@@ -517,6 +517,21 @@ class IScreenImpl(IScreen):
         cursor = self.cursor
         return cursor.row, cursor.col
 
+    def clipdraw(self, context, region):
+        s = self._output
+        cursor = Cursor(0, 0)
+        cursor.attr.draw(s)
+        ranges = region.add(0, 0, self.width, self.height)
+        for i in xrange(0, self.height):
+            s.write("\x1b[%d;1H" % (i + 1))
+            line = self.lines[i]
+            line.clipdraw(s, cursor, ranges[i])
+        self.cursor.draw(s)
+        self.cursor.attr.draw(s)
+        context.puts(s.getvalue())
+        s.truncate(0)
+
+
     def drawall(self, context):
         s = self._output
         cursor = Cursor(0, 0)
@@ -529,21 +544,6 @@ class IScreenImpl(IScreen):
         self.cursor.attr.draw(s)
         context.puts(s.getvalue())
         s.truncate(0)
-
-    def drawwindows(self, context):
-        for window in self._trash:
-            window.dealloc()
-            window.draw(context)
-        region = self._region
-        region.reset()
-        widgets = self._widgets
-        for window in self._layouts:
-            widget = widgets[window.id]
-            widget.draw(region)
-        for window in reversed(self._layouts):
-            widget = widgets[window.id]
-            window.draw(context)
-        self._trash = []
 
     def resize(self, row, col):
         lines = self.lines
@@ -722,27 +722,31 @@ class Window():
             y = max(self.top, 0)
             w = min(left - self.left, screen.width - x)
             h = min(self.height, screen.height - y)
-            screen.copyrect(self, x, y, w, h)
+            self._screen._region.sub(x, y, w, h)
+            #screen.copyrect(self, x, y, w, h)
         if self.left + self.width > left + width:
             if screen.width > left + width:
                 x = left + width
                 y = max(self.top, 0)
                 w = min((self.left + self.width) - (left + width), screen.width - x)
                 h = min(self.height, screen.height - y)
-                screen.copyrect(self, x, y, w, h)
+                self._screen._region.sub(x, y, w, h)
+                #screen.copyrect(self, x, y, w, h)
         if self.top + self.height > top + height:
             if screen.height > top + height:
                 x = max(self.left, 0)
                 y = top + height
                 w = min(self.width, screen.width - x)
                 h = min(self.top + self.height - (top + height), screen.height - y)
-                screen.copyrect(self, x, y, w, h)
+                self._screen._region.sub(x, y, w, h)
+                #screen.copyrect(self, x, y, w, h)
         if self.top < top:
             x = max(self.left, 0)
             y = max(self.top, 0)
             w = min(self.width, screen.width - x)
             h = top - self.top
-            screen.copyrect(self, x, y, w, h)
+            self._screen._region.sub(x, y, w, h)
+            #screen.copyrect(self, x, y, w, h)
         self.left = left
         self.top = top
         self.width = width
@@ -756,7 +760,8 @@ class Window():
         top = max(self.top, 0)
         width = min(self.width, screen.width - left)
         height = min(self.height, screen.height - top)
-        screen.copyrect(self, left, top, width, height)
+        self._screen._region.sub(left, top, width, height)
+        #screen.copyrect(self, left, top, width, height)
 
         self.left = 0
         self.top = 0
@@ -765,6 +770,9 @@ class Window():
 
     def write(self, s):
         self._buffer.write(s)
+
+    def is_shown(self):
+        return self._show
 
     def draw(self, context):
         buffer = self._buffer
@@ -833,9 +841,74 @@ class Region():
         self._lines = {}
 
 
+class IWindowManager():
+    pass
+
+class IWindowManagerImpl(IWindowManager):
+
+    def __init__(self):
+        self._widgets = {}
+        self._layouts = []
+        self._region = Region()
+
+    def create_window(self, widget):
+        window = Window(self)
+        self._widgets[window.id] = widget
+        self._layouts.insert(0, window)
+        return window
+
+    def destruct_window(self, window):
+        widgets = self._widgets
+        layouts = self._layouts
+        if window.id in widgets:
+            del widgets[window.id]
+        if window in layouts:
+            layouts.remove(window)
+
+    def focus(self, window):
+        layouts = self._layouts
+        layouts.remove(window)
+        layouts.insert(0, window)
+
+    def blur(self, window):
+        layouts = self._layouts
+        layouts.remove(window)
+        layouts.append(window)
+
+    def is_active(self, window):
+        layouts = self._layouts
+        if layouts:
+            return layouts[0] == window
+        return False
+
+    def has_visible_windows(self):
+        for window in self._layouts:
+            if window.is_shown():
+                return True
+        return False
+
+    def drawwindows(self, context):
+        region = self._region
+        widgets = self._widgets
+
+        if widgets:
+            for window in self._layouts:
+                widget = widgets[window.id]
+                widget.draw(region)
+
+            for window in reversed(self._layouts):
+                widget = widgets[window.id]
+                if window.is_shown():
+                    window.draw(context)
+                    has_visible_window = True
+
+            self.clipdraw(context, region)
+
+
 class Screen(IScreenImpl,
              IFocusListenerImpl,
              IMouseListenerImpl,
+             IWindowManagerImpl,
              MockScreenWithCursor,
              SupportsAnsiModeTrait,
              SupportsExtendedModeTrait,
@@ -848,9 +921,10 @@ class Screen(IScreenImpl,
     def __init__(self, row=24, col=80, y=0, x=0,
                  termenc="UTF-8", termprop=None):
 
+        IWindowManagerImpl.__init__(self)
+
         self._saved_pos = None
         self._title = u""
-        self._widgets = None
 
         self.height = row
         self.width = col
@@ -871,48 +945,6 @@ class Screen(IScreenImpl,
         self._setup_altbuf()
         self._setup_tab()
         self._setup_charset()
-
-        self._widgets = {}
-        self._layouts = []
-        self._trash = []
-
-        self._region = Region()
-
-    def create_window(self, widget):
-        window = Window(self)
-        self._widgets[window.id] = widget
-        self._layouts.insert(0, window)
-        return window
-
-    def focus(self, window):
-        layouts = self._layouts
-        layouts.remove(window)
-        layouts.insert(0, window)
-
-    def blur(self, window):
-        layouts = self._layouts
-        layouts.remove(window)
-        layouts.append(window)
-
-    def is_active(self, window):
-        layouts = self._layouts
-        if layouts:
-            return layouts[0] == window
-        return False
-
-    def has_windows(self):
-        if self._layouts:
-            return True
-        return False
-
-    def destruct_window(self, window):
-        widgets = self._widgets
-        layouts = self._layouts
-        if window.id in widgets:
-            del widgets[window.id]
-        if window in layouts:
-            layouts.remove(window)
-        self._trash.append(window)
 
     def _wrap(self):
         self.cursor.col = 0

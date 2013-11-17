@@ -243,6 +243,24 @@ class Line(SupportsDoubleSizedTrait,
                         s.write(c)
                         break
 
+    def clipdraw(self, s, cursor, dirty_range):
+        self.dirty = False
+        cells = self.cells
+        s.write(u"\x1b#%d" % self._type)
+        attr = cursor.attr
+        attr.draw(s)
+        c = None
+        for i, cell in enumerate(cells):
+            if i in dirty_range:
+                c = cell.get()
+                if not c is None:
+                    if not attr.equals(cell.attr):
+                        cell.attr.draw(s, attr)
+                        attr.copyfrom(cell.attr)
+                    s.write(c)
+            else:
+                s.write('\x1b[C')
+
     def drawall(self, s, cursor):
         self.dirty = False
         cells = self.cells
@@ -257,15 +275,6 @@ class Line(SupportsDoubleSizedTrait,
                     cell.attr.draw(s, attr)
                     attr.copyfrom(cell.attr)
                 s.write(c)
-        if c is None:
-            for cell in cells[right:]:
-                c = cell.get()
-                if not c is None:
-                    if not attr.equals(cell.attr):
-                        cell.attr.draw(s, attr)
-                        attr.copyfrom(cell.attr)
-                    s.write(c)
-                    break
 
     def __str__(self):
         '''
