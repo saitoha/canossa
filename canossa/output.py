@@ -382,7 +382,7 @@ class Canossa(tff.DefaultHandler):
                 screen.write(c)
                 return not self.__visibility
             elif c == 0x07: # BEL
-                screen.write(c)
+                pass
             elif c == 0x0b: # VT
                 screen.lf()
             elif c == 0x0c: # FF
