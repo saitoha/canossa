@@ -356,6 +356,7 @@ class IMouseListenerImpl(IMouseListener):
         elif self._dragtype == _DRAGTYPE_LEFT:
 
             screen = self.innerscreen
+            outerscreen = self._outerscreen
             window = self._window
 
             left = min(max(x, 0), self.left + screen.width - 10)
@@ -363,13 +364,16 @@ class IMouseListenerImpl(IMouseListener):
             row = screen.height
             col = self.left + screen.width - left + 1
 
-            screen.resize(row, col)
-            self._tty.resize(row, col)
-
             left -= 2
             top -= 1
             width = col + 2
             height = row + 2
+
+            if left > outerscreen.width - 1:
+                return
+
+            screen.resize(row, col)
+            self._tty.resize(row, col)
 
             self.left = left + 1
 
@@ -386,13 +390,13 @@ class IMouseListenerImpl(IMouseListener):
             row = screen.height
             col = max(x - left, 8)
 
-            screen.resize(row, col)
-            self._tty.resize(row, col)
-
             left -= 1
             top -= 1
             width = col + 2
             height = row + 2
+
+            screen.resize(row, col)
+            self._tty.resize(row, col)
 
             window.realloc(left, top, width, height)
 
@@ -602,12 +606,14 @@ class InnerFrame(tff.DefaultHandler,
                                 dirty_right = left + screen.width + 1
 
                             dirty_width = dirty_right - dirty_left
+                            if dirty_width < 0:
+                                continue
 
                             # フレーム左辺の描画
-                            if left > 0 and left >= dirty_left:
-                                row = top + index + 1
-                                col = left
-                                self.moveto(row, col)
+                            if left > 0 and left >= dirty_left and left - 1 < outerscreen.width:
+                                row = top + index
+                                col = left - 1
+                                self.moveto(row + 1, col + 1)
 
                                 if self._dragtype == _DRAGTYPE_LEFT:
                                     window.write('\x1b[41m')
@@ -700,7 +706,11 @@ class InnerFrame(tff.DefaultHandler,
             col = cursor.col + left + 1
             if col < 1:
                 return
-            elif col > outerscreen.height:
+            elif col > outerscreen.width:
+                return
+            if row < 1:
+                return
+            elif row > outerscreen.height:
                 return
 
             cursor.draw(window)

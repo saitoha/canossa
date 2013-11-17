@@ -683,7 +683,7 @@ class Window():
         if self.left < left:
             x = max(self.left, 0)
             y = max(self.top, 0)
-            w = left - self.left
+            w = min(left - self.left, screen.width - x)
             h = min(self.height, screen.height - y)
             screen.copyrect(self, x, y, w, h)
         if self.left + self.width > left + width:
