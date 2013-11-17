@@ -655,57 +655,59 @@ class InnerFrame(tff.DefaultHandler,
             # フレーム下部の描画
             if top + height < outerscreen.height:
                 if top + index >= 0:
+
                     dirtyrange = dirtyregion[top + height]
 
-                    dirty_left = min(dirtyrange)
-                    if dirty_left < left - 1:
-                        dirty_left = left - 1
-                    if dirty_left < 0:
-                        dirty_left = 0
+                    if dirtyrange:
+                        dirty_left = min(dirtyrange)
+                        if dirty_left < left - 1:
+                            dirty_left = left - 1
+                        if dirty_left < 0:
+                            dirty_left = 0
 
-                    dirty_right = max(dirtyrange) + 1
-                    if dirty_right > left + screen.width + 1:
-                        dirty_right = left + screen.width + 1
-                    if dirty_right > outerscreen.width:
-                        dirty_right = outerscreen.width
+                        dirty_right = max(dirtyrange) + 1
+                        if dirty_right > left + screen.width + 1:
+                            dirty_right = left + screen.width + 1
+                        if dirty_right > outerscreen.width:
+                            dirty_right = outerscreen.width
 
-                    window.write('\x1b[m')
-                    self.moveto(top + height + 1, dirty_left + 1)
+                        window.write('\x1b[m')
+                        self.moveto(top + height + 1, dirty_left + 1)
 
-                    n = left - 1
-                    if n >= 0 and n >= dirty_left:
-                        if self._dragtype == _DRAGTYPE_BOTTOMLEFT:
+                        n = left - 1
+                        if n >= 0 and n >= dirty_left:
+                            if self._dragtype == _DRAGTYPE_BOTTOMLEFT:
+                                window.write('\x1b[41m')
+                            elif self._hovertype == _HOVERTYPE_BOTTOMLEFT:
+                                window.write('\x1b[43m')
+                            else:
+                                window.write('\x1b[m')
+                            window.write('+')
+                            n += 1
+
+                        if self._dragtype == _DRAGTYPE_BOTTOM:
                             window.write('\x1b[41m')
-                        elif self._hovertype == _HOVERTYPE_BOTTOMLEFT:
+                        elif self._hovertype == _HOVERTYPE_BOTTOM:
                             window.write('\x1b[43m')
                         else:
                             window.write('\x1b[m')
-                        window.write('+')
-                        n += 1
-
-                    if self._dragtype == _DRAGTYPE_BOTTOM:
-                        window.write('\x1b[41m')
-                    elif self._hovertype == _HOVERTYPE_BOTTOM:
-                        window.write('\x1b[43m')
-                    else:
-                        window.write('\x1b[m')
-                    while True:
-                        if n >= dirty_right - 1:
-                            if n == left + screen.width:
-                                if self._dragtype == _DRAGTYPE_BOTTOMRIGHT:
-                                    window.write('\x1b[41m')
-                                elif self._hovertype == _HOVERTYPE_BOTTOMRIGHT:
-                                    window.write('\x1b[43m')
-                                else:
-                                    window.write('\x1b[m')
-                                window.write('+')
-                            break
-                        if n >= outerscreen.width:
-                            break
-                        n += 1
-                        if n < dirty_left + 1:
-                            continue
-                        window.write('-')
+                        while True:
+                            if n >= dirty_right - 1:
+                                if n == left + screen.width:
+                                    if self._dragtype == _DRAGTYPE_BOTTOMRIGHT:
+                                        window.write('\x1b[41m')
+                                    elif self._hovertype == _HOVERTYPE_BOTTOMRIGHT:
+                                        window.write('\x1b[43m')
+                                    else:
+                                        window.write('\x1b[m')
+                                    window.write('+')
+                                break
+                            if n >= outerscreen.width:
+                                break
+                            n += 1
+                            if n < dirty_left + 1:
+                                continue
+                            window.write('-')
 
             window.write('\x1b[?25h')
             cursor = screen.cursor
