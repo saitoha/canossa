@@ -26,6 +26,7 @@ except ImportError:
 import codecs
 #import logger
 from interface import IScreen
+from constant import *
 
 
 #
@@ -259,7 +260,9 @@ class SupportsExtendedModeTrait():
     decawm = True
     decom = False
     allow_deccolm = False
-    enable_hover_event = False
+
+    mouse_protocol = MOUSE_PROTOCOL_NONE 
+    mouse_encoding = MOUSE_ENCODING_NORMAL 
 
     def decset(self, params):
         for param in params:
@@ -274,17 +277,24 @@ class SupportsExtendedModeTrait():
             elif param == 7:
                 self.decawm = True
             elif param == 9:
-                self.enable_hover_event = False
+                self.mouse_protocol = MOUSE_PROTOCOL_X10
             elif param == 40:
                 self.allow_deccolm = True
             elif param == 1000:
-                self.enable_hover_event = False
+                self.mouse_encoding = MOUSE_ENCODING_NORMAL
+                self.mouse_protocol = MOUSE_PROTOCOL_NORMAL
             elif param == 1001:
-                self.enable_hover_event = False
+                self.mouse_protocol = MOUSE_PROTOCOL_HIGHLIGHT
             elif param == 1002:
-                self.enable_hover_event = True
+                self.mouse_protocol = MOUSE_PROTOCOL_BUTTON_EVENT
             elif param == 1003:
-                self.enable_hover_event = True
+                self.mouse_protocol = MOUSE_PROTOCOL_ANY_EVENT
+            elif param == 1005:
+                self.mouse_encoding = MOUSE_ENCODING_UTF8
+            elif param == 1006:
+                self.mouse_encoding = MOUSE_ENCODING_SGR
+            elif param == 1015:
+                self.mouse_encoding = MOUSE_ENCODING_URXVT
             elif param == 1047:
                 self.switch_altbuf()
                 return True
@@ -310,17 +320,23 @@ class SupportsExtendedModeTrait():
             elif param == 7:
                 self.decawm = False
             elif param == 9:
-                self.enable_hover_event = False
+                self.mouse_protocol = MOUSE_PROTOCOL_NONE
             elif param == 40:
                 self.allow_deccolm = False
             elif param == 1000:
-                self.enable_hover_event = False
+                self.mouse_protocol = MOUSE_PROTOCOL_NONE
             elif param == 1001:
-                self.enable_hover_event = False
+                self.mouse_protocol = MOUSE_PROTOCOL_NONE
             elif param == 1002:
-                self.enable_hover_event = False
+                self.mouse_protocol = MOUSE_PROTOCOL_NONE
             elif param == 1003:
-                self.enable_hover_event = False
+                self.mouse_protocol = MOUSE_PROTOCOL_NONE
+            elif param == 1005:
+                self.mouse_encoding = MOUSE_ENCODING_NORMAL
+            elif param == 1006:
+                self.mouse_encoding = MOUSE_ENCODING_NORMAL
+            elif param == 1015:
+                self.mouse_encoding = MOUSE_ENCODING_NORMAL
             elif param == 1047:
                 self.switch_mainbuf()
                 return True

@@ -21,18 +21,7 @@
 import tff
 import time
 
-_MOUSE_PROTOCOL_X10          = 9
-_MOUSE_PROTOCOL_NORMAL       = 1000
-_MOUSE_PROTOCOL_HIGHLIGHT    = 1001
-_MOUSE_PROTOCOL_BUTTON_EVENT = 1002
-_MOUSE_PROTOCOL_ANY_EVENT    = 1003
-
-_MOUSE_ENCODING_UTF8         = 1005
-_MOUSE_ENCODING_SGR          = 1006
-_MOUSE_ENCODING_URXVT        = 1015
-
-_FOCUS_EVENT_TRACKING        = 1004
-
+from constant import *
 
 _DOUBLE_CLICK_SPAN = 0.2
 
@@ -244,26 +233,26 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
         modes = []
         for param in params:
             if param >= 100:
-                if param == _MOUSE_PROTOCOL_NORMAL:
-                    self.setprotocol(_MOUSE_PROTOCOL_NORMAL)
+                if param == MOUSE_PROTOCOL_NORMAL:
+                    self.setprotocol(MOUSE_PROTOCOL_NORMAL)
                     modes.append(str(param))
-                elif param == _MOUSE_PROTOCOL_HIGHLIGHT:
-                    self.setprotocol(_MOUSE_PROTOCOL_HIGHLIGHT)
+                elif param == MOUSE_PROTOCOL_HIGHLIGHT:
+                    self.setprotocol(MOUSE_PROTOCOL_HIGHLIGHT)
                     modes.append(str(param))
-                elif param == _MOUSE_PROTOCOL_BUTTON_EVENT:
-                    self.setprotocol(_MOUSE_PROTOCOL_BUTTON_EVENT)
+                elif param == MOUSE_PROTOCOL_BUTTON_EVENT:
+                    self.setprotocol(MOUSE_PROTOCOL_BUTTON_EVENT)
                     modes.append(str(param))
-                elif param == _MOUSE_PROTOCOL_ANY_EVENT:
-                    self.setprotocol(_MOUSE_PROTOCOL_ANY_EVENT)
+                elif param == MOUSE_PROTOCOL_ANY_EVENT:
+                    self.setprotocol(MOUSE_PROTOCOL_ANY_EVENT)
                     modes.append(str(param))
-                elif param == _FOCUS_EVENT_TRACKING:
-                    self.setfocusmode(_FOCUS_EVENT_TRACKING)
-                elif param == _MOUSE_ENCODING_UTF8:
-                    self.setencoding(_MOUSE_ENCODING_UTF8)
-                elif param == _MOUSE_ENCODING_URXVT:
-                    self.setencoding(_MOUSE_ENCODING_URXVT)
-                elif param == _MOUSE_ENCODING_SGR:
-                    self.setencoding(_MOUSE_ENCODING_SGR)
+                elif param == FOCUS_EVENT_TRACKING:
+                    self.setfocusmode(FOCUS_EVENT_TRACKING)
+                elif param == MOUSE_ENCODING_UTF8:
+                    self.setencoding(MOUSE_ENCODING_UTF8)
+                elif param == MOUSE_ENCODING_URXVT:
+                    self.setencoding(MOUSE_ENCODING_URXVT)
+                elif param == MOUSE_ENCODING_SGR:
+                    self.setencoding(MOUSE_ENCODING_SGR)
                 elif param == 8840:
                     self._termprop.set_amb_as_double()
                     modes.append(str(param))
@@ -285,25 +274,25 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
         modes = []
         for param in params:
             if param >= 1000:
-                if param == _MOUSE_PROTOCOL_NORMAL:
+                if param == MOUSE_PROTOCOL_NORMAL:
                     self.setprotocol(0)
                     modes.append(str(param))
-                elif param == _MOUSE_PROTOCOL_HIGHLIGHT:
+                elif param == MOUSE_PROTOCOL_HIGHLIGHT:
                     self.setprotocol(0)
                     modes.append(str(param))
-                elif param == _MOUSE_PROTOCOL_BUTTON_EVENT:
+                elif param == MOUSE_PROTOCOL_BUTTON_EVENT:
                     self.setprotocol(0)
                     modes.append(str(param))
-                elif param == _MOUSE_PROTOCOL_ANY_EVENT:
+                elif param == MOUSE_PROTOCOL_ANY_EVENT:
                     self.setprotocol(0)
                     modes.append(str(param))
-                elif param == _FOCUS_EVENT_TRACKING:
+                elif param == FOCUS_EVENT_TRACKING:
                     self.setfocusmode(0)
-                elif param == _MOUSE_ENCODING_UTF8:
+                elif param == MOUSE_ENCODING_UTF8:
                     self.setencoding(0)
-                elif param == _MOUSE_ENCODING_URXVT:
+                elif param == MOUSE_ENCODING_URXVT:
                     self.setencoding(0)
-                elif param == _MOUSE_ENCODING_SGR:
+                elif param == MOUSE_ENCODING_SGR:
                     self.setencoding(0)
                 elif param == 8840:
                     self._termprop.set_amb_as_single()
@@ -352,7 +341,7 @@ class MouseDecoder(tff.DefaultHandler):
                             return False
                         self._init_glich_time = None
                     mode, mouseup, code, x, y = mouse_info
-                    if mode == _MOUSE_PROTOCOL_NORMAL:
+                    if mode == MOUSE_PROTOCOL_NORMAL:
                         self._mouse_state = []
                         return True
                     elif self.always_handle or self._listener.mouseenabled():
@@ -360,29 +349,29 @@ class MouseDecoder(tff.DefaultHandler):
                             code |= 0x3
                         self._dispatch_mouse(context, code, x, y)
                         return True
-                    if self._mouse_mode.getprotocol() == _MOUSE_ENCODING_SGR:
-                        if mode == _MOUSE_ENCODING_SGR:
+                    if self._mouse_mode.getprotocol() == MOUSE_ENCODING_SGR:
+                        if mode == MOUSE_ENCODING_SGR:
                             return False
-                        elif mode == _MOUSE_ENCODING_URXVT:
+                        elif mode == MOUSE_ENCODING_URXVT:
                             params = (code + 32, x, y)
                             context.puts("\x1b[%d;%d;%dM" % params)
                             return True
-                        elif mode == _MOUSE_PROTOCOL_NORMAL:
+                        elif mode == MOUSE_PROTOCOL_NORMAL:
                             params = (min(0x7e, code) + 32, x + 32, y + 32)
                             context.puts("\x1b[M%c%c%c" % params)
                             return True
                         return True
-                    if self._mouse_mode.getprotocol() == _MOUSE_ENCODING_URXVT:
-                        if mode == _MOUSE_ENCODING_URXVT:
+                    if self._mouse_mode.getprotocol() == MOUSE_ENCODING_URXVT:
+                        if mode == MOUSE_ENCODING_URXVT:
                             return False
-                        elif mode == _MOUSE_ENCODING_SGR:
+                        elif mode == MOUSE_ENCODING_SGR:
                             params = (code + 32, x, y)
                             if mouseup:
                                 context.puts("\x1b[%d;%d;%dm" % params)
                             else:
                                 context.puts("\x1b[%d;%d;%dM" % params)
                             return True
-                        elif mode == _MOUSE_PROTOCOL_NORMAL:
+                        elif mode == MOUSE_PROTOCOL_NORMAL:
                             params = (min(0x7e, code) + 32, x + 32, y + 32)
                             context.puts("\x1b[M%c%c%c" % params)
                             return True
@@ -433,7 +422,7 @@ class MouseDecoder(tff.DefaultHandler):
     def _decode_mouse(self, context, parameter, intermediate, final):
         if not parameter:
             if final == 0x4d: # M
-                return _MOUSE_PROTOCOL_NORMAL, None, None, None, None
+                return MOUSE_PROTOCOL_NORMAL, None, None, None, None
             return None
         elif parameter[0] == 0x3c:
             if final == 0x4d: # M
@@ -447,7 +436,7 @@ class MouseDecoder(tff.DefaultHandler):
                     y -= 1
                 except ValueError:
                     return False
-                return _MOUSE_ENCODING_SGR, False, code, x, y
+                return MOUSE_ENCODING_SGR, False, code, x, y
             elif final == 0x6d: # m
                 p = ''.join([chr(c) for c in parameter[1:]])
                 try:
@@ -459,7 +448,7 @@ class MouseDecoder(tff.DefaultHandler):
                     y -= 1
                 except ValueError:
                     return None
-                return _MOUSE_ENCODING_SGR, True, code, x, y
+                return MOUSE_ENCODING_SGR, True, code, x, y
         elif 0x30 <= parameter[0] and parameter[0] <= 0x39:
             if final == 0x4d: # M
                 p = ''.join([chr(c) for c in parameter])
