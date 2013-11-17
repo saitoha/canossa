@@ -50,6 +50,7 @@ _DRAGTYPE_BOTTOMLEFT       = 3
 _DRAGTYPE_BOTTOM           = 4
 _DRAGTYPE_LEFT             = 5
 _DRAGTYPE_RIGHT            = 6
+_DRAGTYPE_CLIENTAREA       = 7
 
 _HOVERTYPE_NONE            = 0
 _HOVERTYPE_TITLEBAR        = 1
@@ -146,13 +147,14 @@ class IMouseListenerImpl(IMouseListener):
             return False
         if hittest == _HITTEST_CLIENTAREA:
             if self._window.is_active():
-                x -= self.left + self.offset_left
-                y -= self.top + self.offset_top
-                x += 33
-                y += 33
-                if x < 0x80 and y < 0x80:
-                    context.puts(u"\x1b[M%c%c%c" % (32 + 32, x, y))
-                self._titlestyle = _TITLESTYLE_ACTIVE
+                if self.innerscreen.enable_hover_event:
+                    x -= self.left + self.offset_left
+                    y -= self.top + self.offset_top
+                    x += 33
+                    y += 33
+                    if x < 0x80 and y < 0x80:
+                        context.puts(u"\x1b[M%c%c%c" % (32 + 32, x, y))
+                    self._titlestyle = _TITLESTYLE_ACTIVE
             self._hovertype = _HOVERTYPE_NONE
         elif hittest == _HITTEST_TITLEBAR:
             self._titlestyle = _TITLESTYLE_HOVER
@@ -220,7 +222,10 @@ class IMouseListenerImpl(IMouseListener):
             return False
         if not self._window.is_active():
             return True
-        if hittest == _HITTEST_TITLEBAR:
+        elif hittest == _HITTEST_CLIENTAREA:
+            self._dragtype = _DRAGTYPE_CLIENTAREA
+            self._titlestyle = _TITLESTYLE_ACTIVE
+        elif hittest == _HITTEST_TITLEBAR:
             self._dragtype = _DRAGTYPE_TITLEBAR
             self._dragpos = (x, y)
             self._titlestyle = _TITLESTYLE_DRAG
@@ -407,13 +412,10 @@ class IMouseListenerImpl(IMouseListener):
 
             window.realloc(left, top, width, height)
 
-
         else:
             hittest = self._hittest(x, y)
             self._lasthittest = hittest
-            if self._dragtype == _DRAGTYPE_NONE:
-                return False
-            elif hittest == _HITTEST_CLIENTAREA:
+            if hittest == _HITTEST_CLIENTAREA:
                 x -= self.left + self.offset_left
                 y -= self.top + self.offset_top
                 x += 33
@@ -513,6 +515,8 @@ class InnerFrame(tff.DefaultHandler,
     def handle_end(self, context):
         self._window.close()
         self._listener.onclose(self, context)
+        if self._outerscreen.has_windows():
+            self._mousedecoder.uninitialize_mouse(self._window)
 
     def handle_csi(self, context, parameter, intermediate, final):
         if self._mousedecoder.handle_csi(context, parameter, intermediate, final):

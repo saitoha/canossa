@@ -259,6 +259,7 @@ class SupportsExtendedModeTrait():
     decawm = True
     decom = False
     allow_deccolm = False
+    enable_hover_event = False
 
     def decset(self, params):
         for param in params:
@@ -272,8 +273,18 @@ class SupportsExtendedModeTrait():
                 self.decom = True
             elif param == 7:
                 self.decawm = True
+            elif param == 9:
+                self.enable_hover_event = False
             elif param == 40:
                 self.allow_deccolm = True
+            elif param == 1000:
+                self.enable_hover_event = False
+            elif param == 1001:
+                self.enable_hover_event = False
+            elif param == 1002:
+                self.enable_hover_event = True
+            elif param == 1003:
+                self.enable_hover_event = True
             elif param == 1047:
                 self.switch_altbuf()
                 return True
@@ -298,8 +309,18 @@ class SupportsExtendedModeTrait():
                 self.decom = False
             elif param == 7:
                 self.decawm = False
+            elif param == 9:
+                self.enable_hover_event = False
             elif param == 40:
                 self.allow_deccolm = False
+            elif param == 1000:
+                self.enable_hover_event = False
+            elif param == 1001:
+                self.enable_hover_event = False
+            elif param == 1002:
+                self.enable_hover_event = False
+            elif param == 1003:
+                self.enable_hover_event = False
             elif param == 1047:
                 self.switch_mainbuf()
                 return True
