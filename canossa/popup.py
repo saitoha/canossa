@@ -191,9 +191,8 @@ class IListboxImpl(IListbox):
             top = display.top
             width = display.width
             height = display.height
-            if self._show:
-                pass
-            elif not self._mousemode is None:
+
+            if not self._show:
                 self._style = self._style_active
                 self._mouse_decoder.initialize_mouse(window)
 
@@ -289,10 +288,13 @@ class IListboxImpl(IListbox):
     def close(self):
         if self.isshown():
             window = self._window
-            self._show = False
-            if not self._mousemode is None:
-                self._mouse_decoder.uninitialize_mouse(window)
             window.dealloc()
+
+            self._show = False
+
+            if not self._mousemode is None:
+                if self._screen.has_windows():
+                    self._mouse_decoder.uninitialize_mouse(window)
 
         self.reset()
 

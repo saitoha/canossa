@@ -128,8 +128,6 @@ class IMouseListenerImpl(IMouseListener):
         if hittest == _HITTEST_NONE:
             return False
         if hittest == _HITTEST_BUTTON_CLOSE:
-            self._window.close()
-            self._listener.onclose(self, context)
             self.close()
             return True
         return True
@@ -473,7 +471,7 @@ class InnerFrame(tff.DefaultHandler,
                  IMouseListenerImpl,
                  IFocusListenerImpl): # aggregate mouse and focus listener
 
-    def __init__(self, session, listener, inputhandler, screen,
+    def __init__(self, session, listener, mousedecoder, screen,
                  top, left, row, col,
                  command, termenc, termprop):
 
@@ -492,6 +490,10 @@ class InnerFrame(tff.DefaultHandler,
 
         self._window = window
 
+        mousedecoder.initialize_mouse(window)
+
+        self._mousedecoder = mousedecoder
+
         self.top = top
         self.left = left
         self.offset_top = 0
@@ -500,7 +502,7 @@ class InnerFrame(tff.DefaultHandler,
         self.innerscreen = innerscreen
         self._outerscreen = screen
         self._listener = listener
-        self._inputhandler = inputhandler
+        self._mousedecoder = mousedecoder
 
         self._tty = session.add_subtty('xterm', 'ja_JP.UTF-8',
                                        command, row, col, termenc,
@@ -513,12 +515,12 @@ class InnerFrame(tff.DefaultHandler,
         self._listener.onclose(self, context)
 
     def handle_csi(self, context, parameter, intermediate, final):
-        if self._inputhandler.handle_csi(context, parameter, intermediate, final):
+        if self._mousedecoder.handle_csi(context, parameter, intermediate, final):
             return True
         return False
 
     def handle_char(self, context, c):
-        if self._inputhandler.handle_char(context, c):
+        if self._mousedecoder.handle_char(context, c):
             return True
         return False
 
@@ -735,6 +737,9 @@ class InnerFrame(tff.DefaultHandler,
         session = self._session
         fd = self._tty.fileno()
         session.destruct_subprocess(fd)
+
+        if self._outerscreen.has_windows():
+            self._mousedecoder.uninitialize_mouse(self._window)
 
 
 def test():

@@ -33,7 +33,7 @@ from interface import IScreen
 #
 from cursor import Cursor
 from line import Line
-from mouse import IFocusListener, IMouseListener
+from mouse import IFocusListener, IMouseListener, MouseDecoder
 
 
 class IFocusListenerImpl(IFocusListener):
@@ -861,6 +861,11 @@ class Screen(IScreenImpl,
         layouts = self._layouts
         if layouts:
             return layouts[0] == window
+        return False
+
+    def has_windows(self):
+        if self._layouts:
+            return True
         return False
 
     def destruct_window(self, window):
