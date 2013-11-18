@@ -974,14 +974,17 @@ class Screen(IScreenImpl,
             #    if self.decawm:
             #        self._wrap()
             cursor.row += 1
-            if cursor.row >= self.scroll_bottom:
+            scroll_top = self.scroll_top
+            scroll_bottom = self.scroll_bottom
+            if cursor.row >= scroll_bottom:
+                lines = self.lines
                 bcevalue = cursor.attr.getbcevalue()
-                for line in self.lines[self.scroll_top + 1:self.scroll_bottom]:
+                for line in lines[scroll_top + 1:scroll_bottom]:
                     line.dirty = True
-                line = self.lines.pop(self.scroll_top)
+                line = lines.pop(scroll_top)
                 line.clear(bcevalue)
-                self.lines.insert(self.scroll_bottom - 1, line)
-                cursor.row = self.scroll_bottom - 1
+                lines.insert(scroll_bottom - 1, line)
+                cursor.row = scroll_bottom - 1
             cursor.dirty = True
 
     def ind(self):
