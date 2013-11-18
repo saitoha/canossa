@@ -97,21 +97,22 @@ class Canossa(tff.DefaultHandler):
     __cpr = False
 
     def __init__(self,
-                 scr=None,
+                 screen=None,
                  termenc="UTF-8",
                  termprop=None,
                  visibility=False):
 
         self.__super = super(Canossa, self)
 
-        if scr:
-            self.screen = scr
+        if screen:
+            self.screen = screen
         else:
-            import sys, screen
+            import sys
+            from screen import Screen
             # make screen
             # get current position
             row, col, y, x = _get_pos_and_size(sys.stdin, sys.stdout)
-            self.screen = screen.Screen(row, col, y, x, termenc, termprop)
+            self.screen = Screen(row, col, y, x, termenc, termprop)
 
         self.__visibility = visibility
         self.__cpr = False
