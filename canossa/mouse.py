@@ -202,12 +202,12 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
                 """ TTIMERS: CSI < Ps r """
                 self._listener.notifyimerestore()
                 return False
-        if final == 0x73 and parameter:
+        elif final == 0x73 and parameter:
             if parameter[0] == 0x3c and not intermediate:
                 """ TTIMESV: CSI < Ps s """
                 self._listener.notifyimesave()
                 return False
-        if final == 0x74 and parameter:
+        elif final == 0x74 and parameter:
             if parameter[0] == 0x3c and not intermediate:
                 """ TTIMEST: CSI < Ps t """
                 length = len(parameter)
