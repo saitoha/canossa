@@ -197,20 +197,26 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
     def handle_csi(self, context, parameter, intermediate, final):
         if self._handle_mode(context, parameter, intermediate, final):
             return True
-        if final == 0x72 and parameter == [0x3c] and intermediate == []:
-            """ TTIMERS: CSI < Ps r """
-            self._listener.notifyimerestore()
-        elif final == 0x73 and parameter == [0x3c] and intermediate == []:
-            """ TTIMESV: CSI < Ps s """
-            self._listener.notifyimesave()
-        elif final == 0x74 and parameter[0] == 0x3c and intermediate == []:
-            """ TTIMEST: CSI < Ps t """
-            if parameter == [0x3c]:
-                self._listener.notifyimeoff()
-            elif parameter == [0x3c, 0x30]:
-                self._listener.notifyimeoff()
-            elif parameter == [0x3c, 0x31]:
-                self._listener.notifyimeon()
+        if final == 0x72 and parameter:
+            if parameter[0] == 0x3c and not intermediate:
+                """ TTIMERS: CSI < Ps r """
+                self._listener.notifyimerestore()
+                return False
+        if final == 0x73 and parameter:
+            if parameter[0] == 0x3c and not intermediate:
+                """ TTIMESV: CSI < Ps s """
+                self._listener.notifyimesave()
+                return False
+        if final == 0x74 and parameter:
+            if parameter[0] == 0x3c and not intermediate:
+                """ TTIMEST: CSI < Ps t """
+                if parameter == [0x3c]:
+                    self._listener.notifyimeoff()
+                elif parameter == [0x3c, 0x30]:
+                    self._listener.notifyimeoff()
+                elif parameter == [0x3c, 0x31]:
+                    self._listener.notifyimeon()
+                return False
         return False
 
     def _handle_mode(self, context, parameter, intermediate, final):
