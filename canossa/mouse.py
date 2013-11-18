@@ -210,12 +210,14 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
         if final == 0x74 and parameter:
             if parameter[0] == 0x3c and not intermediate:
                 """ TTIMEST: CSI < Ps t """
-                if parameter == [0x3c]:
+                length = len(parameter)
+                if parameter == 1:
                     self._listener.notifyimeoff()
-                elif parameter == [0x3c, 0x30]:
-                    self._listener.notifyimeoff()
-                elif parameter == [0x3c, 0x31]:
-                    self._listener.notifyimeon()
+                elif parameter == 1 or parameter[2] == 0x3b:
+                    if parameter[1] == 0x30:
+                        self._listener.notifyimeoff()
+                    elif parameter[1] == 0x31:
+                        self._listener.notifyimeon()
                 return False
         return False
 
