@@ -282,6 +282,7 @@ class Canossa(tff.DefaultHandler):
             if intermediate == [ 0x21 ] and final == 0x70:
                 self.screen.decstr()
         except:
+            mnemonic = '[' + chr(final) + ']'
             logging.exception("handle_csi: %s" % mnemonic)
         return True
 
@@ -428,5 +429,3 @@ def test():
 
 if __name__ == "__main__":
     test()
-
-

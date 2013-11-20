@@ -222,9 +222,10 @@ class SuuportsAlternateScreenTrait():
         else:
             for line in lines:
                 line.resize(self.width)
-        assert len(lines) == self.height
-        for line in lines:
-            assert self.width == line.length()
+        if __debug__:
+            assert len(lines) == self.height
+            for line in lines:
+                assert self.width == line.length()
 
     def switch_altbuf(self):
         self.lines = self._altbuf
@@ -245,9 +246,10 @@ class SuuportsAlternateScreenTrait():
         else:
             for line in lines:
                 line.resize(self.width)
-        assert len(lines) == self.height
-        for line in lines:
-            assert self.width == line.length()
+        if __debug__:
+            assert len(lines) == self.height
+            for line in lines:
+                assert self.width == line.length()
 
 
 class SupportsAnsiModeTrait():
@@ -452,7 +454,6 @@ class IScreenImpl(IScreen):
                 raise CanossaRangeException("y = %d" % y)
 
             assert self.height == len(self.lines)
-            assert y < self.height
 
             while True:
                 s.write("\x1b[%d;%dH" % (y + 1, x + 1))
@@ -521,16 +522,16 @@ class IScreenImpl(IScreen):
         s = self._output
         cursor = Cursor(0, 0)
         cursor.attr.draw(s)
-        ranges = region.add(0, 0, self.width, self.height)
         for i in xrange(0, self.height):
             s.write("\x1b[%d;1H" % (i + 1))
             line = self.lines[i]
-            line.clipdraw(s, cursor, ranges[i])
+            dirty_range = line.ranges.add(0, self.width)
+            if dirty_range:
+                line.clipdraw(s, cursor, dirty_range)
         self.cursor.draw(s)
         self.cursor.attr.draw(s)
         context.puts(s.getvalue())
         s.truncate(0)
-
 
     def drawall(self, context):
         s = self._output
@@ -609,6 +610,7 @@ class IScreenImpl(IScreen):
                 col = width - 1
 
         line.dirty = True
+        line.ranges.sub(col, col + 1)
 
         if col >= width:
             col = width - 1
@@ -632,6 +634,7 @@ class IScreenImpl(IScreen):
                     col = width - 1
                     cursor.col = col
             line.write(c, col, cursor.attr)
+            line.ranges.sub(col, col + 1)
             cursor.dirty = True
             cursor.col += 1
         else:
@@ -646,11 +649,13 @@ class IScreenImpl(IScreen):
                     cursor.col = col
             if char_width == 1:  # normal (narrow) character
                 line.write(c, col, cursor.attr)
+                line.ranges.sub(col, col + 1)
                 cursor.dirty = True
                 cursor.col += 1
             elif char_width == 2:  # wide character
                 line.pad(col)
                 line.write(c, col + 1, cursor.attr)
+                line.ranges.sub(col, col + 2)
                 cursor.dirty = True
                 cursor.col += 2
             elif char_width == 0:  # combining character
@@ -714,8 +719,10 @@ class Window():
         self.top = top
         self.width = width
         self.height = height
+        self._screen._region.sub(left, top, width, height)
 
     def realloc(self, left, top, width, height):
+        self._screen._region.sub(left, top, width, height)
         screen = self._screen
         if self.left < left:
             x = max(self.left, 0)
@@ -794,51 +801,27 @@ class Window():
         self._screen.destruct_window(self)
 
 
-class Ranges():
-
-    def __init__(self):
-        self._ranges = set()
-
-    def add(self, start, end):
-        ranges = self._ranges
-        newrange = set(xrange(start, end))
-        dirtyrange = newrange.difference(ranges)
-        ranges.update(newrange)
-        return dirtyrange
-
-    def sub(self, start, end):
-        ranges = self._ranges
-        newrange = set(xrange(start, end))
-        ranges.difference_update(newrange)
-
-
 class Region():
 
-    def __init__(self):
-        self._lines = {}
+    def __init__(self, lines):
+        self._lines = lines
 
     def add(self, left, top, width, height):
         lines = self._lines
         result = {}
         for index in xrange(top, top + height):
-            if not index in lines:
-                line = Ranges()
-                lines[index] = line
-            else:
-                line = lines[index]
-            dirtyrange = line.add(left, left + width)
-            result[index] = dirtyrange
+            if index in lines:
+                result[index] = line.ranges.add(left, left + width)
         return result
 
     def sub(self, left, top, width, height):
         lines = self._lines
         for index in xrange(top, top + height):
             if index in lines:
-                line = lines[index]
-                dirtyrange = line.sub(left, left + width)
+                line.ranges.sub(left, left + width)
 
     def reset(self):
-        self._lines = {}
+        pass
 
 
 class IWindowManager():
@@ -849,7 +832,7 @@ class IWindowManagerImpl(IWindowManager):
     def __init__(self):
         self._widgets = {}
         self._layouts = []
-        self._region = Region()
+        self._region = Region(self.lines)
 
     def create_window(self, widget):
         window = Window(self)
@@ -893,6 +876,8 @@ class IWindowManagerImpl(IWindowManager):
 
         if widgets:
             for window in self._layouts:
+                region.sub(window.left, window.top, window.width, window.height)
+            for window in self._layouts:
                 widget = widgets[window.id]
                 widget.draw(region)
 
@@ -900,7 +885,6 @@ class IWindowManagerImpl(IWindowManager):
                 widget = widgets[window.id]
                 if window.is_shown():
                     window.draw(context)
-                    has_visible_window = True
 
             self.clipdraw(context, region)
 
@@ -920,8 +904,6 @@ class Screen(IScreenImpl,
 
     def __init__(self, row=24, col=80, y=0, x=0,
                  termenc="UTF-8", termprop=None):
-
-        IWindowManagerImpl.__init__(self)
 
         self._saved_pos = None
         self._title = u""
@@ -945,6 +927,8 @@ class Screen(IScreenImpl,
         self._setup_altbuf()
         self._setup_tab()
         self._setup_charset()
+
+        IWindowManagerImpl.__init__(self)
 
     def _wrap(self):
         self.cursor.col = 0
@@ -981,6 +965,7 @@ class Screen(IScreenImpl,
                 bcevalue = cursor.attr.getbcevalue()
                 for line in lines[scroll_top + 1:scroll_bottom]:
                     line.dirty = True
+                    line.ranges.sub(0, len(line.cells))
                 line = lines.pop(scroll_top)
                 line.clear(bcevalue)
                 lines.insert(scroll_bottom - 1, line)
@@ -1000,6 +985,7 @@ class Screen(IScreenImpl,
             bcevalue = cursor.attr.getbcevalue()
             for line in self.lines:
                 line.dirty = True
+                line.ranges.sub(0, len(line.cells))
             line = self.lines.pop(self.scroll_bottom - 1)
             line.clear(bcevalue)
             self.lines.insert(self.scroll_top, line)
@@ -1068,6 +1054,7 @@ class Screen(IScreenImpl,
         if ps == 0:
             line = self.lines[cursor.row]
             line.dirty = True
+            line.ranges.sub(cursor.col, len(line.cells))
             attr = cursor.attr
             bcevalue = attr.getbcevalue()
             for cell in line.cells[cursor.col:]:
@@ -1078,6 +1065,7 @@ class Screen(IScreenImpl,
         elif ps == 1:
             line = self.lines[cursor.row]
             line.dirty = True
+            line.ranges.sub(0, cursor.col)
             bcevalue = cursor.attr.getbcevalue()
             for cell in line.cells[:cursor.col]:
                 cell.clear(bcevalue)
@@ -1086,6 +1074,7 @@ class Screen(IScreenImpl,
                     line.clear(bcevalue)
         elif ps == 2:
             bcevalue = cursor.attr.getbcevalue()
+            line.ranges.sub(0, len(line.cells))
             for line in self.lines:
                 line.clear(bcevalue)
 
@@ -1093,6 +1082,7 @@ class Screen(IScreenImpl,
         attr = self.cursor.attr
         for line in self.lines:
             line.dirty = True
+            line.ranges.sub(0, len(line.cells))
             for cell in line.cells:
                 cell.write(0x45, attr)  # E
         self.scroll_top = 0
@@ -1103,6 +1093,7 @@ class Screen(IScreenImpl,
         defaultvalue = cursor.attr.getdefaultvalue()
         for line in self.lines:
             line.clear(defaultvalue)
+            line.ranges.sub(0, len(line.cells))
         self.dectcem = True
         cursor.clear()
         self._setup_tab()
@@ -1138,6 +1129,8 @@ class Screen(IScreenImpl,
             cell = cells.pop()
             cell.clear(bcevalue)
             cells.insert(col, cell)
+
+        line.ranges.sub(0, ps)
 
     def cuu(self, ps):
         ''' cursor up '''
@@ -1175,6 +1168,7 @@ class Screen(IScreenImpl,
         bottom = self.scroll_bottom
         for line in lines[row + ps:bottom]:
             line.dirty = True
+            line.ranges.sub(0, len(line.cells))
         for x in xrange(0, ps):
             lines.insert(bottom, Line(self.width))
             lines.pop(row)
@@ -1190,6 +1184,7 @@ class Screen(IScreenImpl,
         bottom = self.scroll_bottom
         for line in lines[row:bottom - ps]:
             line.dirty = True
+            line.ranges.sub(0, len(line.cells))
         for x in xrange(0, ps):
             lines.pop(bottom - 1)
             lines.insert(row, Line(self.width))
@@ -1203,10 +1198,13 @@ class Screen(IScreenImpl,
         line = self.lines[cursor.row]
         if ps == 0:
             cells = line.cells[cursor.col:]
+            line.ranges.sub(cursor.col, len(line.cells))
         elif ps == 1:
             cells = line.cells[:cursor.col]
+            line.ranges.sub(0, cursor.col)
         elif ps == 2:
             cells = line.cells
+            line.ranges.sub(0, len(line.cells))
         else:
             return
         line.dirty = True

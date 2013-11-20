@@ -228,9 +228,8 @@ class IListboxImpl(IListbox):
                 if top + i >= screen.height:
                     break
 
-                dirtyrange = dirtyregion[top + i]
-
-                if dirtyrange:
+                if top + i in dirtyregion:
+                    dirtyrange = dirtyregion[top + i]
 
                     dirty_left = min(dirtyrange)
                     if dirty_left < 0:
@@ -242,8 +241,6 @@ class IListboxImpl(IListbox):
 
                     if dirty_left > dirty_right:
                         continue
-
-#                    dirtyrange.difference_update(xrange(left, left + width))
 
                     self.moveto(top + 1 + i, dirty_left + 1)
 

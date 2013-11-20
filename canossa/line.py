@@ -122,6 +122,29 @@ class SupportsCombiningTrait():
         '''
         self.cells[max(0, pos - 1)].combine(value)
 
+class Ranges():
+
+    def __init__(self):
+        self._rangeset = set()
+
+    def get(self, start, end):
+        ranges = self._rangeset
+        newrange = set(xrange(start, end))
+        return newrange.difference(ranges)
+
+    def add(self, start, end):
+        ranges = self._rangeset
+        newrange = set(xrange(start, end))
+        dirtyrange = newrange.difference(ranges)
+        ranges.update(newrange)
+        return dirtyrange
+
+    def sub(self, start, end):
+        rangeset = self._rangeset
+        newrange = set(xrange(start, end))
+        rangeset.difference_update(newrange)
+
+
 class Line(SupportsDoubleSizedTrait,
            SupportsWideTrait,
            SupportsCombiningTrait):
@@ -135,6 +158,7 @@ class Line(SupportsDoubleSizedTrait,
         True
         '''
         self.cells = [Cell() for cell in xrange(0, width)]
+        self.ranges = Ranges()
         self.dirty = True
 
     def length(self):
