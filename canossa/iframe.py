@@ -845,13 +845,13 @@ class InnerFrame(tff.DefaultHandler,
             window.write('\x1b[?25h')
             cursor = screen.cursor
 
-            row = cursor.row + top + 1
+            row = cursor.row + top
             if row < 1:
                 return
             elif row > outerscreen.width:
                 return
 
-            col = cursor.col + left + 1
+            col = cursor.col + left
             if col < 1:
                 return
             elif col > outerscreen.width:
