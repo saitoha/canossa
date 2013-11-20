@@ -761,6 +761,8 @@ class InnerFrame(tff.DefaultHandler,
                                     window.write('\x1b[41m')
                                 elif self._hovertype == _HOVERTYPE_LEFT:
                                     window.write('\x1b[43m')
+                                else:
+                                    window.write('\x1b[m')
                                 window.write('|')
                                 window.write('\x1b[m')
 
@@ -778,6 +780,8 @@ class InnerFrame(tff.DefaultHandler,
                                     window.write('\x1b[41m')
                                 elif self._hovertype == _HOVERTYPE_RIGHT:
                                     window.write('\x1b[43m')
+                                else:
+                                    window.write('\x1b[m')
                                 window.write('|')
                                 window.write('\x1b[m')
 
