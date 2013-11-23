@@ -102,8 +102,6 @@ class Canossa(tff.DefaultHandler):
                  termprop=None,
                  visibility=False):
 
-        self.__super = super(Canossa, self)
-
         if screen:
             self.screen = screen
         else:
