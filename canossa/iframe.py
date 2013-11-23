@@ -91,7 +91,7 @@ class IMouseListenerImpl(IMouseListener):
         hittest = self._hittest(x, y)
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
-            self._window.blur()
+            #self._window.blur()
             self._session.blur_subprocess()
             return False
         if not self._window.is_active():
@@ -638,7 +638,8 @@ class InnerFrame(tff.DefaultHandler,
     def handle_end(self, context):
         self._window.close()
         self._listener.onclose(self, context)
-        if self._outerscreen.has_windows():
+
+        if not self._outerscreen.has_visible_windows():
             self._mousedecoder.uninitialize_mouse(self._window)
 
     def handle_csi(self, context, parameter, intermediate, final):
@@ -689,7 +690,7 @@ class InnerFrame(tff.DefaultHandler,
                 title = ' ' * (width - 3) + '[x]'
 
 
-            window.write('\x1b[?25l')
+#            window.write('\x1b[?25l')
             window.write(self._titlestyle)
             dirtyrange = dirtyregion[top - 1]
             if not dirtyrange:
@@ -842,7 +843,7 @@ class InnerFrame(tff.DefaultHandler,
                                 continue
                             window.write('-')
 
-            window.write('\x1b[?25h')
+#            window.write('\x1b[?25h')
             cursor = screen.cursor
 
             row = cursor.row + top
@@ -861,15 +862,26 @@ class InnerFrame(tff.DefaultHandler,
             elif row > outerscreen.height:
                 return
 
-            cursor.draw(window)
-            self.moveto(row, col)
+#            cursor.draw(window)
+
+            if self._window.is_active():
+                self.moveto(row + 1, col + 1)
+
+        #    cursor = screen.cursor
+        #    try:
+        #        screen.cursor = Cursor(/frame.top + iframe.innerscreen.cursor.row,
+        #                               iframe.left + iframe.innerscreen.cursor.col)
+        #        self._inputhandler.handle_draw(context)
+        #    finally:
+        #        # restore cursor
+        #        screen.cursor = cursor
 
     def close(self):
         session = self._session
         fd = self._tty.fileno()
         session.destruct_subprocess(fd)
 
-        if self._outerscreen.has_windows():
+        if not self._outerscreen.has_visible_windows():
             self._mousedecoder.uninitialize_mouse(self._window)
 
 
