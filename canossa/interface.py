@@ -19,8 +19,6 @@
 # ***** END LICENSE BLOCK *****
 
 
-import abc
-
 ################################################################################
 #
 # interfaces
@@ -43,163 +41,117 @@ import abc
 #
 class IScreen:
 
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
     def copyrect(self, s, srcx, srcy, width, height, destx=None, desty=None):
         raise NotImplementedError("IScreen::copyrect")
 
-    @abc.abstractmethod
     def drawall(self, context):
         raise NotImplementedError("IScreen::drawall")
 
-    @abc.abstractmethod
     def resize(self, row, col):
         raise NotImplementedError("IScreen::resize")
 
-    @abc.abstractmethod
     def write(self, c):
         raise NotImplementedError("IScreen::write")
 
-    @abc.abstractmethod
     def setlistener(self, listener):
         raise NotImplementedError("IScreen::setlistener")
 
 class IScreenListener:
 
-    @abc.abstractmethod
     def ontitlechanged(self, s):
         raise NotImplementedError("IScreenListener::ontitlechanged")
 
-    @abc.abstractmethod
     def onmodeenabled(self, n):
         raise NotImplementedError("IScreenListener::onmodeenabled")
 
-    @abc.abstractmethod
     def onmodedisabled(self, n):
         raise NotImplementedError("IScreenListener::onmodedisabled")
 
 class IModeListener():
 
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
     def notifyenabled(self, n):
         raise NotImplementedError("IModeListener::notifyenabled")
 
-    @abc.abstractmethod
     def notifydisabled(self, n):
         raise NotImplementedError("IModeListener::notifydisabled")
 
-    @abc.abstractmethod
     def notifyimeon(self):
         raise NotImplementedError("IModeListener::notifyimeon")
 
-    @abc.abstractmethod
     def notifyimeoff(self):
         raise NotImplementedError("IModeListener::notifyimeoff")
 
-    @abc.abstractmethod
     def notifyimesave(self):
         raise NotImplementedError("IModeListener::notifyimesave")
 
-    @abc.abstractmethod
     def notifyimerestore(self):
         raise NotImplementedError("IModeListener::notifyimerestore")
 
-    @abc.abstractmethod
     def reset(self):
         raise NotImplementedError("IModeListener::reset")
 
-    @abc.abstractmethod
     def hasevent(self):
         raise NotImplementedError("IModeListener::hasevent")
 
-    @abc.abstractmethod
     def getenabled(self):
         raise NotImplementedError("IModeListener::getenabled")
 
 
 class IWidget():
 
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
     def close(self):
         raise NotImplementedError("IWidget::close")
 
-    @abc.abstractmethod
     def draw(self, output):
         raise NotImplementedError("IWidget::draw")
 
 
 class IListbox(IWidget):
 
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
     def assign(self, a_list):
         raise NotImplementedError("IListbox::assign")
 
-    @abc.abstractmethod
     def isempty(self):
         raise NotImplementedError("IListbox::isempty")
 
-    @abc.abstractmethod
     def reset(self):
         raise NotImplementedError("IListbox::reset")
 
-    @abc.abstractmethod
     def movenext(self):
         raise NotImplementedError("IListbox::movenext")
 
-    @abc.abstractmethod
     def moveprev(self):
         raise NotImplementedError("IListbox::moveprev")
 
-    @abc.abstractmethod
     def jumpnext(self):
         raise NotImplementedError("IListbox::jumpnext")
 
-    @abc.abstractmethod
     def isshown(self):
         raise NotImplementedError("IListbox::isshown")
 
 class IListboxListener():
 
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
     def oninput(self, popup, context, c):
         raise NotImplementedError("IListboxListener::oninput")
 
-    @abc.abstractmethod
     def onselected(self, popup, index, text, remarks):
         raise NotImplementedError("IListboxListener::onselected")
 
-    @abc.abstractmethod
     def onsettled(self, popup, context):
         raise NotImplementedError("IListboxListener::onsettled")
 
-    @abc.abstractmethod
     def oncancel(self, popup, context):
         raise NotImplementedError("IListboxListener::oncancel")
 
-    @abc.abstractmethod
     def onrepeat(self, popup, context):
         raise NotImplementedError("IListboxListener::onrepeat")
 
 
 class IInnerFrame(IWidget):
-
-    __metaclass__ = abc.ABCMeta
-
+    pass
 
 class IInnerFrameListener():
 
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
     def onclose(self, iframe, context):
         raise NotImplementedError("IInnerFrameListener::onclose")
 
@@ -211,5 +163,3 @@ def test():
 
 if __name__ == "__main__":
     test()
-
-
