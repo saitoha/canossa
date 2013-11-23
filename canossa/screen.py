@@ -81,6 +81,8 @@ class IMouseListenerImpl(IMouseListener):
             widget = widgets[window.id]
             if widget.onclick(context, x, y):
                 return True
+        for window in self._layouts:
+            window.blur()
         return False
 
     def ondoubleclick(self, context, x, y):
@@ -531,19 +533,22 @@ class IScreenImpl(IScreen):
         s.truncate(0)
 
     def drawwindows(self, context):
-        for window in self._trash:
-            window.dealloc()
-            window.draw(context)
-        region = self._region
-        region.reset()
-        widgets = self._widgets
-        for window in self._layouts:
-            widget = widgets[window.id]
-            widget.draw(region)
-        for window in reversed(self._layouts):
-            widget = widgets[window.id]
-            window.draw(context)
-        self._trash = []
+        trash = self._trash
+        if trash:
+            for window in trash:
+                window.dealloc()
+                window.draw(context)
+            del trash[:]
+        if self.has_visible_windows:
+            region = self._region
+            widgets = self._widgets
+            region.reset()
+            for window in self._layouts:
+                widget = widgets[window.id]
+                widget.draw(region)
+            for window in reversed(self._layouts):
+                widget = widgets[window.id]
+                window.draw(context)
 
     def resize(self, row, col):
         lines = self.lines
@@ -766,6 +771,9 @@ class Window():
     def write(self, s):
         self._buffer.write(s)
 
+    def is_shown(self):
+        return self._show
+
     def draw(self, context):
         buffer = self._buffer
         s = self._buffer.getvalue()
@@ -900,9 +908,10 @@ class Screen(IScreenImpl,
             return layouts[0] == window
         return False
 
-    def has_windows(self):
-        if self._layouts:
-            return True
+    def has_visible_windows(self):
+        for window in self._layouts:
+            if window.is_shown():
+                return True
         return False
 
     def destruct_window(self, window):
