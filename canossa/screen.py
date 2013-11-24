@@ -77,12 +77,14 @@ class IMouseListenerImpl(IMouseListener):
 
     def onclick(self, context, x, y):
         widgets = self._widgets
+        self._active = False
         for window in self._layouts:
             widget = widgets[window.id]
             if widget.onclick(context, x, y):
                 return True
         for window in self._layouts:
             window.blur()
+        self._active = True
         return False
 
     def ondoubleclick(self, context, x, y):
@@ -539,16 +541,15 @@ class IScreenImpl(IScreen):
                 window.dealloc()
                 window.draw(context)
             del trash[:]
-        if self.has_visible_windows:
-            region = self._region
-            widgets = self._widgets
-            region.reset()
-            for window in self._layouts:
-                widget = widgets[window.id]
-                widget.draw(region)
-            for window in reversed(self._layouts):
-                widget = widgets[window.id]
-                window.draw(context)
+        region = self._region
+        widgets = self._widgets
+        region.reset()
+        for window in self._layouts:
+            widget = widgets[window.id]
+            widget.draw(region)
+        for window in reversed(self._layouts):
+            widget = widgets[window.id]
+            window.draw(context)
 
     def resize(self, row, col):
         lines = self.lines
@@ -867,6 +868,7 @@ class Screen(IScreenImpl,
         self.scroll_bottom = self.height
         self.termenc = termenc
         self._output = codecs.getwriter(termenc)(StringIO())
+        self._active = True
 
         if termprop is None:
             from termprop import Termprop
@@ -896,17 +898,23 @@ class Screen(IScreenImpl,
         layouts = self._layouts
         layouts.remove(window)
         layouts.insert(0, window)
+        self._active = False
 
     def blur(self, window):
         layouts = self._layouts
         layouts.remove(window)
         layouts.append(window)
+        if len(layouts) < 2:
+            self._active = True
 
     def is_active(self, window):
         layouts = self._layouts
         if layouts:
             return layouts[0] == window
         return False
+
+    def has_active_windows(self):
+        return not self._active
 
     def has_visible_windows(self):
         for window in self._layouts:

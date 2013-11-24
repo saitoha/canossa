@@ -843,7 +843,6 @@ class InnerFrame(tff.DefaultHandler,
                                 continue
                             window.write('-')
 
-#            window.write('\x1b[?25h')
             cursor = screen.cursor
 
             row = cursor.row + top
@@ -866,15 +865,7 @@ class InnerFrame(tff.DefaultHandler,
 
             if self._window.is_active():
                 self.moveto(row + 1, col + 1)
-
-        #    cursor = screen.cursor
-        #    try:
-        #        screen.cursor = Cursor(/frame.top + iframe.innerscreen.cursor.row,
-        #                               iframe.left + iframe.innerscreen.cursor.col)
-        #        self._inputhandler.handle_draw(context)
-        #    finally:
-        #        # restore cursor
-        #        screen.cursor = cursor
+                window.write('\x1b[?25h')
 
     def close(self):
         session = self._session

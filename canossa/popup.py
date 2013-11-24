@@ -95,7 +95,6 @@ class IListboxImpl(IListbox):
                        'slider': u''}
 
     _style = _style_active
-    _show = False
 
     """ IListbox implementation """
     def assign(self, l, index=0):
@@ -192,11 +191,6 @@ class IListboxImpl(IListbox):
             width = display.width
             height = display.height
 
-            if not self._show:
-                self._style = self._style_active
-                self._mouse_decoder.initialize_mouse(window)
-                self._window.focus()
-
             self._left = left
             self._top = top
             self._width = width
@@ -205,11 +199,13 @@ class IListboxImpl(IListbox):
             left += self._offset_left
             top += self._offset_top
 
-            if self._show:
+            if window.is_shown():
                 window.realloc(left, top, width, height)
             else:
-                self._show = True
                 window.alloc(left, top, width, height)
+                self._style = self._style_active
+                self._mouse_decoder.initialize_mouse(window)
+                window.focus()
 
             dirtyregion = region.add(left, top, width, height)
 
@@ -291,7 +287,6 @@ class IListboxImpl(IListbox):
             window = self._window
             window.dealloc()
 
-            self._show = False
             if not self._mousemode is None:
                 if not self._screen.has_visible_windows():
                     self._mouse_decoder.uninitialize_mouse(window)
@@ -299,7 +294,7 @@ class IListboxImpl(IListbox):
         self.reset()
 
     def isshown(self):
-        return self._show
+        return self._window.is_shown()
 
     def _truncate_str(self, s, length):
         if self._termprop.wcswidth(s) > length:
@@ -634,7 +629,6 @@ class Listbox(tff.DefaultHandler,
         self._height = _POPUP_HEIGHT_MAX
         self._offset_left = 0
         self._offset_top = 0
-        self._show = False
         self._dragpos = None
         self._list = None
         self._index = 0
