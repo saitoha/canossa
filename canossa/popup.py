@@ -205,7 +205,7 @@ class IListboxImpl(IListbox):
                 window.alloc(left, top, width, height)
                 self._style = self._style_active
                 self._mouse_decoder.initialize_mouse(window)
-                window.focus()
+                #window.focus()
 
             dirtyregion = region.add(left, top, width, height)
 

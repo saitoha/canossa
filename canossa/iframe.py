@@ -612,6 +612,7 @@ class InnerFrame(tff.DefaultHandler,
 
         window = screen.create_window(self)
         window.alloc(left - 1, top - 1, col + 2, row + 2)
+        window.focus()
 
         self._window = window
 
