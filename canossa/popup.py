@@ -278,6 +278,7 @@ class IListboxImpl(IListbox):
                         if n < dirty_left + 1:
                             continue
                         window.write(u' ')
+            screen.cursor.attr.draw(window)
 
             return True
         return False
