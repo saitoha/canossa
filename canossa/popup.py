@@ -624,8 +624,8 @@ class Listbox(tff.DefaultHandler,
         self._termprop = termprop
         self._mousemode = mousemode
         self._window = screen.create_window(self)
-        self._left = None
-        self._top = None
+        self._left = 0
+        self._top = 0
         self._width = 10
         self._height = _POPUP_HEIGHT_MAX
         self._offset_left = 0
