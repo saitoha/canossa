@@ -79,7 +79,7 @@ class IFocusListenerImpl(IFocusListener):
 class IMouseListenerImpl(IMouseListener):
 
     def __init__(self):
-        self._lasthittest = None
+        self._lasthittest = _HITTEST_NONE
         self._dragtype = _DRAGTYPE_NONE
         self._hovertype = _HOVERTYPE_NONE
         self._dragpos = None
@@ -327,7 +327,7 @@ class IMouseListenerImpl(IMouseListener):
             return False
         if not self._window.is_active():
             return True
-        elif hittest == _HITTEST_CLIENTAREA:
+        if hittest == _HITTEST_CLIENTAREA:
             self._dragtype = _DRAGTYPE_CLIENTAREA
             self._titlestyle = _TITLESTYLE_ACTIVE
         elif hittest == _HITTEST_TITLEBAR:
@@ -353,8 +353,8 @@ class IMouseListenerImpl(IMouseListener):
 
     def ondragend(self, s, x, y):
         hittest = self._lasthittest
-        if hittest == _HITTEST_NONE:
-            return False
+        #if hittest == _HITTEST_NONE:
+        #    return False
         if self._dragtype == _DRAGTYPE_NONE:
             return True
         if not self._window.is_active():
