@@ -916,6 +916,9 @@ class Screen(IScreenImpl,
     def has_active_windows(self):
         return not self._active
 
+    def setfocus(self):
+        self._active = True
+
     def has_visible_windows(self):
         for window in self._layouts:
             if window.is_shown():

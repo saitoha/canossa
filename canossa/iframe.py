@@ -637,10 +637,11 @@ class InnerFrame(tff.DefaultHandler,
 
     """ tff.EventObserver override """
     def handle_end(self, context):
+        screen = self._outerscreen
         self._window.close()
         self._listener.onclose(self, context)
-
-        if not self._outerscreen.has_visible_windows():
+        screen.setfocus()
+        if not screen.has_visible_windows():
             self._mousedecoder.uninitialize_mouse(self._window)
 
     def handle_csi(self, context, parameter, intermediate, final):
@@ -870,10 +871,11 @@ class InnerFrame(tff.DefaultHandler,
 
     def close(self):
         session = self._session
+        screen = self._outerscreen
         fd = self._tty.fileno()
         session.destruct_subprocess(fd)
-
-        if not self._outerscreen.has_visible_windows():
+        screen.setfocus()
+        if not screen.has_visible_windows():
             self._mousedecoder.uninitialize_mouse(self._window)
 
 
