@@ -26,7 +26,7 @@ from mouse import IFocusListener, IMouseListener
 
 _POPUP_DIR_NORMAL = True
 _POPUP_DIR_REVERSE = False
-_POPUP_WIDTH_MAX = 20
+#_POPUP_WIDTH_MAX = 20
 _POPUP_HEIGHT_MAX = 12
 
 
@@ -298,8 +298,13 @@ class IListboxImpl(IListbox):
         return self._window.is_shown()
 
     def _truncate_str(self, s, length):
-        if self._termprop.wcswidth(s) > length:
-            return s[:length] + u"..."
+        wcwidth = self._termprop.wcwidth
+        l = 0
+        for i in xrange(0, len(s)):
+            if l > length:
+                return s[:i] + u"..."
+            c = s[i]
+            l += wcwidth(ord(c))
         return s
 
     def setposition(self, x, y):
@@ -337,11 +342,10 @@ class IListboxImpl(IListbox):
 
         for value in candidates:
             length = self._termprop.wcswidth(value)
-            if length > _POPUP_WIDTH_MAX:
-                length = self._termprop.wcswidth(value)
-            width = max(width, length + 6)
+            width = max(width, length)
 
         candidates = [self._truncate_str(s, width) for s in candidates]
+        width += 4
 
         height = min(height, candidates_length)
 
