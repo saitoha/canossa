@@ -700,6 +700,8 @@ class MockScreenWithWindows(MockScreen):
 
     width = 80
     height = 24
+    scroll_top = 0
+    scroll_bottom = 24
 
     def __init__(self, row=24, col=80, y=0, x=0):
         self.height = row
