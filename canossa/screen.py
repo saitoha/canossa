@@ -696,6 +696,25 @@ class MockScreenWithCursor(MockScreen):
         self.cursor = Cursor(y, x)
         self._setup_lines()
 
+class MockScreenWithWindows(MockScreen):
+
+    width = 80
+    height = 24
+
+    def __init__(self, row=24, col=80, y=0, x=0):
+        self.height = row
+        self.width = col
+        self.cursor = Cursor(y, x)
+        self._setup_lines()
+
+    def has_visible_windows(self):
+        return True
+
+    def drawall(self, context):
+        pass
+
+    def drawwindows(self, context):
+        pass
 
 class Window():
 
