@@ -718,7 +718,7 @@ class InnerFrame(tff.DefaultHandler,
                     break
                 if n >= dirty_right:
                     break
-                if n == dirty_left:
+                if n == dirty_left and top > 0:
                     self.moveto(top, n + 1)
                 if n >= dirty_left:
                     if n in dirtyrange:
