@@ -332,14 +332,14 @@ class MouseDecoder(tff.DefaultHandler):
         self._mousedown = False
         self._mousedrag = False
         self._init_glich_time = None
-        self._mouse_mode = mousemode
+        self.mouse_mode = mousemode
         self._termprop = termprop
         self._listener = listener
 
     """ tff.EventObserver overrides """
     def handle_csi(self, context, parameter, intermediate, final):
         ''' '''
-        if self._mouse_mode:
+        if self.mouse_mode:
             try:
                 mouse_info = self._decode_mouse(context, parameter, intermediate, final)
                 if mouse_info:
@@ -357,7 +357,7 @@ class MouseDecoder(tff.DefaultHandler):
                             code |= 0x3
                         self._dispatch_mouse(context, code, x, y)
                         return True
-                    if self._mouse_mode.getprotocol() == MOUSE_ENCODING_SGR:
+                    if self.mouse_mode.getprotocol() == MOUSE_ENCODING_SGR:
                         if mode == MOUSE_ENCODING_SGR:
                             return False
                         elif mode == MOUSE_ENCODING_URXVT:
@@ -369,7 +369,7 @@ class MouseDecoder(tff.DefaultHandler):
                             context.puts("\x1b[M%c%c%c" % params)
                             return True
                         return True
-                    if self._mouse_mode.getprotocol() == MOUSE_ENCODING_URXVT:
+                    if self.mouse_mode.getprotocol() == MOUSE_ENCODING_URXVT:
                         if mode == MOUSE_ENCODING_URXVT:
                             return False
                         elif mode == MOUSE_ENCODING_SGR:
@@ -400,13 +400,13 @@ class MouseDecoder(tff.DefaultHandler):
         return False
 
     def initialize_mouse(self, output):
-        self._mouse_mode.setenabled(output, True)
+        self.mouse_mode.setenabled(output, True)
         self._x = -1
         self._y = -1
         self._init_glich_flag = time.time()
 
     def uninitialize_mouse(self, output):
-        self._mouse_mode.setenabled(output, False)
+        self.mouse_mode.setenabled(output, False)
         self._init_glich_flag = None
 
     def handle_char(self, context, c):
@@ -421,7 +421,7 @@ class MouseDecoder(tff.DefaultHandler):
                     self._mouse_state = None
                     if self.always_handle or self._listener.mouseenabled():
                         self._dispatch_mouse(context, code, x - 1, y - 1)
-                    if self._mouse_mode.getprotocol() != 0:
+                    if self.mouse_mode.getprotocol() != 0:
                         params = (code + 0x20, x + 0x20, y + 0x20)
                         context.puts("\x1b[M%c%c%c" % params)
                 return True
