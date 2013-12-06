@@ -24,7 +24,6 @@ try:
 except ImportError:
     from StringIO import StringIO
 import codecs
-#import logger
 from interface import IScreen
 from constant import *
 
@@ -444,20 +443,25 @@ class IScreenImpl(IScreen):
 
     def copyline(self, s, x, y, length, lazy=False):
         if not lazy or line.dirty:
+            try:
+                if x + length > self.width:
+                    raise CanossaRangeException("x + length = %d" % (x + length))
+                elif x < 0:
+                    raise CanossaRangeException("x = %d" % x)
+                if y >= self.height:
+                    raise CanossaRangeException("y = %d" % y)
+                elif y < 0:
+                    raise CanossaRangeException("y = %d" % y)
+
+                assert self.height == len(self.lines)
+                assert y < self.height
+            except e:
+                import logging
+                logging.exception(e)
+                return
+
             cursor = Cursor(0, 0)
             cursor.attr.draw(s)
-            if x + length > self.width:
-                raise CanossaRangeException("x + length = %d" % (x + length))
-            elif x < 0:
-                raise CanossaRangeException("x = %d" % x)
-            if y >= self.height:
-                raise CanossaRangeException("y = %d" % y)
-            elif y < 0:
-                raise CanossaRangeException("y = %d" % y)
-
-            assert self.height == len(self.lines)
-            assert y < self.height
-
             while True:
                 s.write("\x1b[%d;%dH" % (y + 1, x + 1))
                 line = self.lines[y]
@@ -874,6 +878,8 @@ class Screen(IScreenImpl,
              SuuportsCursorPersistentTrait,
              SuuportsAlternateScreenTrait,
              SuuportsISO2022DesignationTrait):
+
+    parent = None
 
     def __init__(self, row=24, col=80, y=0, x=0,
                  termenc="UTF-8", termprop=None):
