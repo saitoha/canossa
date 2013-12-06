@@ -29,7 +29,7 @@ import canossa.output as output
 import doctest
 dirty = False
 #for m in (attribute, cell, line, cursor, screen, popup, output):
-for m in [attribute]:
+for m in [attribute, cell]:
     failure_count, test_count = doctest.testmod(m)
     if failure_count > 0:
         dirty = True

@@ -26,23 +26,31 @@ class Cell():
     >>> from attribute import Attribute
     >>> cell = Cell()
     >>> attr = Attribute()
-    >>> print cell.get()
+    >>> cell.get()
+    u' '
     >>> cell.write(0x34, attr)
-    >>> print cell.get()
+    >>> cell.get()
+    u'4'
     >>> cell.clear(attr)
-    >>> print cell.get()
+    >>> cell.get()
+    u' '
     >>> cell.write(0x3042, attr)
-    >>> print cell.get()
+    >>> cell.get()
+    u'\u3042'
     >>> cell.pad()
-    >>> print cell.get()
+    >>> cell.get()
     >>> cell.write(0x09a4, attr)
-    >>> print cell.get()
+    >>> cell.get()
+    u'\u09a4'
     >>> cell.combine(0x20DE)
-    >>> print cell.get()
+    >>> cell.get()
+    u'\u09a4\u20de'
     >>> cell.combine(0x20DD)
-    >>> print cell.get()
+    >>> cell.get()
+    u'\u09a4\u20de\u20dd'
     >>> cell.combine(0x0308)
-    >>> print cell.get()
+    >>> cell.get()
+    u'\u09a4\u20de\u20dd\u0308'
     """
 
     _value = None
