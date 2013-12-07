@@ -73,10 +73,12 @@ class Attribute():
     defaultvalue = _ATTR_DEFAULT
 
     def __init__(self, value=_ATTR_DEFAULT):
+        #assert type(value) == int
         self._attrvalue = value
 
-    def setvalue(self, attrvalue):
-        self._attrvalue = attrvalue
+    def setvalue(self, value=_ATTR_DEFAULT):
+        #assert type(value) == int
+        self._attrvalue = value
 
     def draw(self, s, attr=None):
         params = [0]

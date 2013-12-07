@@ -74,18 +74,25 @@ def test():
     """
     >>> cursor = Cursor()
     >>> print cursor
+    <ESC>[1;1H
     >>> cursor.clear()
     >>> print cursor
+    <ESC>[1;1H
     >>> cursor.setyx(10, 20)
     >>> print cursor
+    <ESC>[11;21H
     >>> print cursor.getyx()
+    (10, 20)
     >>> cursor.save()
     >>> cursor.setyx(24, 15)
     >>> print cursor
+    <ESC>[25;16H
     >>> cursor.clear()
     >>> print cursor
+    <ESC>[1;1H
     >>> cursor.restore()
     >>> print cursor
+    <ESC>[11;21H
     """
     import doctest
     doctest.testmod()

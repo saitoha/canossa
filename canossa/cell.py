@@ -31,7 +31,7 @@ class Cell():
     >>> cell.write(0x34, attr)
     >>> cell.get()
     u'4'
-    >>> cell.clear(attr)
+    >>> cell.clear(attr._attrvalue)
     >>> cell.get()
     u' '
     >>> cell.write(0x3042, attr)

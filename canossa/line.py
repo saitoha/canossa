@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # ***** END LICENSE BLOCK *****
 
-from cell import Attribute, Cell
+from cell import Cell
 
 _LINE_TYPE_DHLT = 3
 _LINE_TYPE_DHLB = 4
@@ -112,13 +112,14 @@ class SupportsCombiningTrait():
 
     def combine(self, value, pos):
         '''
+        >>> from attribute import Attribute
         >>> line = Line(5)
         >>> attr = Attribute()
-        >>> line.clear(attr)
+        >>> line.clear(attr._attrvalue)
         >>> line.write(0x40, 1, attr)
         >>> line.combine(0x300, 2)
         >>> print line
-        <ESC>#5<ESC>(B<ESC>[0;39;49m<SP>@̀<SP><SP><SP>
+        <ESC>[0;39;49m<SP>@̀<SP><SP><SP>
         '''
         self.cells[max(0, pos - 1)].combine(value)
 
@@ -169,10 +170,11 @@ class Line(SupportsDoubleSizedTrait,
 
     def clear(self, attrvalue):
         '''
+        >>> from attribute import Attribute
         >>> line = Line(5)
-        >>> line.clear(Attribute())
+        >>> line.clear(Attribute()._attrvalue)
         >>> print line
-        <ESC>#5<ESC>(B<ESC>[0;39;49m<SP><SP><SP><SP><SP>
+        <ESC>[0;39;49m<SP><SP><SP><SP><SP>
         '''
         if not self.dirty:
             self.dirty = True
@@ -182,18 +184,19 @@ class Line(SupportsDoubleSizedTrait,
 
     def write(self, value, pos, attr):
         '''
+        >>> from attribute import Attribute
         >>> line = Line(5)
         >>> attr = Attribute()
-        >>> line.clear(attr)
+        >>> line.clear(attr._attrvalue)
         >>> line.write(0x40, 0, attr)
         >>> print line
-        <ESC>#5<ESC>(B<ESC>[0;39;49m@<SP><SP><SP><SP>
+        <ESC>[0;39;49m@<SP><SP><SP><SP>
         >>> line.write(0x50, 0, attr)
         >>> print line
-        <ESC>#5<ESC>(B<ESC>[0;39;49mP<SP><SP><SP><SP>
+        <ESC>[0;39;49mP<SP><SP><SP><SP>
         >>> line.write(0x3042, 1, attr)
         >>> print line
-        <ESC>#5<ESC>(B<ESC>[0;39;49mPあ<SP><SP><SP>
+        <ESC>[0;39;49mPあ<SP><SP><SP>
         '''
         if not self.dirty:
             self.dirty = True
@@ -204,11 +207,12 @@ class Line(SupportsDoubleSizedTrait,
         >>> line = Line(5)
         >>> import StringIO
         >>> s = StringIO.StringIO()
-        >>> line.draw(s, 3, 5)
+        >>> from cursor import Cursor
+        >>> line.drawrange(s, 3, 5, Cursor())
         >>> result = s.getvalue().replace("\x1b", "<ESC>")
         >>> result = result.replace("\x20", "<SP>")
         >>> print result
-        <ESC>#5<ESC>(B<ESC>[0m<SP><SP>
+        <ESC>[0;39;49m<SP><SP>
         '''
         cells = self.cells
         attr = cursor.attr
@@ -271,13 +275,15 @@ class Line(SupportsDoubleSizedTrait,
         '''
         >>> line = Line(5)
         >>> print line
-        <ESC>#5<ESC>(B<ESC>[0m<SP><SP><SP><SP><SP>
+        <ESC>[0;39;49m<SP><SP><SP><SP><SP>
         '''
         import StringIO, codecs
         import locale
+        from cursor import Cursor
         language, encoding = locale.getdefaultlocale()
+        cursor = Cursor()
         s = codecs.getwriter(encoding)(StringIO.StringIO())
-        self.draw(s, 0, len(self.cells))
+        self.drawrange(s, 0, len(self.cells), cursor)
         result = s.getvalue().replace("\x1b", "<ESC>")
         result = result.replace("\x20", "<SP>")
         result = result.replace("\x00", "<NUL>")
@@ -285,27 +291,28 @@ class Line(SupportsDoubleSizedTrait,
 
 def test():
     """
+    >>> from attribute import Attribute
     >>> line = Line(10)
     >>> attr = Attribute()
     >>> print line
-    <ESC>#5<ESC>(B<ESC>[0m<SP><SP><SP><SP><SP><SP><SP><SP><SP><SP>
-    >>> line.clear(attr)
+    <ESC>[0;39;49m<SP><SP><SP><SP><SP><SP><SP><SP><SP><SP>
+    >>> line.clear(attr._attrvalue)
     >>> print line
-    <ESC>#5<ESC>(B<ESC>[0;39;49m<SP><SP><SP><SP><SP><SP><SP><SP><SP><SP>
+    <ESC>[0;39;49m<SP><SP><SP><SP><SP><SP><SP><SP><SP><SP>
     >>> line.write(0x40, 0, attr)
     >>> line.write(0x50, 0, attr)
     >>> print line
-    <ESC>#5<ESC>(B<ESC>[0;39;49mP<SP><SP><SP><SP><SP><SP><SP><SP><SP>
+    <ESC>[0;39;49mP<SP><SP><SP><SP><SP><SP><SP><SP><SP>
     >>> line.write(0x40, 1, attr)
     >>> print line
-    <ESC>#5<ESC>(B<ESC>[0;39;49mP@<SP><SP><SP><SP><SP><SP><SP><SP>
+    <ESC>[0;39;49mP@<SP><SP><SP><SP><SP><SP><SP><SP>
     >>> line.pad(2)
     >>> line.write(0x3042, 3, attr)
     >>> print line
-    <ESC>#5<ESC>(B<ESC>[0;39;49mP@あ<SP><SP><SP><SP><SP><SP>
+    <ESC>[0;39;49mP@あ<SP><SP><SP><SP><SP><SP>
     >>> line.write(0x30, 5, attr)
     >>> print line
-    <ESC>#5<ESC>(B<ESC>[0;39;49mP@あ<SP>0<SP><SP><SP><SP>
+    <ESC>[0;39;49mP@あ<SP>0<SP><SP><SP><SP>
     """
     import doctest
     doctest.testmod()

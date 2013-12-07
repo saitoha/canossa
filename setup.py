@@ -28,8 +28,7 @@ import canossa.output as output
 
 import doctest
 dirty = False
-#for m in (attribute, cell, line, cursor, screen, popup, output):
-for m in [attribute, cell]:
+for m in (attribute, cell, line, cursor, attribute, popup, iframe, output):
     failure_count, test_count = doctest.testmod(m)
     if failure_count > 0:
         dirty = True
