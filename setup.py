@@ -24,6 +24,7 @@ import canossa.line as line
 import canossa.cursor as cursor
 import canossa.screen as screen
 import canossa.popup as popup
+import canossa.iframe as iframe
 import canossa.output as output
 
 import doctest
