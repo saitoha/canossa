@@ -424,14 +424,14 @@ class CanossaRangeException(Exception):
         """
         >>> e = CanossaRangeException("test1")
         >>> e.message
-        test1
+        'test1'
         """
         self.message = message
 
     def __str__(self):
         """
         >>> e = CanossaRangeException("test2")
-        >>> print e
+        >>> e.message
         'test2'
         """
         return repr(self.message)
