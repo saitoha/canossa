@@ -629,6 +629,20 @@ class InnerFrame(tff.DefaultHandler,
         self._outerscreen = screen
         self._listener = listener
         self._mousedecoder = mousedecoder
+        innerscreen.parent = screen
+
+        from mode import InputMode
+        from input import InputHandler
+        inputmode = InputMode(session.tty)
+        self.input_handler = InputHandler(session,
+                                          screen,
+                                          termenc,
+                                          termprop,
+                                          mousedecoder.mouse_mode,
+                                          inputmode,
+                                          offset_x=self.left,
+                                          offset_y=self.top)
+
 
         self._tty = session.add_subtty('xterm', 'ja_JP.UTF-8',
                                        command, row, col, termenc,
@@ -645,11 +659,15 @@ class InnerFrame(tff.DefaultHandler,
             self._mousedecoder.uninitialize_mouse(self._window)
 
     def handle_csi(self, context, parameter, intermediate, final):
+        if self.input_handler.handle_csi(context, parameter, intermediate, final):
+            return True
         if self._mousedecoder.handle_csi(context, parameter, intermediate, final):
             return True
         return False
 
     def handle_char(self, context, c):
+        if self.input_handler.handle_char(context, c):
+            return True
         if self._mousedecoder.handle_char(context, c):
             return True
         return False
