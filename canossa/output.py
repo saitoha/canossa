@@ -124,7 +124,7 @@ class Canossa(tff.DefaultHandler):
             if not intermediate:
                 if final == 0x6d: # m
                     ''' SGR - Select Graphics Rendition '''
-                    if len(parameter) == 0:
+                    if not parameter:
                         self.screen.reset_sgr()
                     else:
                         params = _param_generator(parameter)
@@ -136,14 +136,14 @@ class Canossa(tff.DefaultHandler):
                     self.screen.cup(row, col)
 
                 elif final == 0x68: # h
-                    if len(parameter) > 0:
+                    if parameter:
                         if parameter[0] == 0x3f: #
                             params = _param_generator(parameter)
                             self.screen.decset(params)
                     return not self.__visibility
 
                 elif final == 0x6c: # l
-                    if len(parameter) > 0:
+                    if parameter:
                         if parameter[0] == 0x3f: # ?
                             params = _param_generator(parameter)
                             self.screen.decrst(params)
@@ -222,39 +222,40 @@ class Canossa(tff.DefaultHandler):
                 elif final == 0x6e: # n
                     ''' DSR - Device Status Request '''
                     if self.__visibility:
-                        if parameter == [0x36]: # n
-                            if intermediate == []:
-                                if not self._is_frame:
-                                    self.__cpr = _CPR_ANSI
-                                return True
-                            elif intermediate == [0x3f]: # ?
-                                if not self._is_frame:
-                                    self.__cpr = _CPR_DEC
-                                return True
+                        if parameter:
+                            if parameter[0] == 0x36: # n
+                                if not intermediate:
+                                    if not self._is_frame:
+                                        self.__cpr = _CPR_ANSI
+                                    return True
+                                elif intermediate[0] == 0x3f: # ?
+                                    if not self._is_frame:
+                                        self.__cpr = _CPR_DEC
+                                    return True
                     return not self.__visibility
 
                 elif final == 0x70: # p
 
-                    if intermediate == []:
-                        if len(parameter) and parameter[0] == 0x3e: # >h
+                    if not intermediate:
+                        if parameter and parameter[0] == 0x3e: # >h
                             ''' DECRQM - Request DEC Private Mode '''
-                    elif intermediate == [0x22]: # "
+                    elif intermediate[0] == 0x22: # "
                         ''' DECSCL - Set Conformance Level '''
                         return not self.__visibility
-                    elif intermediate == [0x24]: # $
-                        if len(parameter) and parameter[0] == 0x3f: # ?
+                    elif intermediate[0] == 0x24: # $
+                        if parameter and parameter[0] == 0x3f: # ?
                             ''' DECRQM - Request DEC Private Mode '''
                             return not self.__visibility
                         else:
                             ''' DECRQM - Request ANSI Mode '''
                             return not self.__visibility
-                    elif intermediate == [0x21]: # !
+                    elif intermediate[0] == 0x21: # !
                         ''' DECTSR - Soft Reset '''
                         # TODO: implement soft reset
                         return not self.__visibility
 
                 elif final == 0x72: # r
-                    if len(parameter) > 0:
+                    if parameter:
                         if parameter[0] == 0x3f: # ?
                             params = _parse_params(parameter[1:])
                             self.screen.xt_rest(params)
@@ -266,7 +267,7 @@ class Canossa(tff.DefaultHandler):
                         self.screen.decstbm(top, bottom)
 
                 elif final == 0x73: # s
-                    if len(parameter) > 0:
+                    if parameter:
                         if parameter[0] == 0x3f: # ?
                             params = _parse_params(parameter[1:])
                             self.screen.xt_save(params)
@@ -277,7 +278,7 @@ class Canossa(tff.DefaultHandler):
                 else:
                     mnemonic = '[' + chr(final) + ']'
                     logging.error("mnemonic: %s" % mnemonic)
-            if intermediate == [ 0x21 ] and final == 0x70:
+            if final == 0x70 and intermediate and intermediate[0] == 0x21:
                 self.screen.decstr()
         except:
             mnemonic = '[' + chr(final) + ']'
@@ -288,7 +289,7 @@ class Canossa(tff.DefaultHandler):
         if self._resized:
             self._resized = False
             self.screen.adjust_cursor()
-        if len(intermediate) == 0:
+        if not intermediate:
             if False:
                 pass
 
@@ -347,8 +348,8 @@ class Canossa(tff.DefaultHandler):
                     num = value[:pos]
                 except:
                     num = None
-            if not num is None:
-                if num == [0x30] or num == [0x32]:
+            if num:
+                if num[0] == 0x30 or num[0] == 0x32:
                     arg = value[pos + 1:]
                     self.screen.settitle(u''.join([unichr(x) for x in arg]))
                     s = self.screen.gettitle()
