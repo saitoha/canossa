@@ -23,6 +23,10 @@ import thread
 import logging
 lock = thread.allocate_lock()
 
+_CPR_NONE = 0
+_CPR_ANSI = 1
+_CPR_DEC = 2
+
 def _param_generator(params, minimum=0, offset=0, minarg=1):
     param = 0
     for c in params:
@@ -88,10 +92,6 @@ def _get_pos_and_size(stdin, stdout):
         termios.tcsetattr(stdin_fileno, termios.TCSANOW, backup)
 
 
-_CPR_NONE=0
-_CPR_ANSI=1
-_CPR_DEC=2
-
 class Canossa(tff.DefaultHandler):
 
     __cpr = False
@@ -121,140 +121,158 @@ class Canossa(tff.DefaultHandler):
             self._resized = False
             self.screen.adjust_cursor()
         try:
-            if not intermediate:
-                if final == 0x6d: # m
+            if final == 0x6d: # m
+                if not intermediate:
                     ''' SGR - Select Graphics Rendition '''
-                    if len(parameter) == 0:
+                    if not parameter:
                         self.screen.reset_sgr()
                     else:
                         params = _param_generator(parameter)
                         self.screen.sgr(params)
 
-                elif final == 0x48: # H
+            elif final == 0x48: # H
+                if not intermediate:
                     ''' CUP - Cursor Position '''
                     row, col = _param_generator(parameter, offset=-1, minarg=2)
                     self.screen.cup(row, col)
 
-                elif final == 0x68: # h
-                    if len(parameter) > 0:
+            elif final == 0x68: # h
+                if not intermediate:
+                    if parameter:
                         if parameter[0] == 0x3f: #
                             params = _param_generator(parameter)
                             self.screen.decset(params)
                     return not self.__visibility
 
-                elif final == 0x6c: # l
-                    if len(parameter) > 0:
+            elif final == 0x6c: # l
+                if not intermediate:
+                    if parameter:
                         if parameter[0] == 0x3f: # ?
                             params = _param_generator(parameter)
                             self.screen.decrst(params)
                     return not self.__visibility
 
-                elif final == 0x4b: # K
+            elif final == 0x4b: # K
+                if not intermediate:
                     ''' EL - Erase Line(s) '''
                     ps = _parse_params(parameter)[0]
                     self.screen.el(ps)
 
-                elif final == 0x4a: # J
+            elif final == 0x4a: # J
+                if not intermediate:
                     ''' ED - Erase Display '''
                     ps = _parse_params(parameter)[0]
                     self.screen.ed(ps)
 
-                elif final == 0x40: # @
+            elif final == 0x40: # @
+                if not intermediate:
                     ''' ICH - Insert Blank Character(s) '''
                     ps = _parse_params(parameter, minimum=1)[0]
                     self.screen.ich(ps)
 
-                elif final == 0x41: # A
+            elif final == 0x41: # A
+                if not intermediate:
                     ''' CUU - Cursor Up '''
                     ps = _parse_params(parameter, minimum=1)[0]
                     self.screen.cuu(ps)
 
-                elif final == 0x42: # B
+            elif final == 0x42: # B
+                if not intermediate:
                     ''' CUD - Cursor Down '''
                     ps = _parse_params(parameter, minimum=1)[0]
                     self.screen.cud(ps)
 
-                elif final == 0x43: # C
+            elif final == 0x43: # C
+                if not intermediate:
                     ''' CUF - Cursor Forward '''
                     ps = _parse_params(parameter, minimum=1)[0]
                     self.screen.cuf(ps)
 
-                elif final == 0x44: # D
+            elif final == 0x44: # D
+                if not intermediate:
                     ''' CUF - Cursor Backward '''
                     ps = _parse_params(parameter, minimum=1)[0]
                     self.screen.cub(ps)
 
-                elif final == 0x4c: # L
+            elif final == 0x4c: # L
+                if not intermediate:
                     ''' IL - Insert Line(s) '''
                     ps = _parse_params(parameter, minimum=1)[0]
                     self.screen.il(ps)
 
-                elif final == 0x4d: # M
+            elif final == 0x4d: # M
+                if not intermediate:
                     ''' DL - Down Line(s) '''
                     ps = _parse_params(parameter, minimum=1)[0]
                     self.screen.dl(ps)
 
-                elif final == 0x50: # P
+            elif final == 0x50: # P
+                if not intermediate:
                     ''' DCH - Delete Char(s) '''
                     ps = _parse_params(parameter, minimum=1)[0]
                     self.screen.dch(ps)
 
-                elif final == 0x63: # c DA2
+            elif final == 0x63: # c DA2
+                if not intermediate:
                     ''' DA2 - Secondary Device Attribute '''
                     #return not self.__visibility
                     return False
 
-                elif final == 0x64: # d
+            elif final == 0x64: # d
+                if not intermediate:
                     ''' VPA - Vertical Position Absolute '''
                     ps = _parse_params(parameter, offset=-1)[0]
                     self.screen.vpa(ps)
 
-                elif final == 0x66: # f
+            elif final == 0x66: # f
+                if not intermediate:
                     ''' HVP - Horizontal and Vertical Position '''
                     row, col = _parse_params(parameter, offset=-1, minarg=2)
                     self.screen.hvp(row, col)
 
-                elif final == 0x67: # g
+            elif final == 0x67: # g
+                if not intermediate:
                     ''' TBC - Tabstop Clear '''
                     ps = _parse_params(parameter)[0]
                     self.screen.tbc(ps)
 
-                elif final == 0x6e: # n
-                    ''' DSR - Device Status Request '''
-                    if self.__visibility:
-                        if parameter == [0x36]: # n
-                            if intermediate == []:
-                                if not self._is_frame:
-                                    self.__cpr = _CPR_ANSI
-                                return True
-                            elif intermediate == [0x3f]: # ?
-                                if not self._is_frame:
-                                    self.__cpr = _CPR_DEC
-                                return True
+            elif final == 0x6e: # n
+                ''' DSR - Device Status Request '''
+                if parameter:
+                    if parameter[0] == 0x36: # 6
+                        if not intermediate:
+                            y, x = self.screen.getyx()
+                            context.puts("\x1b[%d;%dR" % (y + 1, x + 1))
+                            return True
+                        elif intermediate[0] == 0x3f: # ?
+                            y, x = self.screen.getyx()
+                            context.puts("\x1b[?%d;%dR" % (y + 1, x + 1))
+                            return True
+                return not self.__visibility
+
+            elif final == 0x70: # p
+
+                if not intermediate:
+                    if parameter and parameter[0] == 0x3e: # >h
+                        ''' DECRQM - Request DEC Private Mode '''
+                elif intermediate[0] == 0x22: # "
+                    ''' DECSCL - Set Conformance Level '''
                     return not self.__visibility
-
-                elif final == 0x70: # p
-
-                    if intermediate == []:
-                        if len(parameter) and parameter[0] == 0x3e: # >h
-                            ''' DECRQM - Request DEC Private Mode '''
-                    elif intermediate == [0x22]: # "
-                        ''' DECSCL - Set Conformance Level '''
+                elif intermediate[0] == 0x24: # $
+                    if parameter and parameter[0] == 0x3f: # ?
+                        ''' DECRQM - Request DEC Private Mode '''
                         return not self.__visibility
-                    elif intermediate == [0x24]: # $
-                        if len(parameter) and parameter[0] == 0x3f: # ?
-                            ''' DECRQM - Request DEC Private Mode '''
-                            return not self.__visibility
-                        else:
-                            ''' DECRQM - Request ANSI Mode '''
-                            return not self.__visibility
-                    elif intermediate == [0x21]: # !
-                        ''' DECTSR - Soft Reset '''
-                        # TODO: implement soft reset
+                    else:
+                        ''' DECRQM - Request ANSI Mode '''
                         return not self.__visibility
+                elif intermediate[0] == 0x21: # !
+                    ''' DECTSR - Soft Reset '''
+                    self.screen.decstr()
+                    return True
 
-                elif final == 0x72: # r
-                    if len(parameter) > 0:
+            elif final == 0x72: # r
+                if not intermediate:
+                    if parameter:
                         if parameter[0] == 0x3f: # ?
                             params = _parse_params(parameter[1:])
                             self.screen.xt_rest(params)
@@ -265,20 +283,21 @@ class Canossa(tff.DefaultHandler):
                         top, bottom = 0, self.screen.height - 1
                         self.screen.decstbm(top, bottom)
 
-                elif final == 0x73: # s
-                    if len(parameter) > 0:
+            elif final == 0x73: # s
+                if not intermediate:
+                    if parameter:
                         if parameter[0] == 0x3f: # ?
                             params = _parse_params(parameter[1:])
                             self.screen.xt_save(params)
 
-                elif final == 0x78: # x
+            elif final == 0x78: # x
+                if not intermediate:
                     return not self.__visibility
 
-                else:
-                    mnemonic = '[' + chr(final) + ']'
-                    logging.error("mnemonic: %s" % mnemonic)
-            if intermediate == [ 0x21 ] and final == 0x70:
-                self.screen.decstr()
+            else:
+                mnemonic = '[' + chr(final) + ']'
+                logging.error("mnemonic: %s" % mnemonic)
+
         except:
             mnemonic = '[' + chr(final) + ']'
             logging.exception("handle_csi: %s" % mnemonic)
@@ -288,7 +307,7 @@ class Canossa(tff.DefaultHandler):
         if self._resized:
             self._resized = False
             self.screen.adjust_cursor()
-        if len(intermediate) == 0:
+        if not intermediate:
             if False:
                 pass
 
@@ -347,8 +366,8 @@ class Canossa(tff.DefaultHandler):
                     num = value[:pos]
                 except:
                     num = None
-            if not num is None:
-                if num == [0x30] or num == [0x32]:
+            if num:
+                if num[0] == 0x30 or num[0] == 0x32:
                     arg = value[pos + 1:]
                     self.screen.settitle(u''.join([unichr(x) for x in arg]))
                     s = self.screen.gettitle()
@@ -404,13 +423,13 @@ class Canossa(tff.DefaultHandler):
     def handle_draw(self, context):
         if self.__visibility:
             self.screen.drawall(context)
-        if self.__cpr != _CPR_NONE:
-            if self.__cpr == _CPR_ANSI:
-                self.__cpr = _CPR_NONE
-                context.puts("\x1b[6n")
-            elif self.__cpr == _CPR_DEC:
-                self.__cpr = _CPR_NONE
-                context.puts("\x1b[?6n")
+        #if self.__cpr != _CPR_NONE:
+        #    if self.__cpr == _CPR_ANSI:
+        #        self.__cpr = _CPR_NONE
+        #        context.puts("\x1b[6n")
+        #    elif self.__cpr == _CPR_DEC:
+        #        self.__cpr = _CPR_NONE
+        #        context.puts("\x1b[?6n")
 
     def handle_resize(self, context, row, col):
         lock.acquire()

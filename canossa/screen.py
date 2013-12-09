@@ -208,9 +208,9 @@ class SuuportsAlternateScreenTrait():
 
     def switch_mainbuf(self):
         self.lines = self._mainbuf
-        bcevalue = self.cursor.attr.getbcevalue()
+        defaultvalue = self.cursor.attr.getdefaultvalue()
         for line in self.lines:
-            line.clear(bcevalue)
+            line.clear(defaultvalue)
         lines = self.lines
         if len(lines) > self.height:
             while len(lines) != self.height:
@@ -231,9 +231,9 @@ class SuuportsAlternateScreenTrait():
 
     def switch_altbuf(self):
         self.lines = self._altbuf
-        bcevalue = self.cursor.attr.getbcevalue()
+        defaultvalue = self.cursor.attr.getdefaultvalue()
         for line in self.lines:
-            line.clear(bcevalue)
+            line.clear(defaultvalue)
         lines = self.lines
         if len(lines) > self.height:
             while len(lines) > self.height:
@@ -1115,6 +1115,13 @@ class Screen(IScreenImpl,
         defaultvalue = cursor.attr.getdefaultvalue()
         for line in self.lines:
             line.clear(defaultvalue)
+        self.dectcem = True
+        cursor.clear()
+        self._setup_tab()
+
+    def decstr(self):
+        # TODO:
+        cursor = self.cursor
         self.dectcem = True
         cursor.clear()
         self._setup_tab()

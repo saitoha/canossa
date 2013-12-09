@@ -425,7 +425,8 @@ class IMouseListenerImpl(IMouseListener):
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
             return False
-        self._style = self._style_active
+        #self._style = self._style_active
+        self._screen.setfocus()
         return True
 
     def onclick(self, context, x, y):
