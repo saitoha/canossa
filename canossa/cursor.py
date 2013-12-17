@@ -27,14 +27,14 @@ class Cursor():
     row = 0
     dirty = True
     attr = None
-    __backup = None
+    _backup = None
 
     def __init__(self, y=0, x=0, attr=Attribute()):
         self.col = x
         self.row = y
         self.dirty = True
         self.attr = attr
-        self.__backup = None
+        self._backup = None
 
     def clear(self):
         self.col = 0
@@ -43,14 +43,14 @@ class Cursor():
         self.attr.clear()
 
     def save(self):
-        self.__backup = Cursor(self.row, self.col, self.attr.clone())
+        self._backup = Cursor(self.row, self.col, self.attr.clone())
 
     def restore(self):
-        if self.__backup:
-            self.col = self.__backup.col
-            self.row = self.__backup.row
-            self.attr = self.__backup.attr
-            self.__backup = None
+        if self._backup:
+            self.col = self._backup.col
+            self.row = self._backup.row
+            self.attr = self._backup.attr
+            self._backup = None
 
     def draw(self, s):
         s.write("\x1b[%d;%dH" % (self.row + 1, self.col + 1))

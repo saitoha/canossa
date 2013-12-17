@@ -655,9 +655,10 @@ class InnerFrame(tff.DefaultHandler,
         return False
 
     def moveto(self, row, col):
-        if col >= self._outerscreen.width + 1:
+        screen = self._outerscreen
+        if col >= screen.width + 1:
             raise Exception("range error col=%s" % col)
-        if row >= self._outerscreen.height + 1:
+        if row >= screen.height + 1:
             raise Exception("range error row=%s" % row)
         if row < 1:
             raise Exception("range error row=%s" % row)
