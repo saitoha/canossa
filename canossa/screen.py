@@ -442,7 +442,7 @@ class IScreenImpl(IScreen):
     _listener = None
 
     def copyline(self, s, x, y, length, lazy=False):
-        if not lazy or line.dirty:
+        if not lazy:
             try:
                 if x + length > self.width:
                     raise CanossaRangeException("x + length = %d" % (x + length))
@@ -538,6 +538,15 @@ class IScreenImpl(IScreen):
         context.puts(s.getvalue())
         s.truncate(0)
 
+    def update_when_scroll(self, s, n):
+        for window in self._layouts:
+            if window.is_shown():
+                top = window.top - n
+                if top >= 0:
+                    width = window.width
+                    if width > 0 and n > 0 and window.left > 0:
+                        self.copyline(self, window._buffer, window.left, top, width)
+
     def drawwindows(self, context):
         trash = self._trash
         if trash:
@@ -552,7 +561,6 @@ class IScreenImpl(IScreen):
             widget = widgets[window.id]
             widget.draw(region)
         for window in reversed(self._layouts):
-            widget = widgets[window.id]
             window.draw(context)
 
     def resize(self, row, col):
@@ -721,6 +729,10 @@ class MockScreenWithWindows(MockScreen):
 
     def drawwindows(self, context):
         pass
+
+    def getyx(self):
+        cursor = self.cursor
+        return cursor.row, cursor.col
 
 class Window():
 
