@@ -878,6 +878,8 @@ class Region():
     def reset(self):
         self._lines = {}
 
+class DummyTermprop():
+    wcwidth = None
 
 class Screen(IScreenImpl,
              IFocusListenerImpl,
@@ -896,6 +898,11 @@ class Screen(IScreenImpl,
     def __init__(self, row=24, col=80, y=0, x=0,
                  termenc="UTF-8", termprop=None):
 
+        """
+        >>> screen = Screen(termprop=DummyTermprop())
+        >>> screen.getyx()
+        (0, 0)
+        """
         self._saved_pos = None
         self._title = u""
         self._widgets = None
