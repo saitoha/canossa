@@ -610,8 +610,16 @@ class InnerFrame(tff.DefaultHandler,
 
         self._session = session
 
+        self._padding_top = 1
+        self._padding_left = 1
+        self._padding_bottom = 1
+        self._padding_right = 1
+
         window = screen.create_window(self)
-        window.alloc(left - 1, top - 1, col + 2, row + 2)
+        window.alloc(left - self._padding_left,
+                     top - self._padding_top,
+                     col + self._padding_left + self._padding_right,
+                     row + self._padding_top + self._padding_bottom)
         window.focus()
 
         self._window = window
@@ -620,10 +628,11 @@ class InnerFrame(tff.DefaultHandler,
 
         self._mousedecoder = mousedecoder
 
-        self.top = top
-        self.left = left
+        self.left = window.left + self._padding_left
+        self.top = window.top + self._padding_top
         self.offset_top = 0
         self.offset_left = 0
+
         self._termprop = termprop
         self.innerscreen = innerscreen
         self._outerscreen = screen
@@ -677,7 +686,10 @@ class InnerFrame(tff.DefaultHandler,
             width = screen.width
             height = screen.height
 
-            dirtyregion = region.add(left - 1, top - 1, width + 2, height + 2)
+            dirtyregion = region.add(left - self._padding_left,
+                                     top - self._padding_top,
+                                     width + self._padding_left + self._padding_right,
+                                     height + self._padding_top + self._padding_bottom)
 
             # タイトルの描画
             termprop = self._termprop
@@ -686,11 +698,11 @@ class InnerFrame(tff.DefaultHandler,
             if title_length < width - 11:
                 pad_left = (width - title_length) / 2
                 pad_right = width - title_length - pad_left
-                title = ' ' * pad_left + self._title + ' ' * (pad_right - 3) + '[x]'
+                title = u' ' * pad_left + self._title + u' ' * (pad_right - 3) + u'[x]'
             elif width > 10:
-                title = '  ' + self._title[0:width - 2 - 9] + u'...   [x]'
+                title = u'  ' + self._title[0:width - 2 - 9] + u'...   [x]'
             else:
-                title = ' ' * (width - 3) + '[x]'
+                title = u' ' * (width - 3) + u'[x]'
 
 
 #            window.write('\x1b[?25l')
