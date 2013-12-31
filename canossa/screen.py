@@ -1052,6 +1052,11 @@ class Screen(IScreenImpl,
     def dch(self, n):
         self.cursor.dirty = True
 
+    def cha(self, col):
+        if col >= self.width:
+            col = self.width - 1
+        self.cursor.col = col
+
     def vpa(self, row):
         if row >= self.scroll_bottom:
             self.cursor.row = self.scroll_bottom - 1
