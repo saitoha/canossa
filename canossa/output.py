@@ -92,6 +92,17 @@ def _get_pos_and_size(stdin, stdout):
         termios.tcsetattr(stdin_fileno, termios.TCSANOW, backup)
 
 
+def _generate_mock_parser(screen):
+    import StringIO
+    import tff
+
+    canossa = Canossa(screen=screen, resized=False)
+    outputcontext = tff.ParseContext(output=StringIO.StringIO(), handler=canossa, buffering=False)
+    parser = tff.DefaultParser()
+    parser.init(outputcontext)
+    return parser
+
+
 class Canossa(tff.DefaultHandler):
 
     __cpr = False
@@ -100,7 +111,15 @@ class Canossa(tff.DefaultHandler):
                  screen=None,
                  termenc="UTF-8",
                  termprop=None,
-                 visibility=False):
+                 visibility=False,
+                 resized=True):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> screen.getyx()
+        (0, 0)
+        >>> canossa = Canossa(screen=screen, resized=False)
+        """
 
         if screen:
             self.screen = screen
@@ -114,9 +133,21 @@ class Canossa(tff.DefaultHandler):
 
         self.__visibility = visibility
         self.__cpr = False
-        self._resized = True
+        self._resized = resized
 
     def handle_csi(self, context, parameter, intermediate, final):
+
+        """
+        Test for CHA
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[7G')
+        >>> screen.getyx()
+        (0, 6)
+        """
+
         if self._resized:
             self._resized = False
             self.screen.adjust_cursor()
