@@ -697,17 +697,6 @@ class MockScreen():
         self.lines = [Line(self.width) for line in xrange(0, self.height)]
 
 
-class MockScreenWithCursor(MockScreen):
-
-    width = 80
-    height = 24
-
-    def __init__(self, row=24, col=80, y=0, x=0):
-        self.height = row
-        self.width = col
-        self.cursor = Cursor(y, x)
-        self._setup_lines()
-
 class MockScreenWithWindows(MockScreen):
 
     width = 80
@@ -884,7 +873,6 @@ class DummyTermprop():
 class Screen(IScreenImpl,
              IFocusListenerImpl,
              IMouseListenerImpl,
-             MockScreenWithCursor,
              SupportsAnsiModeTrait,
              SupportsExtendedModeTrait,
              SupportsTabStopTrait,
@@ -933,6 +921,9 @@ class Screen(IScreenImpl,
         self._trash = []
 
         self._region = Region()
+
+    def _setup_lines(self):
+        self.lines = [Line(self.width) for line in xrange(0, self.height)]
 
     def create_window(self, widget):
         window = Window(self)
@@ -1256,6 +1247,22 @@ class Screen(IScreenImpl,
         bcevalue = self.cursor.attr.getbcevalue()
         for cell in cells:
             cell.clear(bcevalue)
+
+
+class MockScreenWithCursor(Screen):
+
+    width = 80
+    height = 24
+
+    def __init__(self, row=24, col=80, y=0, x=0):
+        self.height = row
+        self.width = col
+        self.cursor = Cursor(y, x)
+        self._setup_lines()
+
+    def getyx(self):
+        cursor = self.cursor
+        return cursor.row, cursor.col
 
 
 def test():
