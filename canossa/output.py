@@ -164,6 +164,12 @@ class Canossa(tff.DefaultHandler):
                     ps = _parse_params(parameter)[0]
                     self.screen.ed(ps)
 
+            elif final == 0x47: # G
+                if not intermediate:
+                    ''' CHA - Cursor Horizontal Absolute '''
+                    ps = _parse_params(parameter, offset=-1, minimum=1)[0]
+                    self.screen.cha(ps)
+
             elif final == 0x40: # @
                 if not intermediate:
                     ''' ICH - Insert Blank Character(s) '''
