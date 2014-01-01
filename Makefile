@@ -1,31 +1,51 @@
 
 PACKAGE_NAME=canossa
+DEPENDENCIES=tff termprop
 PYTHON=python
+RM=rm -rf
 
-all: test
+.PHONY: test nosetest build setuptools install uninstall clean update
+
+build: test
 	$(PYTHON) setup.py sdist
+	python2.5 setup.py bdist_egg
 	python2.6 setup.py bdist_egg
 	python2.7 setup.py bdist_egg
 
-install:
-	$(PYTHON) -c "import setuptools" || curl http://peak.telecommunity.com/dist/ez_setup.py | python
+setuptools:
+	$(PYTHON) -c "import setuptools" || \
+		curl http://peak.telecommunity.com/dist/ez_setup.py | $(PYTHON)
+
+install: setuptools
 	$(PYTHON) setup.py install
 
 uninstall:
-	yes | pip uninstall $(PACKAGE_NAME) 
+	for package in $(PACKAGE_NAME) $(DEPENDENCIES); \
+	do \
+		pip uninstall -y $$package; \
+	done
 	
 clean:
-	rm -rf dist/ build/ *.egg-info *.pyc **/*.pyc
+	$(RM) **/dist/ **/build/ **/htmlcov/ **/*.egg-info **/*.pyc
 
 test:
 	$(PYTHON) setup.py test
 
+nosetest:
+	if $$(which nosetests); \
+	then \
+	    nosetests --with-doctest \
+	              --with-coverage \
+	              --cover-html \
+	              --cover-package=sskk; \
+	else \
+	    $(PYTHON) setup.py test; \
+	fi
+
 update: clean test
-	$(PYTHON) -c "import setuptools" || curl http://peak.telecommunity.com/dist/ez_setup.py | python
 	$(PYTHON) setup.py register
 	$(PYTHON) setup.py sdist upload
-	python2.6 -c "import setuptools" || curl http://peak.telecommunity.com/dist/ez_setup.py | python2.6
+	python2.5 setup.py bdist_egg upload
 	python2.6 setup.py bdist_egg upload
-	python2.7 -c "import setuptools" || curl http://peak.telecommunity.com/dist/ez_setup.py | python2.7
 	python2.7 setup.py bdist_egg upload
 
