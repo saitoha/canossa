@@ -684,6 +684,9 @@ class InnerFrame(tff.DefaultHandler,
 
         # タイトルの描画
         termprop = self._termprop
+        innertitle = innerscreen.gettitle()
+        if innertitle:
+            self._title = innertitle
         title_length = termprop.wcswidth(self._title)
         width = innerscreen.width + self._padding_left + self._padding_right
         if title_length < width - 11:
