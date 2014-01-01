@@ -923,7 +923,8 @@ class Screen(IScreenImpl,
         self._region = Region()
 
     def _setup_lines(self):
-        self.lines = [Line(self.width) for line in xrange(0, self.height)]
+        width = self.width
+        self.lines = [ Line(width) for line in xrange(0, self.height) ]
 
     def create_window(self, widget):
         window = Window(self)
@@ -1035,37 +1036,42 @@ class Screen(IScreenImpl,
         self.cursor.dirty = True
 
     def decstbm(self, top, bottom):
+        cursor = self.cursor
         self.scroll_top = max(0, top)
         self.scroll_bottom = min(bottom + 1, self.height)
-        self.cursor.row = self.scroll_top
-        self.cursor.col = 0
+        cursor.row = self.scroll_top
+        cursor.col = 0
 
     def dch(self, n):
         self.cursor.dirty = True
 
     def cha(self, col):
+        cursor = self.cursor
         if col >= self.width:
             col = self.width - 1
-        self.cursor.col = col
+        cursor.col = col
+        cursor.dirty = True
 
     def vpa(self, row):
+        cursor = self.cursor
         if row >= self.scroll_bottom:
-            self.cursor.row = self.scroll_bottom - 1
+            cursor.row = self.scroll_bottom - 1
         elif row < self.scroll_top:
-            self.cursor.row = self.scroll_top
+            cursor.row = self.scroll_top
         else:
-            self.cursor.row = row
-        self.cursor.dirty = True
+            cursor.row = row
+        cursor.dirty = True
 
     def hvp(self, row, col):
+        cursor = self.cursor
         if row >= self.scroll_bottom:
-            self.cursor.row = self.scroll_bottom - 1
+            cursor.row = self.scroll_bottom - 1
         elif row < self.scroll_top:
-            self.cursor.row = self.scroll_top
+            cursor.row = self.scroll_top
         else:
-            self.cursor.row = row
-        self.cursor.col = col
-        self.cursor.dirty = True
+            cursor.row = row
+        cursor.col = col
+        cursor.dirty = True
 
     def cup(self, row, col):
         cursor = self.cursor
