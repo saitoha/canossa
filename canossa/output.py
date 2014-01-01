@@ -157,7 +157,7 @@ class Canossa(tff.DefaultHandler):
             _pack('A'): self.handle_cuu,
             _pack('B'): self.handle_cud,
             _pack('C'): self.handle_cuf,
-            _pack('D'): self.handle_cud,
+            _pack('D'): self.handle_cub,
             _pack('L'): self.handle_il,
             _pack('M'): self.handle_dl,
             _pack('P'): self.handle_dch,
@@ -168,8 +168,8 @@ class Canossa(tff.DefaultHandler):
             _pack('n'): self.handle_dsr,
             _pack('?n'): self.handle_decdsr,
             _pack('r'): self.handle_decstbm,
-            _pack('?$'): self.handle_decrqm_dec,
-            _pack('$'): self.handle_decrqm_ansi,
+            _pack('?$p'): self.handle_decrqm_dec,
+            _pack('$p'): self.handle_decrqm_ansi,
             _pack('"p'): self.handle_decscl,
             _pack('!p'): self.handle_decstr,
             _pack('x'): self.handle_decreqtparm,
@@ -183,8 +183,6 @@ class Canossa(tff.DefaultHandler):
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
         >>> parser.parse('\x1b[1;4;45mabc\x1b[mdef')
-        >>> screen.lines[0]
-        
         """
 
         if not parameter:
@@ -204,7 +202,19 @@ class Canossa(tff.DefaultHandler):
         >>> parser = _generate_mock_parser(screen)
         >>> parser.parse('\x1b[5;5H')
         >>> screen.getyx()
-        (4, 4) 
+        (4, 4)
+        >>> parser.parse('\x1b[H')
+        >>> screen.getyx()
+        (0, 0)
+        >>> parser.parse('\x1b[4H')
+        >>> screen.getyx()
+        (3, 0)
+        >>> parser.parse('\x1b[5;H')
+        >>> screen.getyx()
+        (4, 0)
+        >>> parser.parse('\x1b[;5H')
+        >>> screen.getyx()
+        (0, 4)
         """
 
         row, col = _param_generator(parameter, offset=-1, minarg=2)
@@ -232,7 +242,7 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[1h')
+        >>> parser.parse('\x1b[1l')
         """
 
         return not self.__visibility
@@ -245,7 +255,7 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[1h')
+        >>> parser.parse('\x1b[?1h')
         """
 
         params = _param_generator(parameter)
@@ -260,7 +270,7 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[1h')
+        >>> parser.parse('\x1b[?1l')
         """
 
         params = _param_generator(parameter)
@@ -348,8 +358,6 @@ class Canossa(tff.DefaultHandler):
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
         >>> parser.parse('\x1b[7@')
-        >>> screen.getyx()
-        (0, 6)
         """
         ps = _parse_params(parameter, minimum=1)[0]
         self.screen.ich(ps)
@@ -361,8 +369,18 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7A')
+        >>> parser.parse('\x1b[10;10H')
         >>> screen.getyx()
+        (9, 9)
+        >>> parser.parse('\x1b[A')
+        >>> screen.getyx()
+        (8, 9)
+        >>> parser.parse('\x1b[3A')
+        >>> screen.getyx()
+        (5, 9)
+        >>> parser.parse('\x1b[10A')
+        >>> screen.getyx()
+        (0, 9)
         """
 
         ps = _parse_params(parameter, minimum=1)[0]
@@ -377,8 +395,18 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7B')
+        >>> parser.parse('\x1b[5;10H')
         >>> screen.getyx()
+        (4, 9)
+        >>> parser.parse('\x1b[B')
+        >>> screen.getyx()
+        (5, 9)
+        >>> parser.parse('\x1b[4B')
+        >>> screen.getyx()
+        (9, 9)
+        >>> parser.parse('\x1b[40B')
+        >>> screen.getyx()
+        (23, 9)
         """
 
         ps = _parse_params(parameter, minimum=1)[0]
@@ -393,8 +421,18 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7C')
+        >>> parser.parse('\x1b[5;10H')
         >>> screen.getyx()
+        (4, 9)
+        >>> parser.parse('\x1b[C')
+        >>> screen.getyx()
+        (4, 10)
+        >>> parser.parse('\x1b[4C')
+        >>> screen.getyx()
+        (4, 14)
+        >>> parser.parse('\x1b[100C')
+        >>> screen.getyx()
+        (4, 79)
         """
 
         ps = _parse_params(parameter, minimum=1)[0]
@@ -409,8 +447,18 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7D')
+        >>> parser.parse('\x1b[5;10H')
         >>> screen.getyx()
+        (4, 9)
+        >>> parser.parse('\x1b[D')
+        >>> screen.getyx()
+        (4, 8)
+        >>> parser.parse('\x1b[3D')
+        >>> screen.getyx()
+        (4, 5)
+        >>> parser.parse('\x1b[10D')
+        >>> screen.getyx()
+        (4, 0)
         """
 
         ps = _parse_params(parameter, minimum=1)[0]
@@ -426,7 +474,6 @@ class Canossa(tff.DefaultHandler):
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
         >>> parser.parse('\x1b[7C')
-        >>> screen.getyx()
         """
 
         ps = _parse_params(parameter, minimum=1)[0]
@@ -441,8 +488,7 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7C')
-        >>> screen.getyx()
+        >>> parser.parse('\x1b[7M')
         """
 
         ps = _parse_params(parameter, minimum=1)[0]
@@ -457,12 +503,11 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7C')
-        >>> screen.getyx()
+        >>> parser.parse('\x1b[7P')
         """
 
-        ps = _parse_params(parameter, minimum=1)[0]
-        self.screen.dch(ps)
+        #ps = _parse_params(parameter, minimum=1)[0]
+        #self.screen.dch(ps)
         return True
 
 
@@ -473,8 +518,7 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7C')
-        >>> screen.getyx()
+        >>> parser.parse('\x1b[>c')
         """
 
         return False
@@ -487,8 +531,18 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7d')
+        >>> parser.parse('\x1b[4;4H')
         >>> screen.getyx()
+        (3, 3)
+        >>> parser.parse('\x1b[d')
+        >>> screen.getyx()
+        (0, 3)
+        >>> parser.parse('\x1b[6d')
+        >>> screen.getyx()
+        (5, 3)
+        >>> parser.parse('\x1b[100d')
+        >>> screen.getyx()
+        (23, 3)
         """
 
         ps = _parse_params(parameter, offset=-1)[0]
@@ -503,8 +557,22 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7f')
+        >>> parser.parse('\x1b[5;5f')
         >>> screen.getyx()
+        (4, 4)
+        >>> parser.parse('\x1b[f')
+        >>> screen.getyx()
+        (0, 0)
+        >>> parser.parse('\x1b[4f')
+        >>> screen.getyx()
+        (3, 0)
+        >>> parser.parse('\x1b[5;f')
+        >>> screen.getyx()
+        (4, 0)
+        >>> parser.parse('\x1b[;5f')
+        >>> screen.getyx()
+        (0, 4)
+
         """
 
         row, col = _parse_params(parameter, offset=-1, minarg=2)
@@ -520,12 +588,11 @@ class Canossa(tff.DefaultHandler):
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
         >>> parser.parse('\x1b[g')
-        >>> screen.getyx()
         """
 
-        ps = _parse_params(parameter)[0]
-        self.screen.tbc(ps)
-        return True
+        #ps = _parse_params(parameter)[0]
+        #self.screen.tbc(ps)
+        return not self.__visibility
 
 
     def handle_dsr(self, context, parameter):
@@ -535,16 +602,15 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[g')
-        >>> screen.getyx()
+        >>> parser.parse('\x1b[6n')
+        >>> parser.parse('\x1b[n')
         """
 
         if len(parameter) == 1:
             if parameter[0] == 0x36: # 6
-                if not intermediate:
-                    y, x = self.screen.getyx()
-                    context.puts("\x1b[%d;%dR" % (y + 1, x + 1))
-                    return True
+                y, x = self.screen.getyx()
+                context.puts("\x1b[%d;%dR" % (y + 1, x + 1))
+                return True
         return not self.__visibility
 
 
@@ -555,16 +621,15 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[g')
-        >>> screen.getyx()
+        >>> parser.parse('\x1b[?6n')
+        >>> parser.parse('\x1b[6n')
         """
 
         if len(parameter) == 2:
-            if intermediate[1] == 0x36: # ?6
-                if not intermediate:
-                    y, x = self.screen.getyx()
-                    context.puts("\x1b[?%d;%dR" % (y + 1, x + 1))
-                    return True
+            if parameter[1] == 0x36: # ?6
+                y, x = self.screen.getyx()
+                context.puts("\x1b[?%d;%dR" % (y + 1, x + 1))
+                return True
         return not self.__visibility
 
 
@@ -577,6 +642,10 @@ class Canossa(tff.DefaultHandler):
         >>> parser = _generate_mock_parser(screen)
         >>> parser.parse('\x1b[r')
         >>> screen.getyx()
+        (0, 0)
+        >>> parser.parse('\x1b[4;6r')
+        >>> screen.getyx()
+        (3, 0)
         """
 
         if parameter:
@@ -595,8 +664,7 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[>p')
-        >>> screen.getyx()
+        >>> parser.parse('\x1b[$p')
         """
 
         return not self.__visibility
@@ -609,8 +677,7 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[>p')
-        >>> screen.getyx()
+        >>> parser.parse('\x1b[?$p')
         """
 
         return not self.__visibility
@@ -624,7 +691,6 @@ class Canossa(tff.DefaultHandler):
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
         >>> parser.parse('\x1b["p')
-        >>> screen.getyx()
         """
 
         return not self.__visibility
@@ -637,8 +703,7 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b["p')
-        >>> screen.getyx()
+        >>> parser.parse('\x1b[!p')
         """
 
         self.screen.decstr()
@@ -652,14 +717,22 @@ class Canossa(tff.DefaultHandler):
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b["p')
-        >>> screen.getyx()
+        >>> parser.parse('\x1b[x')
         """
 
         return not self.__visibility
 
 
     def handle_csi(self, context, parameter, intermediate, final):
+        """
+        DECREQTPARM - Request terminal parameters
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[$$x')
+        """
+
 
         if self._resized:
             self._resized = False
@@ -676,63 +749,95 @@ class Canossa(tff.DefaultHandler):
                 self._map[key](context, parameter)
 
             else:
-                mnemonic = '[' + chr(final) + ']'
+                mnemonic = '[%s, %s, %s]' % (repr(parameter), repr(intermediate), chr(final)) 
                 logging.error("mnemonic: %s" % mnemonic)
 
         except Exception, e:
-            mnemonic = '[' + chr(final) + ']'
-            logging.exception("handle_csi: %s" % mnemonic)
+            mnemonic = '[%s, %s, %s]' % (repr(parameter), repr(intermediate), chr(final)) 
+            logging.error("handle_csi: %s" % mnemonic)
         return True
 
     def handle_esc(self, context, intermediate, final):
-        if self._resized:
-            self._resized = False
-            self.screen.adjust_cursor()
-        if not intermediate:
-            if False:
-                pass
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b7')
+        >>> parser.parse('\x1b8')
+        >>> parser.parse('\x1bD')
+        >>> parser.parse('\x1bE')
+        >>> parser.parse('\x1bH')
+        >>> parser.parse('\x1bM')
+        >>> parser.parse('\x1bc')
+        >>> parser.parse('\x1b#3')
+        >>> parser.parse('\x1b#4')
+        >>> parser.parse('\x1b#5')
+        >>> parser.parse('\x1b#6')
+        >>> parser.parse('\x1b#8')
+        >>> parser.parse('\x1b#9')
+        """
 
-            elif final == 0x37: # 7
-                self.screen.cursor.save()
-                return True
-            elif final == 0x38: # 8
-                self.screen.cursor.restore()
-                return True
-            elif final == 0x44: # D
-                self.screen.ind()
-            elif final == 0x45: # E
-                self.screen.nel()
-            elif final == 0x48: # H
-                self.screen.hts()
-            elif final == 0x4d: # M
-                self.screen.ri()
-            elif final == 0x63: # c
-                self.screen.ris()
-                return not self.__visibility # pass through
-        elif intermediate == [0x23]: # #
-            if final == 0x33: # 3
-                self.screen.decdhlt()
-            elif final == 0x34: # 4
-                self.screen.decdhlb()
-            elif final == 0x35: # 5
-                self.screen.decswl()
-            elif final == 0x36: # 6
-                self.screen.decdwl()
-            elif final == 0x38: # 8
-                self.screen.decaln()
+        try:
+            if self._resized:
+                self._resized = False
+                self.screen.adjust_cursor()
+            if not intermediate:
+                if False:
+                    pass
+
+                elif final == 0x37: # 7
+                    self.screen.cursor.save()
+                    return True
+                elif final == 0x38: # 8
+                    self.screen.cursor.restore()
+                    return True
+                elif final == 0x44: # D
+                    self.screen.ind()
+                elif final == 0x45: # E
+                    self.screen.nel()
+                elif final == 0x48: # H
+                    self.screen.hts()
+                elif final == 0x4d: # M
+                    self.screen.ri()
+                elif final == 0x63: # c
+                    self.screen.ris()
+                    return not self.__visibility # pass through
+            elif intermediate == [0x23]: # #
+                if final == 0x33: # 3
+                    self.screen.decdhlt()
+                elif final == 0x34: # 4
+                    self.screen.decdhlb()
+                elif final == 0x35: # 5
+                    self.screen.decswl()
+                elif final == 0x36: # 6
+                    self.screen.decdwl()
+                elif final == 0x38: # 8
+                    self.screen.decaln()
+                else:
+                    pass
+            #elif intermediate == [0x28]: # (
+            #    self.screen.set_g0(final)
+            #    return True
+            #elif intermediate == [0x29]: # )
+            #    self.screen.set_g1(final)
+            #    return True
             else:
-                pass
-        #elif intermediate == [0x28]: # (
-        #    self.screen.set_g0(final)
-        #    return True
-        #elif intermediate == [0x29]: # )
-        #    self.screen.set_g1(final)
-        #    return True
-        else:
-            return True
+                return True
+        except Exception, e:
+            mnemonic = '[%s, %s]' % (repr(intermediate), chr(final)) 
+            logging.error("handle_esc: %s" % mnemonic)
         return True
 
     def handle_control_string(self, context, prefix, value):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b]0;abcde\\x1b\\\\')
+        >>> parser.parse('\x1b]2;abcde\\x1b\\\\')
+        >>> parser.parse('\x1b]Pq\\x1b\\\\')
+        """
+
         if prefix == 0x5d: # ']'
             try:
                 pos = value.index(0x3b)
@@ -762,6 +867,13 @@ class Canossa(tff.DefaultHandler):
 
 
     def handle_char(self, context, c):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('abc\\x07def\\x0a\\x0d\\x0c\\x0e\\x0f')
+        """
+
         if self._resized:
             self._resized = False
             self.screen.adjust_cursor()
