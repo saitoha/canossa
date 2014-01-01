@@ -1259,16 +1259,17 @@ class MockScreenWithCursor(Screen):
 
     width = 80
     height = 24
+    scroll_top = 0
+    scroll_bottom = 24
 
     def __init__(self, row=24, col=80, y=0, x=0):
         self.height = row
         self.width = col
         self.cursor = Cursor(y, x)
         self._setup_lines()
-
-    def getyx(self):
-        cursor = self.cursor
-        return cursor.row, cursor.col
+        self._setup_altbuf()
+        self._setup_tab()
+        self._setup_charset()
 
 
 def test():
