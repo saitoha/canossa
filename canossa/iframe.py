@@ -698,6 +698,9 @@ class InnerFrame(tff.DefaultHandler,
         window.write(self._titlestyle)
         dirtyrange = dirtyregion[top - 1]
 
+        if not dirtyrange:
+            return
+
         dirty_left = min(dirtyrange)
         if dirty_left < left - 1:
             dirty_left = left - 1
