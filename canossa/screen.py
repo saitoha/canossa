@@ -36,6 +36,18 @@ from line import Line
 from mouse import IFocusListener, IMouseListener, MouseDecoder
 
 
+def _generate_mock_parser(screen):
+    import StringIO
+    import tff
+    import output
+
+    canossa = output.Canossa(screen=screen, resized=False)
+    outputcontext = tff.ParseContext(output=StringIO.StringIO(), handler=canossa, buffering=False)
+    parser = tff.DefaultParser()
+    parser.init(outputcontext)
+    return parser
+
+
 class IFocusListenerImpl(IFocusListener):
 
     def __init__(self):
@@ -267,37 +279,455 @@ class SupportsExtendedModeTrait():
     mouse_protocol = MOUSE_PROTOCOL_NONE 
     mouse_encoding = MOUSE_ENCODING_NORMAL 
 
+    def _set_dectcem(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> screen.dectcem
+        True
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[?25h')
+        >>> screen.dectcem
+        True
+        """
+
+        self.dectcem = True
+        return False
+
+
+    def _reset_dectcem(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> screen.dectcem
+        True
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[?25l')
+        >>> screen.dectcem
+        False
+        """
+
+        self.dectcem = False
+        return False
+
+
+    def _set_deccolm(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.resize(24, 60)
+        >>> screen.width
+        60
+        >>> screen.allow_deccolm = False
+        >>> parser.parse('\x1b[?3h')
+        >>> screen.width
+        60
+        >>> screen.allow_deccolm = True
+        >>> parser.parse('\x1b[?3h')
+        >>> screen.width
+        132
+        """
+        if self.allow_deccolm:
+            self.resize(self.height, 132)
+            self.ris()
+        return False
+
+
+    def _reset_deccolm(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.resize(24, 60)
+        >>> screen.width
+        60
+        >>> screen.allow_deccolm = False
+        >>> parser.parse('\x1b[?3l')
+        >>> screen.width
+        60
+        >>> screen.allow_deccolm = True
+        >>> parser.parse('\x1b[?3l')
+        >>> screen.width
+        80
+        """
+        if self.allow_deccolm:
+            self.resize(self.height, 80)
+            self.ris()
+        return False
+
+
+    def _set_decom(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.decom
+        False
+        >>> parser.parse('\x1b[?6h')
+        >>> screen.decom
+        True
+        """
+
+        self.decom = True
+        return False
+
+
+    def _reset_decom(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.decom
+        False
+        >>> screen.decom = True
+        >>> parser.parse('\x1b[?6l')
+        >>> screen.decom
+        False
+        """
+
+        self.decom = False
+        return False
+
+
+    def _set_decawm(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.decawm = False
+        >>> parser.parse('\x1b[?7h')
+        >>> screen.decawm
+        True
+        """
+
+        self.decawm = True
+        return False
+
+
+    def _reset_decawm(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.decawm = True
+        >>> parser.parse('\x1b[?7l')
+        >>> screen.decawm
+        False
+        """
+
+        self.decawm = False
+        return False
+
+
+    def _set_x10mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_protocol == MOUSE_PROTOCOL_NONE
+        True
+        >>> parser.parse('\x1b[?9h')
+        >>> screen.mouse_protocol == MOUSE_PROTOCOL_X10
+        True
+        """
+
+        self.mouse_protocol = MOUSE_PROTOCOL_X10
+        return False
+
+
+    def _reset_x10mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_protocol = MOUSE_PROTOCOL_X10
+        >>> parser.parse('\x1b[?9l')
+        >>> screen.mouse_protocol == MOUSE_PROTOCOL_NONE
+        True
+        """
+
+        self.mouse_protocol = MOUSE_PROTOCOL_NONE
+        return False
+
+
+    def _set_allow_deccolm(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.allow_deccolm = False
+        >>> parser.parse('\x1b[?40h')
+        >>> screen.allow_deccolm
+        True
+        """
+
+        self.allow_deccolm = True
+        return False
+
+
+    def _reset_allow_deccolm(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.allow_deccolm = True
+        >>> parser.parse('\x1b[?40l')
+        >>> screen.allow_deccolm
+        False
+        """
+
+        self.allow_deccolm = False
+        return False
+
+
+    def _set_normal_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_protocol = MOUSE_PROTOCOL_NONE
+        >>> screen.mouse_encoding = MOUSE_ENCODING_SGR
+        >>> parser.parse('\x1b[?1000h')
+        >>> screen.mouse_protocol == MOUSE_PROTOCOL_NORMAL
+        True
+        >>> screen.mouse_encoding == MOUSE_ENCODING_NORMAL
+        True
+        """
+
+        self.mouse_encoding = MOUSE_ENCODING_NORMAL
+        self.mouse_protocol = MOUSE_PROTOCOL_NORMAL
+        return False
+
+
+    def _reset_normal_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_protocol = MOUSE_PROTOCOL_NORMAL
+        >>> screen.mouse_encoding = MOUSE_ENCODING_NORMAL
+        >>> parser.parse('\x1b[?1000l')
+        >>> screen.mouse_protocol == MOUSE_PROTOCOL_NONE
+        True
+        >>> screen.mouse_encoding == MOUSE_ENCODING_NORMAL
+        True
+        """
+
+        self.mouse_protocol = MOUSE_PROTOCOL_NONE
+        return False
+
+
+    def _set_highlight_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_protocol = MOUSE_PROTOCOL_NORMAL
+        >>> parser.parse('\x1b[?1001h')
+        >>> screen.mouse_protocol == MOUSE_PROTOCOL_HIGHLIGHT
+        True
+        """
+
+        self.mouse_protocol = MOUSE_PROTOCOL_HIGHLIGHT
+        return False
+
+
+    def _reset_highlight_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_protocol = MOUSE_PROTOCOL_HIGHLIGHT
+        >>> parser.parse('\x1b[?1001l')
+        >>> screen.mouse_protocol == MOUSE_PROTOCOL_NONE
+        True
+        """
+
+        self.mouse_protocol = MOUSE_PROTOCOL_NONE
+        return False
+
+
+
+    def _set_buttonevent_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_protocol = MOUSE_PROTOCOL_NORMAL
+        >>> parser.parse('\x1b[?1002h')
+        >>> screen.mouse_protocol == MOUSE_PROTOCOL_BUTTON_EVENT
+        True
+        """
+
+        self.mouse_protocol = MOUSE_PROTOCOL_BUTTON_EVENT
+        return False
+
+
+    def _reset_buttonevent_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_protocol = MOUSE_PROTOCOL_BUTTON_EVENT
+        >>> parser.parse('\x1b[?1002l')
+        >>> screen.mouse_protocol == MOUSE_PROTOCOL_NONE
+        True
+        """
+
+        self.mouse_protocol = MOUSE_PROTOCOL_NONE
+        return False
+
+
+    def _set_anyevent_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_protocol = MOUSE_PROTOCOL_NORMAL
+        >>> parser.parse('\x1b[?1003h')
+        >>> screen.mouse_protocol == MOUSE_PROTOCOL_ANY_EVENT
+        True
+        """
+
+        self.mouse_protocol = MOUSE_PROTOCOL_ANY_EVENT
+        return False
+
+
+    def _reset_anyevent_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_protocol = MOUSE_PROTOCOL_ANY_EVENT
+        >>> parser.parse('\x1b[?1003l')
+        >>> screen.mouse_protocol == MOUSE_PROTOCOL_NONE
+        True
+        """
+
+        self.mouse_protocol = MOUSE_PROTOCOL_NONE
+        return False
+
+
+    def _set_utf8_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_encoding = MOUSE_ENCODING_NORMAL
+        >>> parser.parse('\x1b[?1005h')
+        >>> screen.mouse_encoding == MOUSE_ENCODING_UTF8
+        True
+        """
+
+        self.mouse_encoding = MOUSE_ENCODING_UTF8
+        return False
+
+
+    def _reset_utf8_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_encoding = MOUSE_ENCODING_UTF8
+        >>> parser.parse('\x1b[?1005l')
+        >>> screen.mouse_encoding == MOUSE_ENCODING_NORMAL
+        True
+        """
+
+        self.mouse_encoding = MOUSE_ENCODING_NORMAL
+        return False
+
+
+    def _set_sgr_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_encoding = MOUSE_ENCODING_NORMAL
+        >>> parser.parse('\x1b[?1006h')
+        >>> screen.mouse_encoding == MOUSE_ENCODING_SGR
+        True
+        """
+
+        self.mouse_encoding = MOUSE_ENCODING_SGR
+        return False
+
+
+    def _reset_sgr_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_encoding = MOUSE_ENCODING_SGR
+        >>> parser.parse('\x1b[?1006l')
+        >>> screen.mouse_encoding == MOUSE_ENCODING_NORMAL
+        True
+        """
+
+        self.mouse_encoding = MOUSE_ENCODING_NORMAL
+        return False
+
+
+    def _set_urxvt_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_encoding = MOUSE_ENCODING_NORMAL
+        >>> parser.parse('\x1b[?1015h')
+        >>> screen.mouse_encoding == MOUSE_ENCODING_URXVT
+        True
+        """
+
+        self.mouse_encoding = MOUSE_ENCODING_URXVT
+        return False
+
+
+    def _reset_urxvt_mouse(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.mouse_encoding = MOUSE_ENCODING_URXVT
+        >>> parser.parse('\x1b[?1015l')
+        >>> screen.mouse_encoding == MOUSE_ENCODING_NORMAL
+        True
+        """
+
+        self.mouse_encoding = MOUSE_ENCODING_NORMAL
+        return False
+
+
+
     def decset(self, params):
         for param in params:
             if param == 25:
-                self.dectcem = True
+                return self._set_dectcem()
             elif param == 3:
-                if self.allow_deccolm:
-                    self.resize(self.height, 132)
-                    self.ris()
+                return self._set_deccolm()
             elif param == 6:
-                self.decom = True
+                return self._set_decom()
             elif param == 7:
-                self.decawm = True
+                return self._set_decawm()
             elif param == 9:
-                self.mouse_protocol = MOUSE_PROTOCOL_X10
+                return self._set_x10mouse()
             elif param == 40:
-                self.allow_deccolm = True
+                return self._set_allow_deccolm()
             elif param == 1000:
-                self.mouse_encoding = MOUSE_ENCODING_NORMAL
-                self.mouse_protocol = MOUSE_PROTOCOL_NORMAL
+                return self._set_normal_mouse()
             elif param == 1001:
-                self.mouse_protocol = MOUSE_PROTOCOL_HIGHLIGHT
+                return self._set_highlight_mouse()
             elif param == 1002:
-                self.mouse_protocol = MOUSE_PROTOCOL_BUTTON_EVENT
+                return self._set_buttonevent_mouse()
             elif param == 1003:
-                self.mouse_protocol = MOUSE_PROTOCOL_ANY_EVENT
+                return self._set_anyevent_mouse()
             elif param == 1005:
-                self.mouse_encoding = MOUSE_ENCODING_UTF8
+                return self._set_utf8_mouse()
             elif param == 1006:
-                self.mouse_encoding = MOUSE_ENCODING_SGR
+                return self._set_sgr_mouse()
             elif param == 1015:
-                self.mouse_encoding = MOUSE_ENCODING_URXVT
+                return self._set_urxvt_mouse()
             elif param == 1047:
                 self.switch_altbuf()
                 return True
@@ -313,33 +743,31 @@ class SupportsExtendedModeTrait():
     def decrst(self, params):
         for param in params:
             if param == 25:
-                self.dectcem = False
+                return self._reset_dectcem()
             elif param == 3:
-                if self.allow_deccolm:
-                    self.resize(self.height, 80)
-                    self.ris()
+                return self._reset_deccolm()
             elif param == 6:
-                self.decom = False
+                return self._reset_decom()
             elif param == 7:
-                self.decawm = False
+                return self._reset_decawm()
             elif param == 9:
-                self.mouse_protocol = MOUSE_PROTOCOL_NONE
+                return self._reset_x10mouse()
             elif param == 40:
-                self.allow_deccolm = False
+                return self._reset_allow_deccolm()
             elif param == 1000:
-                self.mouse_protocol = MOUSE_PROTOCOL_NONE
+                return self._reset_normal_mouse()
             elif param == 1001:
-                self.mouse_protocol = MOUSE_PROTOCOL_NONE
+                return self._reset_highlight_mouse()
             elif param == 1002:
-                self.mouse_protocol = MOUSE_PROTOCOL_NONE
+                return self._reset_buttonevent_mouse()
             elif param == 1003:
-                self.mouse_protocol = MOUSE_PROTOCOL_NONE
+                return self._reset_anyevent_mouse()
             elif param == 1005:
-                self.mouse_encoding = MOUSE_ENCODING_NORMAL
+                return self._reset_utf8_mouse()
             elif param == 1006:
-                self.mouse_encoding = MOUSE_ENCODING_NORMAL
+                return self._reset_sgr_mouse()
             elif param == 1015:
-                self.mouse_encoding = MOUSE_ENCODING_NORMAL
+                return self._reset_urxvt_mouse()
             elif param == 1047:
                 self.switch_mainbuf()
                 return True
@@ -595,6 +1023,7 @@ class IScreenImpl(IScreen):
         if cursor.col >= self.width:
             cursor.col = self.width - 1
         self._setup_tab()
+
 
     def adjust_cursor(self):
         pos = self._termprop.getyx()
