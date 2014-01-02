@@ -27,6 +27,7 @@ _CPR_NONE = 0
 _CPR_ANSI = 1
 _CPR_DEC = 2
 
+
 def _param_generator(params, minimum=0, offset=0, minarg=1):
     param = 0
     for c in params:
@@ -49,8 +50,10 @@ def _param_generator(params, minimum=0, offset=0, minarg=1):
     if minarg > 0:
         yield minimum
 
+
 def _parse_params(params, minimum=0, offset=0, minarg=1):
    return [param for param in _param_generator(params, minimum, offset, minarg)]
+
 
 def _get_pos_and_size(stdin, stdout):
     import sys, os, termios, select
@@ -102,11 +105,13 @@ def _generate_mock_parser(screen):
     parser.init(outputcontext)
     return parser
 
+
 def _pack(s):
     result = 0
     for c in s:
         result = result << 8 | ord(c) 
     return result
+
 
 class CSIHandlerTrait():
 
@@ -736,7 +741,7 @@ class ESCHandlerTrait():
         >>> parser.parse('\x1b7')
         """
 
-        self._screen.cursor.save()
+        self.screen.cursor.save()
         return True
 
 
@@ -750,7 +755,7 @@ class ESCHandlerTrait():
         >>> parser.parse('\x1b8')
         """
 
-        self._screen.cursor.save()
+        self.screen.cursor.save()
         return True
 
 
@@ -764,7 +769,7 @@ class ESCHandlerTrait():
         >>> parser.parse('\x1bD')
         """
 
-        self._screen.ind()
+        self.screen.ind()
         return True
 
 
@@ -778,7 +783,7 @@ class ESCHandlerTrait():
         >>> parser.parse('\x1bE')
         """
 
-        self._screen.nel()
+        self.screen.nel()
         return True
 
 
@@ -792,7 +797,7 @@ class ESCHandlerTrait():
         >>> parser.parse('\x1bH')
         """
 
-        self._screen.hts()
+        self.screen.hts()
         return True
 
 
@@ -806,7 +811,7 @@ class ESCHandlerTrait():
         >>> parser.parse('\x1bM')
         """
 
-        self._screen.ri()
+        self.screen.ri()
         return True
 
 
@@ -820,7 +825,7 @@ class ESCHandlerTrait():
         >>> parser.parse('\x1bc')
         """
 
-        self._screen.ris()
+        self.screen.ris()
         return not self.__visibility # pass through
 
 
@@ -834,7 +839,7 @@ class ESCHandlerTrait():
         >>> parser.parse('\x1b#3')
         """
 
-        self._screen.decdhlt()
+        self.screen.decdhlt()
         return True
 
 
@@ -848,7 +853,7 @@ class ESCHandlerTrait():
         >>> parser.parse('\x1b#4')
         """
 
-        self._screen.decdhlb()
+        self.screen.decdhlb()
         return True
 
 
@@ -862,7 +867,7 @@ class ESCHandlerTrait():
         >>> parser.parse('\x1b#5')
         """
 
-        self._screen.decswl()
+        self.screen.decswl()
         return True
 
 
@@ -876,7 +881,7 @@ class ESCHandlerTrait():
         >>> parser.parse('\x1b#6')
         """
 
-        self._screen.decdwl()
+        self.screen.decdwl()
         return True
 
 
@@ -890,7 +895,7 @@ class ESCHandlerTrait():
         >>> parser.parse('\x1b#8')
         """
 
-        self._screen.decaln()
+        self.screen.decaln()
         return True
 
 
@@ -908,6 +913,7 @@ class ESCHandlerTrait():
         f = self._esc_map[key]
 
         return f()
+
 
 class Canossa(tff.DefaultHandler,
               CSIHandlerTrait,
@@ -1001,9 +1007,9 @@ class Canossa(tff.DefaultHandler,
             try:
                 pos = value.index(0x3b)
             except ValueError:
-                return
+                return False
             if pos == -1:
-                return
+                return False
             elif pos == 0:
                 num = [0]
             else:
@@ -1048,10 +1054,9 @@ class Canossa(tff.DefaultHandler,
                 screen.ht()
             elif c == 0x08: # BS
                 screen.bs()
-            elif c == 0x00: #NUL
+            elif c == 0x00: # NUL
                 pass
             elif c == 0x05: # ENQ
-                screen.write(c)
                 return not self.__visibility
             elif c == 0x07: # BEL
                 pass
@@ -1065,8 +1070,6 @@ class Canossa(tff.DefaultHandler,
             elif c == 0x0f: # SI
                 screen.si()
                 return True
-            else:
-                pass
         else:
             screen.write(c)
 
