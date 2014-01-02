@@ -116,7 +116,7 @@ def _pack(s):
 class CSIHandlerTrait():
 
     def __init__(self):
-            
+
         self._csi_map = {
             _pack('m'):   self._handle_sgr,
             _pack('H'):   self._handle_cup,
@@ -208,7 +208,7 @@ class CSIHandlerTrait():
         >>> parser.parse('\x1b[1h')
         """
 
-        return not self.__visibility
+        return not self._visibility
 
 
     def _handle_rm(self, context, parameter):
@@ -221,7 +221,7 @@ class CSIHandlerTrait():
         >>> parser.parse('\x1b[1l')
         """
 
-        return not self.__visibility
+        return not self._visibility
 
 
     def _handle_decset(self, context, parameter):
@@ -236,7 +236,7 @@ class CSIHandlerTrait():
 
         params = _param_generator(parameter)
         self.screen.decset(params)
-        return not self.__visibility
+        return not self._visibility
 
 
     def _handle_decrst(self, context, parameter):
@@ -251,7 +251,7 @@ class CSIHandlerTrait():
 
         params = _param_generator(parameter)
         self.screen.decrst(params)
-        return not self.__visibility
+        return not self._visibility
 
 
     def _handle_xtsave(self, context, parameter):
@@ -265,7 +265,7 @@ class CSIHandlerTrait():
         """
         params = _parse_params(parameter)
         self.screen.xt_save(params)
-        return not self.__visibility
+        return not self._visibility
 
 
     def _handle_xtrest(self, context, parameter):
@@ -279,7 +279,7 @@ class CSIHandlerTrait():
         """
         params = _parse_params(parameter)
         self.screen.xt_rest(params)
-        return not self.__visibility
+        return not self._visibility
 
 
     def _handle_el(self, context, parameter):
@@ -568,7 +568,7 @@ class CSIHandlerTrait():
 
         #ps = _parse_params(parameter)[0]
         #self.screen.tbc(ps)
-        return not self.__visibility
+        return not self._visibility
 
 
     def _handle_dsr(self, context, parameter):
@@ -587,7 +587,7 @@ class CSIHandlerTrait():
                 y, x = self.screen.getyx()
                 context.puts("\x1b[%d;%dR" % (y + 1, x + 1))
                 return True
-        return not self.__visibility
+        return not self._visibility
 
 
     def _handle_decdsr(self, context, parameter):
@@ -606,7 +606,7 @@ class CSIHandlerTrait():
                 y, x = self.screen.getyx()
                 context.puts("\x1b[?%d;%dR" % (y + 1, x + 1))
                 return True
-        return not self.__visibility
+        return not self._visibility
 
 
     def _handle_decstbm(self, context, parameter):
@@ -643,7 +643,7 @@ class CSIHandlerTrait():
         >>> parser.parse('\x1b[$p')
         """
 
-        return not self.__visibility
+        return not self._visibility
 
 
     def _handle_decrqm_dec(self, context, parameter):
@@ -656,7 +656,7 @@ class CSIHandlerTrait():
         >>> parser.parse('\x1b[?$p')
         """
 
-        return not self.__visibility
+        return not self._visibility
 
 
     def _handle_decscl(self, context, parameter):
@@ -669,7 +669,7 @@ class CSIHandlerTrait():
         >>> parser.parse('\x1b["p')
         """
 
-        return not self.__visibility
+        return not self._visibility
 
 
     def _handle_decstr(self, context, parameter):
@@ -696,7 +696,7 @@ class CSIHandlerTrait():
         >>> parser.parse('\x1b[x')
         """
 
-        return not self.__visibility
+        return not self._visibility
 
 
     def dispatch_csi(self, context, parameter, intermediate, final):
@@ -826,7 +826,7 @@ class ESCHandlerTrait():
         """
 
         self.screen.ris()
-        return not self.__visibility # pass through
+        return not self._visibility # pass through
 
 
     def _esc_decdhlt(self):
@@ -945,7 +945,7 @@ class Canossa(tff.DefaultHandler,
             row, col, y, x = _get_pos_and_size(sys.stdin, sys.stdout)
             self.screen = Screen(row, col, y, x, termenc, termprop)
 
-        self.__visibility = visibility
+        self._visibility = visibility
         self.__cpr = False
         self._resized = resized
 
@@ -958,7 +958,6 @@ class Canossa(tff.DefaultHandler,
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[$$x')
         """
 
         if self._resized:
@@ -970,6 +969,7 @@ class Canossa(tff.DefaultHandler,
         except Exception, e:
             mnemonic = '[%s, %s, %s]' % (repr(parameter), repr(intermediate), chr(final)) 
             logging.error("handle_csi: %s" % mnemonic)
+            logging.error("handle_csi: %s" % e)
         return True
 
 
@@ -978,7 +978,6 @@ class Canossa(tff.DefaultHandler,
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b#9')
         """
 
 
@@ -990,6 +989,7 @@ class Canossa(tff.DefaultHandler,
         except Exception, e:
             mnemonic = '[%s, %s]' % (repr(intermediate), chr(final)) 
             logging.error("handle_esc: %s" % mnemonic)
+            logging.error("handle_esc: %s" % e)
         return True
 
 
@@ -1057,7 +1057,7 @@ class Canossa(tff.DefaultHandler,
             elif c == 0x00: # NUL
                 pass
             elif c == 0x05: # ENQ
-                return not self.__visibility
+                return not self._visibility
             elif c == 0x07: # BEL
                 pass
             elif c == 0x0b: # VT
@@ -1077,7 +1077,7 @@ class Canossa(tff.DefaultHandler,
 
 
     def handle_draw(self, context):
-        if self.__visibility:
+        if self._visibility:
             self.screen.drawall(context)
         #if self.__cpr != _CPR_NONE:
         #    if self.__cpr == _CPR_ANSI:
