@@ -102,8 +102,816 @@ def _generate_mock_parser(screen):
     parser.init(outputcontext)
     return parser
 
+def _pack(s):
+    result = 0
+    for c in s:
+        result = result << 8 | ord(c) 
+    return result
 
-class Canossa(tff.DefaultHandler):
+class CSIHandlerTrait():
+
+    def __init__(self):
+            
+        self._csi_map = {
+            _pack('m'):   self._handle_sgr,
+            _pack('H'):   self._handle_cup,
+            _pack('h'):   self._handle_sm,
+            _pack('l'):   self._handle_rm,
+            _pack('?h'):  self._handle_decset,
+            _pack('?l'):  self._handle_decrst,
+            _pack('?s'):  self._handle_xtsave,
+            _pack('?r'):  self._handle_xtrest,
+            _pack('K'):   self._handle_el,
+            _pack('J'):   self._handle_ed,
+            _pack('G'):   self._handle_cha,
+            _pack('@'):   self._handle_ich,
+            _pack('A'):   self._handle_cuu,
+            _pack('B'):   self._handle_cud,
+            _pack('C'):   self._handle_cuf,
+            _pack('D'):   self._handle_cub,
+            _pack('L'):   self._handle_il,
+            _pack('M'):   self._handle_dl,
+            _pack('P'):   self._handle_dch,
+            _pack('>c'):  self._handle_da2,
+            _pack('d'):   self._handle_vpa,
+            _pack('f'):   self._handle_hvp,
+            _pack('g'):   self._handle_tbc,
+            _pack('n'):   self._handle_dsr,
+            _pack('?n'):  self._handle_decdsr,
+            _pack('r'):   self._handle_decstbm,
+            _pack('?$p'): self._handle_decrqm_dec,
+            _pack('$p'):  self._handle_decrqm_ansi,
+            _pack('"p'):  self._handle_decscl,
+            _pack('!p'):  self._handle_decstr,
+            _pack('x'):   self._handle_decreqtparm,
+        }
+
+
+    def _handle_sgr(self, context, parameter):
+        """
+        SGR - Select Graphics Rendition
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[1;4;45mabc\x1b[mdef')
+        """
+        if not parameter:
+            self.screen.reset_sgr()
+        else:
+            params = _param_generator(parameter)
+            self.screen.sgr(params)
+        return True
+
+
+    def _handle_cup(self, context, parameter):
+        """
+        CUP - Cursor Position
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[5;5H')
+        >>> screen.getyx()
+        (4, 4)
+        >>> parser.parse('\x1b[H')
+        >>> screen.getyx()
+        (0, 0)
+        >>> parser.parse('\x1b[4H')
+        >>> screen.getyx()
+        (3, 0)
+        >>> parser.parse('\x1b[5;H')
+        >>> screen.getyx()
+        (4, 0)
+        >>> parser.parse('\x1b[;5H')
+        >>> screen.getyx()
+        (0, 4)
+        """
+
+        row, col = _param_generator(parameter, offset=-1, minarg=2)
+        self.screen.cup(row, col)
+        return True
+
+
+    def _handle_sm(self, context, parameter):
+        """
+        SM - Set Mode
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[1h')
+        """
+
+        return not self.__visibility
+
+
+    def _handle_rm(self, context, parameter):
+        """
+        RM - Reset Mode
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[1l')
+        """
+
+        return not self.__visibility
+
+
+    def _handle_decset(self, context, parameter):
+        """
+        DECSET - DEC Specific Set Mode
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[?1h')
+        """
+
+        params = _param_generator(parameter)
+        self.screen.decset(params)
+        return not self.__visibility
+
+
+    def _handle_decrst(self, context, parameter):
+        """
+        DECRST - DEC Specific Reset Mode
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[?1l')
+        """
+
+        params = _param_generator(parameter)
+        self.screen.decrst(params)
+        return not self.__visibility
+
+
+    def _handle_xtsave(self, context, parameter):
+        """
+        XTSAVE(DEC) - Save DEC Specific Modes
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[?1s')
+        """
+        params = _parse_params(parameter)
+        self.screen.xt_save(params)
+        return not self.__visibility
+
+
+    def _handle_xtrest(self, context, parameter):
+        """
+        XTREST(DEC) - Restore DEC Specific Modes
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[?1r')
+        """
+        params = _parse_params(parameter)
+        self.screen.xt_rest(params)
+        return not self.__visibility
+
+
+    def _handle_el(self, context, parameter):
+        """
+        EL - Erase Line(s)
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[K')
+        """
+        ps = _parse_params(parameter)[0]
+        self.screen.el(ps)
+        return True
+
+
+    def _handle_ed(self, context, parameter):
+        """
+        ED - Erase Display
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[J')
+        """
+        ps = _parse_params(parameter)[0]
+        self.screen.ed(ps)
+        return True
+
+
+    def _handle_cha(self, context, parameter):
+        """
+        CHA - Cursor Horizontal Absolute
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[7G')
+        >>> screen.getyx()
+        (0, 6)
+        """
+        ps = _parse_params(parameter, offset=-1, minimum=1)[0]
+        self.screen.cha(ps)
+        return True
+
+
+    def _handle_ich(self, context, parameter):
+        """
+        ICH - Insert Blank Character(s)
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[7@')
+        """
+        ps = _parse_params(parameter, minimum=1)[0]
+        self.screen.ich(ps)
+        return True
+
+    def _handle_cuu(self, context, parameter):
+        """
+        CUU - Cursor Up
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[10;10H')
+        >>> screen.getyx()
+        (9, 9)
+        >>> parser.parse('\x1b[A')
+        >>> screen.getyx()
+        (8, 9)
+        >>> parser.parse('\x1b[3A')
+        >>> screen.getyx()
+        (5, 9)
+        >>> parser.parse('\x1b[10A')
+        >>> screen.getyx()
+        (0, 9)
+        """
+
+        ps = _parse_params(parameter, minimum=1)[0]
+        self.screen.cuu(ps)
+        return True
+
+
+    def _handle_cud(self, context, parameter):
+        """
+        CUD - Cursor Down
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[5;10H')
+        >>> screen.getyx()
+        (4, 9)
+        >>> parser.parse('\x1b[B')
+        >>> screen.getyx()
+        (5, 9)
+        >>> parser.parse('\x1b[4B')
+        >>> screen.getyx()
+        (9, 9)
+        >>> parser.parse('\x1b[40B')
+        >>> screen.getyx()
+        (23, 9)
+        """
+
+        ps = _parse_params(parameter, minimum=1)[0]
+        self.screen.cud(ps)
+        return True
+
+
+    def _handle_cuf(self, context, parameter):
+        """
+        CUF - Cursor Forward
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[5;10H')
+        >>> screen.getyx()
+        (4, 9)
+        >>> parser.parse('\x1b[C')
+        >>> screen.getyx()
+        (4, 10)
+        >>> parser.parse('\x1b[4C')
+        >>> screen.getyx()
+        (4, 14)
+        >>> parser.parse('\x1b[100C')
+        >>> screen.getyx()
+        (4, 79)
+        """
+
+        ps = _parse_params(parameter, minimum=1)[0]
+        self.screen.cuf(ps)
+        return True
+
+
+    def _handle_cub(self, context, parameter):
+        """
+        CUB - Cursor Backward
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[5;10H')
+        >>> screen.getyx()
+        (4, 9)
+        >>> parser.parse('\x1b[D')
+        >>> screen.getyx()
+        (4, 8)
+        >>> parser.parse('\x1b[3D')
+        >>> screen.getyx()
+        (4, 5)
+        >>> parser.parse('\x1b[10D')
+        >>> screen.getyx()
+        (4, 0)
+        """
+
+        ps = _parse_params(parameter, minimum=1)[0]
+        self.screen.cub(ps)
+        return True
+
+
+    def _handle_il(self, context, parameter):
+        """
+        IL - Insert Line(s)
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[7C')
+        """
+
+        ps = _parse_params(parameter, minimum=1)[0]
+        self.screen.il(ps)
+        return True
+
+
+    def _handle_dl(self, context, parameter):
+        """
+        DL - Delete Line(s)
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[7M')
+        """
+
+        ps = _parse_params(parameter, minimum=1)[0]
+        self.screen.dl(ps)
+        return True
+
+
+    def _handle_dch(self, context, parameter):
+        """
+        DCH - Delete Char(s)
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[7P')
+        """
+
+        #ps = _parse_params(parameter, minimum=1)[0]
+        #self.screen.dch(ps)
+        return True
+
+
+    def _handle_da2(self, context, parameter):
+        """
+        DA2 - Secondary Device Attributes
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[>c')
+        """
+
+        return False
+
+
+    def _handle_vpa(self, context, parameter):
+        """
+        VPA - Vertical Position Absolute
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[4;4H')
+        >>> screen.getyx()
+        (3, 3)
+        >>> parser.parse('\x1b[d')
+        >>> screen.getyx()
+        (0, 3)
+        >>> parser.parse('\x1b[6d')
+        >>> screen.getyx()
+        (5, 3)
+        >>> parser.parse('\x1b[100d')
+        >>> screen.getyx()
+        (23, 3)
+        """
+
+        ps = _parse_params(parameter, offset=-1)[0]
+        self.screen.vpa(ps)
+        return True
+
+
+    def _handle_hvp(self, context, parameter):
+        """
+        HVP - Horizontal and Vertical Position
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[5;5f')
+        >>> screen.getyx()
+        (4, 4)
+        >>> parser.parse('\x1b[f')
+        >>> screen.getyx()
+        (0, 0)
+        >>> parser.parse('\x1b[4f')
+        >>> screen.getyx()
+        (3, 0)
+        >>> parser.parse('\x1b[5;f')
+        >>> screen.getyx()
+        (4, 0)
+        >>> parser.parse('\x1b[;5f')
+        >>> screen.getyx()
+        (0, 4)
+
+        """
+
+        row, col = _parse_params(parameter, offset=-1, minarg=2)
+        self.screen.hvp(row, col)
+        return True
+
+
+    def _handle_tbc(self, context, parameter):
+        """
+        TBC - Tabstop Clear
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[g')
+        """
+
+        #ps = _parse_params(parameter)[0]
+        #self.screen.tbc(ps)
+        return not self.__visibility
+
+
+    def _handle_dsr(self, context, parameter):
+        """
+        DSR - Device Status Request
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[6n')
+        >>> parser.parse('\x1b[n')
+        """
+
+        if len(parameter) == 1:
+            if parameter[0] == 0x36: # 6
+                y, x = self.screen.getyx()
+                context.puts("\x1b[%d;%dR" % (y + 1, x + 1))
+                return True
+        return not self.__visibility
+
+
+    def _handle_decdsr(self, context, parameter):
+        """
+        DECDSR - DEC Specific Device Status Request
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[?6n')
+        >>> parser.parse('\x1b[6n')
+        """
+
+        if len(parameter) == 2:
+            if parameter[1] == 0x36: # ?6
+                y, x = self.screen.getyx()
+                context.puts("\x1b[?%d;%dR" % (y + 1, x + 1))
+                return True
+        return not self.__visibility
+
+
+    def _handle_decstbm(self, context, parameter):
+        """
+        DECSTBM - Set Top and Bottom Margin
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[r')
+        >>> screen.getyx()
+        (0, 0)
+        >>> parser.parse('\x1b[4;6r')
+        >>> screen.getyx()
+        (3, 0)
+        """
+
+        if parameter:
+            top, bottom = _parse_params(parameter, offset=-1, minarg=2)
+            self.screen.decstbm(top, bottom)
+        else:
+            top, bottom = 0, self.screen.height - 1
+            self.screen.decstbm(top, bottom)
+        return True
+
+
+    def _handle_decrqm_ansi(self, context, parameter):
+        """
+        DECRQM(ANSI) - Request ANSI Mode
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[$p')
+        """
+
+        return not self.__visibility
+
+
+    def _handle_decrqm_dec(self, context, parameter):
+        """
+        DECRQM(DEC) - Request DEC Private Mode
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[?$p')
+        """
+
+        return not self.__visibility
+
+
+    def _handle_decscl(self, context, parameter):
+        """
+        DECSCL - Set Conformance Level
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b["p')
+        """
+
+        return not self.__visibility
+
+
+    def _handle_decstr(self, context, parameter):
+        """
+        DECSTR - Soft Reset
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[!p')
+        """
+
+        self.screen.decstr()
+        return True
+
+
+    def _handle_decreqtparm(self, context, parameter):
+        """
+        DECREQTPARM - Request terminal parameters
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[x')
+        """
+
+        return not self.__visibility
+
+
+    def dispatch_csi(self, context, parameter, intermediate, final):
+        if parameter and parameter[0] > 0x3b:
+            key = parameter[0]
+        else:
+            key = 0
+        key = reduce(lambda acc, x: acc << 8 | x, intermediate, key)
+        key = key << 8 | final
+
+        f = self._csi_map[key]
+        return f(context, parameter)
+
+
+class ESCHandlerTrait():
+
+    def __init__(self):
+            
+        self._esc_map = {
+            _pack('7'): self._esc_cursorsave,
+            _pack('8'): self._esc_cursorrestore,
+            _pack('D'): self._esc_ind,
+            _pack('E'): self._esc_nel,
+            _pack('H'): self._esc_hts,
+            _pack('M'): self._esc_ri,
+            _pack('c'): self._esc_ris,
+            _pack('#3'): self._esc_decdhlt,
+            _pack('#4'): self._esc_decdhlb,
+            _pack('#5'): self._esc_decswl,
+            _pack('#6'): self._esc_decdwl,
+            _pack('#8'): self._esc_decaln,
+        }
+
+
+    def _esc_cursorsave(self):
+        """
+        DECSC - Save Cursor
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b7')
+        """
+
+        self._screen.cursor.save()
+        return True
+
+
+    def _esc_cursorrestore(self):
+        """
+        DECRC - Restore Cursor
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b8')
+        """
+
+        self._screen.cursor.save()
+        return True
+
+
+    def _esc_ind(self):
+        """
+        IND - Index
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1bD')
+        """
+
+        self._screen.ind()
+        return True
+
+
+    def _esc_nel(self):
+        """
+        NEL - Next Line
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1bE')
+        """
+
+        self._screen.nel()
+        return True
+
+
+    def _esc_hts(self):
+        """
+        HTS - Horizontal Tab Set
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1bH')
+        """
+
+        self._screen.hts()
+        return True
+
+
+    def _esc_ri(self):
+        """
+        RI - Reverse Index
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1bM')
+        """
+
+        self._screen.ri()
+        return True
+
+
+    def _esc_ris(self):
+        """
+        RIS - Hard Terminal Reset
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1bc')
+        """
+
+        self._screen.ris()
+        return not self.__visibility # pass through
+
+
+    def _esc_decdhlt(self):
+        """
+        DECDHLT - Double Height Line (Top part)
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b#3')
+        """
+
+        self._screen.decdhlt()
+        return True
+
+
+    def _esc_decdhlb(self):
+        """
+        DECDHLB - Double Height Line (Bottom part)
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b#4')
+        """
+
+        self._screen.decdhlb()
+        return True
+
+
+    def _esc_decswl(self):
+        """
+        DECSWL - Single Width Line
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b#5')
+        """
+
+        self._screen.decswl()
+        return True
+
+
+    def _esc_decdwl(self):
+        """
+        DECDWL - Double Width Line
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b#6')
+        """
+
+        self._screen.decdwl()
+        return True
+
+
+    def _esc_decaln(self):
+        """
+        DECALN - Screen Alignment Pattern
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b#8')
+        """
+
+        self._screen.decaln()
+        return True
+
+
+    def dispatch_esc(self, context, intermediate, final):
+        key = reduce(lambda acc, x: acc << 8 | x, intermediate, 0)
+        key = key << 8 | final
+
+        #elif intermediate == [0x28]: # (
+        #    self.screen.set_g0(final)
+        #    return True
+        #elif intermediate == [0x29]: # )
+        #    self.screen.set_g1(final)
+        #    return True
+
+        f = self._esc_map[key]
+
+        return f()
+
+class Canossa(tff.DefaultHandler,
+              CSIHandlerTrait,
+              ESCHandlerTrait):
 
     __cpr = False
 
@@ -135,602 +943,36 @@ class Canossa(tff.DefaultHandler):
         self.__cpr = False
         self._resized = resized
 
-        def _pack(s):
-            result = 0
-            for c in s:
-                result = result << 8 | ord(c) 
-            return result
-
-        self._map = {
-            _pack('m'): self.handle_sgr,
-            _pack('H'): self.handle_cup,
-            _pack('h'): self.handle_sm,
-            _pack('l'): self.handle_rm,
-            _pack('?h'): self.handle_decset,
-            _pack('?l'): self.handle_decrst,
-            _pack('?s'): self.handle_xtsave,
-            _pack('?r'): self.handle_xtrest,
-            _pack('K'): self.handle_el,
-            _pack('J'): self.handle_ed,
-            _pack('G'): self.handle_cha,
-            _pack('@'): self.handle_ich,
-            _pack('A'): self.handle_cuu,
-            _pack('B'): self.handle_cud,
-            _pack('C'): self.handle_cuf,
-            _pack('D'): self.handle_cub,
-            _pack('L'): self.handle_il,
-            _pack('M'): self.handle_dl,
-            _pack('P'): self.handle_dch,
-            _pack('>c'): self.handle_da2,
-            _pack('d'): self.handle_vpa,
-            _pack('f'): self.handle_hvp,
-            _pack('g'): self.handle_tbc,
-            _pack('n'): self.handle_dsr,
-            _pack('?n'): self.handle_decdsr,
-            _pack('r'): self.handle_decstbm,
-            _pack('?$p'): self.handle_decrqm_dec,
-            _pack('$p'): self.handle_decrqm_ansi,
-            _pack('"p'): self.handle_decscl,
-            _pack('!p'): self.handle_decstr,
-            _pack('x'): self.handle_decreqtparm,
-        }
-
-    def handle_sgr(self, context, parameter):
-        """
-        SGR - Select Graphics Rendition
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[1;4;45mabc\x1b[mdef')
-        """
-
-        if not parameter:
-            self.screen.reset_sgr()
-        else:
-            params = _param_generator(parameter)
-            self.screen.sgr(params)
-        return True
-
-
-    def handle_cup(self, context, parameter):
-        """
-        CUP - Cursor Position
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[5;5H')
-        >>> screen.getyx()
-        (4, 4)
-        >>> parser.parse('\x1b[H')
-        >>> screen.getyx()
-        (0, 0)
-        >>> parser.parse('\x1b[4H')
-        >>> screen.getyx()
-        (3, 0)
-        >>> parser.parse('\x1b[5;H')
-        >>> screen.getyx()
-        (4, 0)
-        >>> parser.parse('\x1b[;5H')
-        >>> screen.getyx()
-        (0, 4)
-        """
-
-        row, col = _param_generator(parameter, offset=-1, minarg=2)
-        self.screen.cup(row, col)
-        return True
-
-
-    def handle_sm(self, context, parameter):
-        """
-        SM - Set Mode
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[1h')
-        """
-
-        return not self.__visibility
-
-
-    def handle_rm(self, context, parameter):
-        """
-        RM - Reset Mode
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[1l')
-        """
-
-        return not self.__visibility
-
-
-    def handle_decset(self, context, parameter):
-        """
-        DECSET - DEC Specific Set Mode
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[?1h')
-        """
-
-        params = _param_generator(parameter)
-        self.screen.decset(params)
-        return not self.__visibility
-
-
-    def handle_decrst(self, context, parameter):
-        """
-        DECRST - DEC Specific Reset Mode
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[?1l')
-        """
-
-        params = _param_generator(parameter)
-        self.screen.decrst(params)
-        return not self.__visibility
-
-
-    def handle_xtsave(self, context, parameter):
-        """
-        XTSAVE(DEC) - Save DEC Specific Modes
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[?1s')
-        """
-        params = _parse_params(parameter)
-        self.screen.xt_save(params)
-        return not self.__visibility
-
-
-    def handle_xtrest(self, context, parameter):
-        """
-        XTREST(DEC) - Restore DEC Specific Modes
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[?1r')
-        """
-        params = _parse_params(parameter)
-        self.screen.xt_rest(params)
-        return not self.__visibility
-
-
-    def handle_el(self, context, parameter):
-        """
-        EL - Erase Line(s)
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[K')
-        """
-        ps = _parse_params(parameter)[0]
-        self.screen.el(ps)
-        return True
-
-
-    def handle_ed(self, context, parameter):
-        """
-        ED - Erase Display
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[J')
-        """
-        ps = _parse_params(parameter)[0]
-        self.screen.ed(ps)
-        return True
-
-
-    def handle_cha(self, context, parameter):
-        """
-        CHA - Cursor Horizontal Absolute
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7G')
-        >>> screen.getyx()
-        (0, 6)
-        """
-        ps = _parse_params(parameter, offset=-1, minimum=1)[0]
-        self.screen.cha(ps)
-        return True
-
-
-    def handle_ich(self, context, parameter):
-        """
-        ICH - Insert Blank Character(s)
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7@')
-        """
-        ps = _parse_params(parameter, minimum=1)[0]
-        self.screen.ich(ps)
-        return True
-
-    def handle_cuu(self, context, parameter):
-        """
-        CUU - Cursor Up
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[10;10H')
-        >>> screen.getyx()
-        (9, 9)
-        >>> parser.parse('\x1b[A')
-        >>> screen.getyx()
-        (8, 9)
-        >>> parser.parse('\x1b[3A')
-        >>> screen.getyx()
-        (5, 9)
-        >>> parser.parse('\x1b[10A')
-        >>> screen.getyx()
-        (0, 9)
-        """
-
-        ps = _parse_params(parameter, minimum=1)[0]
-        self.screen.cuu(ps)
-        return True
-
-
-    def handle_cud(self, context, parameter):
-        """
-        CUD - Cursor Down
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[5;10H')
-        >>> screen.getyx()
-        (4, 9)
-        >>> parser.parse('\x1b[B')
-        >>> screen.getyx()
-        (5, 9)
-        >>> parser.parse('\x1b[4B')
-        >>> screen.getyx()
-        (9, 9)
-        >>> parser.parse('\x1b[40B')
-        >>> screen.getyx()
-        (23, 9)
-        """
-
-        ps = _parse_params(parameter, minimum=1)[0]
-        self.screen.cud(ps)
-        return True
-
-
-    def handle_cuf(self, context, parameter):
-        """
-        CUF - Cursor Forward
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[5;10H')
-        >>> screen.getyx()
-        (4, 9)
-        >>> parser.parse('\x1b[C')
-        >>> screen.getyx()
-        (4, 10)
-        >>> parser.parse('\x1b[4C')
-        >>> screen.getyx()
-        (4, 14)
-        >>> parser.parse('\x1b[100C')
-        >>> screen.getyx()
-        (4, 79)
-        """
-
-        ps = _parse_params(parameter, minimum=1)[0]
-        self.screen.cuf(ps)
-        return True
-
-
-    def handle_cub(self, context, parameter):
-        """
-        CUB - Cursor Backward
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[5;10H')
-        >>> screen.getyx()
-        (4, 9)
-        >>> parser.parse('\x1b[D')
-        >>> screen.getyx()
-        (4, 8)
-        >>> parser.parse('\x1b[3D')
-        >>> screen.getyx()
-        (4, 5)
-        >>> parser.parse('\x1b[10D')
-        >>> screen.getyx()
-        (4, 0)
-        """
-
-        ps = _parse_params(parameter, minimum=1)[0]
-        self.screen.cub(ps)
-        return True
-
-
-    def handle_il(self, context, parameter):
-        """
-        IL - Insert Line(s)
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7C')
-        """
-
-        ps = _parse_params(parameter, minimum=1)[0]
-        self.screen.il(ps)
-        return True
-
-
-    def handle_dl(self, context, parameter):
-        """
-        DL - Delete Line(s)
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7M')
-        """
-
-        ps = _parse_params(parameter, minimum=1)[0]
-        self.screen.dl(ps)
-        return True
-
-
-    def handle_dch(self, context, parameter):
-        """
-        DCH - Delete Char(s)
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7P')
-        """
-
-        #ps = _parse_params(parameter, minimum=1)[0]
-        #self.screen.dch(ps)
-        return True
-
-
-    def handle_da2(self, context, parameter):
-        """
-        DA2 - Secondary Device Attributes
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[>c')
-        """
-
-        return False
-
-
-    def handle_vpa(self, context, parameter):
-        """
-        VPA - Vertical Position Absolute
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[4;4H')
-        >>> screen.getyx()
-        (3, 3)
-        >>> parser.parse('\x1b[d')
-        >>> screen.getyx()
-        (0, 3)
-        >>> parser.parse('\x1b[6d')
-        >>> screen.getyx()
-        (5, 3)
-        >>> parser.parse('\x1b[100d')
-        >>> screen.getyx()
-        (23, 3)
-        """
-
-        ps = _parse_params(parameter, offset=-1)[0]
-        self.screen.vpa(ps)
-        return True
-
-
-    def handle_hvp(self, context, parameter):
-        """
-        HVP - Horizontal and Vertical Position
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[5;5f')
-        >>> screen.getyx()
-        (4, 4)
-        >>> parser.parse('\x1b[f')
-        >>> screen.getyx()
-        (0, 0)
-        >>> parser.parse('\x1b[4f')
-        >>> screen.getyx()
-        (3, 0)
-        >>> parser.parse('\x1b[5;f')
-        >>> screen.getyx()
-        (4, 0)
-        >>> parser.parse('\x1b[;5f')
-        >>> screen.getyx()
-        (0, 4)
-
-        """
-
-        row, col = _parse_params(parameter, offset=-1, minarg=2)
-        self.screen.hvp(row, col)
-        return True
-
-
-    def handle_tbc(self, context, parameter):
-        """
-        TBC - Tabstop Clear
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[g')
-        """
-
-        #ps = _parse_params(parameter)[0]
-        #self.screen.tbc(ps)
-        return not self.__visibility
-
-
-    def handle_dsr(self, context, parameter):
-        """
-        DSR - Device Status Request
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[6n')
-        >>> parser.parse('\x1b[n')
-        """
-
-        if len(parameter) == 1:
-            if parameter[0] == 0x36: # 6
-                y, x = self.screen.getyx()
-                context.puts("\x1b[%d;%dR" % (y + 1, x + 1))
-                return True
-        return not self.__visibility
-
-
-    def handle_decdsr(self, context, parameter):
-        """
-        DECDSR - DEC Specific Device Status Request
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[?6n')
-        >>> parser.parse('\x1b[6n')
-        """
-
-        if len(parameter) == 2:
-            if parameter[1] == 0x36: # ?6
-                y, x = self.screen.getyx()
-                context.puts("\x1b[?%d;%dR" % (y + 1, x + 1))
-                return True
-        return not self.__visibility
-
-
-    def handle_decstbm(self, context, parameter):
-        """
-        DECSTBM - Set Top and Bottom Margin
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[r')
-        >>> screen.getyx()
-        (0, 0)
-        >>> parser.parse('\x1b[4;6r')
-        >>> screen.getyx()
-        (3, 0)
-        """
-
-        if parameter:
-            top, bottom = _parse_params(parameter, offset=-1, minarg=2)
-            self.screen.decstbm(top, bottom)
-        else:
-            top, bottom = 0, self.screen.height - 1
-            self.screen.decstbm(top, bottom)
-        return True
-
-
-    def handle_decrqm_ansi(self, context, parameter):
-        """
-        DECRQM(ANSI) - Request ANSI Mode
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[$p')
-        """
-
-        return not self.__visibility
-
-
-    def handle_decrqm_dec(self, context, parameter):
-        """
-        DECRQM(DEC) - Request DEC Private Mode
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[?$p')
-        """
-
-        return not self.__visibility
-
-
-    def handle_decscl(self, context, parameter):
-        """
-        DECSCL - Set Conformance Level
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b["p')
-        """
-
-        return not self.__visibility
-
-
-    def handle_decstr(self, context, parameter):
-        """
-        DECSTR - Soft Reset
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[!p')
-        """
-
-        self.screen.decstr()
-        return True
-
-
-    def handle_decreqtparm(self, context, parameter):
-        """
-        DECREQTPARM - Request terminal parameters
-
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[x')
-        """
-
-        return not self.__visibility
+        CSIHandlerTrait.__init__(self)
+        ESCHandlerTrait.__init__(self)
 
 
     def handle_csi(self, context, parameter, intermediate, final):
         """
-        DECREQTPARM - Request terminal parameters
-
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
         >>> parser.parse('\x1b[$$x')
+        """
+
+        if self._resized:
+            self._resized = False
+            self.screen.adjust_cursor()
+        try:
+            return self.dispatch_csi(context, parameter, intermediate, final)
+
+        except Exception, e:
+            mnemonic = '[%s, %s, %s]' % (repr(parameter), repr(intermediate), chr(final)) 
+            logging.error("handle_csi: %s" % mnemonic)
+        return True
+
+
+    def handle_esc(self, context, intermediate, final):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b#9')
         """
 
 
@@ -738,95 +980,12 @@ class Canossa(tff.DefaultHandler):
             self._resized = False
             self.screen.adjust_cursor()
         try:
-            if parameter and parameter[0] > 0x3b:
-                key = parameter[0]
-            else:
-                key = 0
-            key = reduce(lambda acc, x: acc << 8 | x, intermediate, key)
-            key = key << 8 | final
-
-            if key in self._map:
-                self._map[key](context, parameter)
-
-            else:
-                mnemonic = '[%s, %s, %s]' % (repr(parameter), repr(intermediate), chr(final)) 
-                logging.error("mnemonic: %s" % mnemonic)
-
-        except Exception, e:
-            mnemonic = '[%s, %s, %s]' % (repr(parameter), repr(intermediate), chr(final)) 
-            logging.error("handle_csi: %s" % mnemonic)
-        return True
-
-    def handle_esc(self, context, intermediate, final):
-        """
-        >>> from screen import MockScreenWithCursor
-        >>> screen = MockScreenWithCursor()
-        >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b7')
-        >>> parser.parse('\x1b8')
-        >>> parser.parse('\x1bD')
-        >>> parser.parse('\x1bE')
-        >>> parser.parse('\x1bH')
-        >>> parser.parse('\x1bM')
-        >>> parser.parse('\x1bc')
-        >>> parser.parse('\x1b#3')
-        >>> parser.parse('\x1b#4')
-        >>> parser.parse('\x1b#5')
-        >>> parser.parse('\x1b#6')
-        >>> parser.parse('\x1b#8')
-        >>> parser.parse('\x1b#9')
-        """
-
-        try:
-            if self._resized:
-                self._resized = False
-                self.screen.adjust_cursor()
-            if not intermediate:
-                if False:
-                    pass
-
-                elif final == 0x37: # 7
-                    self.screen.cursor.save()
-                    return True
-                elif final == 0x38: # 8
-                    self.screen.cursor.restore()
-                    return True
-                elif final == 0x44: # D
-                    self.screen.ind()
-                elif final == 0x45: # E
-                    self.screen.nel()
-                elif final == 0x48: # H
-                    self.screen.hts()
-                elif final == 0x4d: # M
-                    self.screen.ri()
-                elif final == 0x63: # c
-                    self.screen.ris()
-                    return not self.__visibility # pass through
-            elif intermediate == [0x23]: # #
-                if final == 0x33: # 3
-                    self.screen.decdhlt()
-                elif final == 0x34: # 4
-                    self.screen.decdhlb()
-                elif final == 0x35: # 5
-                    self.screen.decswl()
-                elif final == 0x36: # 6
-                    self.screen.decdwl()
-                elif final == 0x38: # 8
-                    self.screen.decaln()
-                else:
-                    pass
-            #elif intermediate == [0x28]: # (
-            #    self.screen.set_g0(final)
-            #    return True
-            #elif intermediate == [0x29]: # )
-            #    self.screen.set_g1(final)
-            #    return True
-            else:
-                return True
+            self.dispatch_esc(context, intermediate, final)
         except Exception, e:
             mnemonic = '[%s, %s]' % (repr(intermediate), chr(final)) 
             logging.error("handle_esc: %s" % mnemonic)
         return True
+
 
     def handle_control_string(self, context, prefix, value):
         """
@@ -913,6 +1072,7 @@ class Canossa(tff.DefaultHandler):
 
         return True
 
+
     def handle_draw(self, context):
         if self.__visibility:
             self.screen.drawall(context)
@@ -923,6 +1083,7 @@ class Canossa(tff.DefaultHandler):
         #    elif self.__cpr == _CPR_DEC:
         #        self.__cpr = _CPR_NONE
         #        context.puts("\x1b[?6n")
+
 
     def handle_resize(self, context, row, col):
         lock.acquire()
