@@ -55,9 +55,59 @@ def _parse_params(params, minimum=0, offset=0, minarg=1):
    return [param for param in _param_generator(params, minimum, offset, minarg)]
 
 
-def _get_pos_and_size(stdin, stdout):
-    import sys, os, termios, select
+import re
+import os
+import select
 
+
+_dimension_pattern = re.compile('\033\[([0-9]+);([0-9]+)R|\033\[8;([0-9]+);([0-9]+)t')
+
+def _getdimension_dtterm(stdin, stdout):
+    data = ""
+    for i in xrange(0, 2):
+        stdout.write("\x1b[18t")
+        stdout.flush()
+        fd = stdin.fileno()
+        rfd, wfd, xfd = select.select([fd], [], [], 0.1)
+        if rfd:
+            data += os.read(fd, 1024)
+            m = _dimension_pattern.match(data)
+            if m is None:
+                continue
+            m1, m2, m3, m4 = m.groups()
+            if m3 and m4:
+                row = int(m3)
+                col = int(m4)
+            return row, col
+    return None
+
+
+def _getposition(stdin, stdout):
+    data = ""
+    for i in xrange(0, 2):
+        stdout.write("\x1b[6n")
+        stdout.flush()
+        fd = stdin.fileno()
+        rfd, wfd, xfd = select.select([fd], [], [], 0.1)
+        if rfd:
+            data += os.read(fd, 1024)
+            m = _dimension_pattern.match(data)
+            if m is None:
+                continue
+            m1, m2, m3, m4 = m.groups()
+            if m3 and m4:
+                row = int(m3)
+                col = int(m4)
+                return row, col
+            if m1 and m2:
+                row = int(m1)
+                col = int(m2)
+                return row, col
+    return None
+
+
+def _get_pos_and_size(stdin, stdout):
+    import termios
     stdin_fileno = stdin.fileno()
     vdisable = os.fpathconf(stdin_fileno, 'PC_VDISABLE')
     backup = termios.tcgetattr(stdin_fileno)
@@ -67,32 +117,22 @@ def _get_pos_and_size(stdin, stdout):
     new[6][termios.VTIME] = 0
     termios.tcsetattr(stdin_fileno, termios.TCSANOW, new)
     try:
-        stdout.write("\x1b[6n")
-        stdout.flush()
-
-        rfd, wfd, xfd = select.select([stdin_fileno], [], [], 2)
-        if rfd:
-            data = os.read(stdin_fileno, 32)
-            assert data[:2] == '\x1b['
-            assert data[-1] == 'R'
-            y, x = [int(n) - 1 for n in  data[2:-1].split(';')]
-
-            stdout.write("\x1b[9999;9999H")
+        position = _getposition(stdin, stdout)
+        if position:
+            y, x = position
             try:
-                stdout.write("\x1b[6n")
-                stdout.flush()
-                rfd, wfd, xfd = select.select([stdin_fileno], [], [], 2)
-                stdout.flush()
-                if rfd:
-                    data = os.read(stdin_fileno, 32)
-                    assert data[:2] == '\x1b['
-                    assert data[-1] == 'R'
-                    row, col = [int(n) for n in  data[2:-1].split(';')]
+                dimension = _getdimension_dtterm(stdin, stdout)
+                if not dimension:
+                    stdout.write("\x1b[9999;9999H")
+                    dimension = _getposition(stdin, stdout)
+                if dimension: 
+                    row, col = dimension
                     return (row, col, y, x)
             finally:
-                stdout.write("\x1b[%d;%dH" % (y, x))
+                stdout.write("\033[%d;%dH" % (y, x))
     finally:
         termios.tcsetattr(stdin_fileno, termios.TCSANOW, backup)
+    return None
 
 
 def _generate_mock_parser(screen):
