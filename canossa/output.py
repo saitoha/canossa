@@ -115,7 +115,7 @@ def _get_pos_and_size(stdin, stdout):
     new[3] &= ~(termios.ECHO | termios.ICANON)
     new[6][termios.VMIN] = 1
     new[6][termios.VTIME] = 0
-    termios.tcsetattr(stdin_fileno, termios.TCSANOW, new)
+    termios.tcsetattr(stdin_fileno, termios.TCSAFLUSH, new)
     try:
         position = _getposition(stdin, stdout)
         if position:
@@ -131,7 +131,7 @@ def _get_pos_and_size(stdin, stdout):
             finally:
                 stdout.write("\033[%d;%dH" % (y, x))
     finally:
-        termios.tcsetattr(stdin_fileno, termios.TCSANOW, backup)
+        termios.tcsetattr(stdin_fileno, termios.TCSAFLUSH, backup)
     return None
 
 
@@ -1007,8 +1007,10 @@ class Canossa(tff.DefaultHandler,
             from screen import Screen
             # make screen
             # get current position
-            row, col, y, x = _get_pos_and_size(sys.stdin, sys.stdout)
-            self.screen = Screen(row, col, y, x, termenc, termprop)
+            result = _get_pos_and_size(sys.stdin, sys.stdout)
+            if result:
+                row, col, y, x = result
+                self.screen = Screen(row, col, y, x, termenc, termprop)
 
         self._visibility = visibility
         self.__cpr = False
@@ -1155,9 +1157,11 @@ class Canossa(tff.DefaultHandler,
 
     def handle_resize(self, context, row, col):
         lock.acquire()
-        self._resized = True
+        #self._resized = True
+        screen = self.screen
         try:
-            self.screen.resize(row, col)
+            screen.resize(row, col)
+            screen.adjust_cursor()
         finally:
             lock.release()
 

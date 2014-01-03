@@ -1180,16 +1180,38 @@ class IScreenImpl(IScreen):
         self._setup_tab()
 
 
-    def adjust_cursor(self):
-        pos = self._termprop.getyx()
+    def adjust_cursor(self, pos=None):
+        if not pos:
+            pos = self._termprop.getyx()
+            if not pos:
+                pos = self._termprop.getyx()
+            if not pos:
+                pos = self._termprop.getyx()
         cursor = self.cursor
         if pos != (0, 0):
             row, col = pos
-            cursor.row, cursor.col = row - 1, col - 1
-        if cursor.row >= self.height:
-            cursor.row = self.height - 1
+            row -= 1
+            col -= 1
+            cursor.col = col
+            cursor.row = row 
+
+            lines = self.lines
+
+            #while cursor.row > row:
+            #    cursor.row -= 1
+            #    lines.pop(0)
+            #    lines.append(Line(self.width))
+
+            #while cursor.row < row:
+            #    cursor.row += 1
+            #    lines.insert(0, Line(self.width))
+            #    lines.pop()
+
         if cursor.col >= self.width:
             cursor.col = self.width - 1
+        if cursor.row >= self.height:
+            cursor.row = self.height - 1
+
 
     def sp(self):
         cursor = self.cursor
