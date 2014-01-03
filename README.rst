@@ -15,10 +15,10 @@ or via pip ::
     $ pip install canossa
 
 
-Usage
+License
 -----
 
-Comming soon.
+MIT license
 
 Dependencies
 ------------
