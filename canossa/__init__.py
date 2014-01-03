@@ -25,8 +25,8 @@
 # ***** END LICENSE BLOCK *****
 
 __author__  = "Hayaki Saito (user@zuse.jp)"
-__version__ = "0.0.25"
-__license__ = "GPL v3"
+__version__ = "0.1.0"
+__license__ = "MIT"
 
 from tff import tff
 from termprop import termprop
