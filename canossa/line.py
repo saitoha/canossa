@@ -124,6 +124,8 @@ class SupportsCombiningTrait():
         >>> line.clear(attr._attrvalue)
         >>> line.write(0x40, 1, attr)
         >>> line.combine(0x300, 2)
+        '''
+        '''
         >>> print line
         <ESC>[0;39;49m<SP>@̀<SP><SP><SP>
         '''
@@ -201,6 +203,8 @@ class Line(SupportsDoubleSizedTrait,
         >>> print line
         <ESC>[0;39;49mP<SP><SP><SP><SP>
         >>> line.write(0x3042, 1, attr)
+        '''
+        '''
         >>> print line
         <ESC>[0;39;49mPあ<SP><SP><SP>
         '''
@@ -314,6 +318,8 @@ def test():
     <ESC>[0;39;49mP@<SP><SP><SP><SP><SP><SP><SP><SP>
     >>> line.pad(2)
     >>> line.write(0x3042, 3, attr)
+    """
+    """
     >>> print line
     <ESC>[0;39;49mP@あ<SP><SP><SP><SP><SP><SP>
     >>> line.write(0x30, 5, attr)

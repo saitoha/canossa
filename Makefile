@@ -35,7 +35,9 @@ clean:
 	done | xargs $(RM)
 
 smoketest:
-	$(PYTHON) setup.py test
+	python2.5 setup.py test
+	python2.6 setup.py test
+	python2.7 setup.py test
 
 nosetest:
 	if $$(which nosetests); \
