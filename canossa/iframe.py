@@ -682,7 +682,7 @@ class InnerFrame(tff.DefaultHandler,
         left = self.left + self.offset_left
         top = self.top + self.offset_top
 
-        # タイトルの描画
+        # draw the title bar
         termprop = self._termprop
         innertitle = innerscreen.gettitle()
         if innertitle:
@@ -742,7 +742,7 @@ class InnerFrame(tff.DefaultHandler,
         left = self.left + self.offset_left
         top = self.top + self.offset_top
 
-        # フレーム下部の描画
+        # draw the bottom of frame
         bottom = top + innerscreen.height - 1 + self._padding_bottom
         if bottom < outerscreen.height:
             if top + innerscreen.height >= 0:
@@ -830,7 +830,7 @@ class InnerFrame(tff.DefaultHandler,
                         if dirty_width < 0:
                             continue
 
-                        # フレーム左辺の描画
+                        # draw the left edge of frame
                         if left > 0 and left >= dirty_left and left - 1 < outerscreen.width:
                             row = top + index
                             col = left - 1
@@ -845,7 +845,7 @@ class InnerFrame(tff.DefaultHandler,
                             window.write('|')
                             window.write('\x1b[m')
 
-                        # フレーム右辺の描画
+                        # draw the right edge of frame
                         col = left + innerscreen.width
                         if col <= dirty_right and col < outerscreen.width:
                             row = top + index
@@ -867,7 +867,7 @@ class InnerFrame(tff.DefaultHandler,
         left = self.left + self.offset_left
         top = self.top + self.offset_top
 
-        # フレーム内容の描画
+        # draw the inner content of frame
         for index in xrange(0, innerscreen.height):
             if top + index < outerscreen.height:
                 if top + index >= 0:
