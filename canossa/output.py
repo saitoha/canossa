@@ -288,8 +288,21 @@ class CSIHandlerTrait():
 
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
+        >>> screen.resize(4, 10)
         >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[H')
+        >>> parser.parse('1234567890')
+        >>> parser.parse('\x1b[1;5H')
         >>> parser.parse('\x1b[K')
+        >>> print screen.lines[0]
+        <ESC>[0;39;49m1234<SP><SP><SP><SP><SP><SP>
+        >>> parser.parse('\x1b[1;2H')
+        >>> parser.parse('\x1b[1K')
+        >>> print screen.lines[0]
+        <ESC>[0;39;49m<SP>234<SP><SP><SP><SP><SP><SP>
+        >>> parser.parse('\x1b[2K')
+        >>> print screen.lines[0]
+        <ESC>[0;39;49m<SP><SP><SP><SP><SP><SP><SP><SP><SP><SP>
         """
         ps = _parse_params(parameter)[0]
         self.screen.el(ps)
@@ -449,7 +462,7 @@ class CSIHandlerTrait():
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
-        >>> parser.parse('\x1b[7C')
+        >>> parser.parse('\x1b[7L')
         """
 
         ps = _parse_params(parameter, minimum=1)[0]
@@ -563,11 +576,23 @@ class CSIHandlerTrait():
         >>> from screen import MockScreenWithCursor
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
+        >>> screen.cursor.col
+        0
+        >>> screen._tabstop
+        [0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80]
         >>> parser.parse('\x1b[g')
+        >>> screen._tabstop
+        [8, 16, 24, 32, 40, 48, 56, 64, 72, 80]
+        >>> parser.parse('\x1b[1;9H\x1b[0g')
+        >>> screen._tabstop
+        [16, 24, 32, 40, 48, 56, 64, 72, 80]
+        >>> parser.parse('\x1b[3g')
+        >>> screen._tabstop
+        []
         """
 
-        #ps = _parse_params(parameter)[0]
-        #self.screen.tbc(ps)
+        ps = _parse_params(parameter)[0]
+        self.screen.tbc(ps)
         return not self._visibility
 
 

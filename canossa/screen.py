@@ -179,11 +179,13 @@ class SupportsDoubleSizedTrait():
 class SuuportsCursorPersistentTrait():
 
     def save_pos(self):
-        self._saved_pos = (self.cursor.row, self.cursor.col)
+        cursor = self.cursor
+        self._saved_pos = (cursor.row, cursor.col)
 
     def restore_pos(self):
         if self._saved_pos:
-            self.cursor.row, self.cursor.col = self._saved_pos
+            cursor = self.cursor
+            cursor.row, cursor.col = self._saved_pos
 
 
 class SuuportsISO2022DesignationTrait():
@@ -243,9 +245,6 @@ class SuuportsAlternateScreenTrait():
 
     def switch_altbuf(self):
         self.lines = self._altbuf
-        defaultvalue = self.cursor.attr.getdefaultvalue()
-        for line in self.lines:
-            line.clear(defaultvalue)
         lines = self.lines
         if len(lines) > self.height:
             while len(lines) > self.height:
@@ -699,6 +698,162 @@ class SupportsExtendedModeTrait():
         return False
 
 
+    def _set_xt_altscrn(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.lines == screen._altbuf
+        False
+        >>> parser.parse('\x1b[?47h')
+        >>> screen.lines == screen._altbuf
+        True
+        """
+        self.switch_altbuf()
+        return True
+
+
+    def _reset_xt_altscrn(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.lines == screen._altbuf
+        False
+        >>> parser.parse('\x1b[?47h')
+        >>> screen.lines == screen._altbuf
+        True
+        >>> parser.parse('\x1b[?47l')
+        >>> screen.lines == screen._altbuf
+        False
+        """
+        self.switch_mainbuf()
+        return True
+
+
+    def _set_xt_alts47(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.lines == screen._altbuf
+        False
+        >>> parser.parse('\x1b[?1047h')
+        >>> screen.lines == screen._altbuf
+        True
+        """
+        self.switch_altbuf()
+        return True
+
+
+    def _reset_xt_alts47(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.lines == screen._altbuf
+        False
+        >>> parser.parse('\x1b[?1047h')
+        >>> screen.lines == screen._altbuf
+        True
+        >>> parser.parse('\x1b[?1047l')
+        >>> screen.lines == screen._altbuf
+        False
+        """
+        self.clear_screen()
+        self.switch_mainbuf()
+        return True
+
+
+    def _set_xt_alts48(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[4;6H')
+        >>> screen.getyx()
+        (3, 5)
+        >>> parser.parse('\x1b[?1048h')
+        >>> screen.getyx()
+        (3, 5)
+        """
+        self.save_pos()
+        return True
+
+
+    def _reset_xt_alts48(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[4;6H')
+        >>> screen.getyx()
+        (3, 5)
+        >>> parser.parse('\x1b[?1048h')
+        >>> screen.getyx()
+        (3, 5)
+        >>> parser.parse('\x1b[1;9H')
+        >>> screen.getyx()
+        (0, 8)
+        >>> parser.parse('\x1b[?1048l')
+        >>> screen.getyx()
+        (3, 5)
+        """
+        self.restore_pos()
+        return True
+
+
+    def _set_xt_extscrn(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[4;6H')
+        >>> screen.getyx()
+        (3, 5)
+        >>> screen.lines == screen._altbuf
+        False
+        >>> parser.parse('\x1b[?1049h')
+        >>> screen.getyx()
+        (3, 5)
+        >>> screen.lines == screen._altbuf
+        True
+        """
+        self.save_pos()
+        self.switch_altbuf()
+        self.clear_screen()
+        return True
+
+
+    def _reset_xt_extscrn(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[4;6H')
+        >>> screen.getyx()
+        (3, 5)
+        >>> screen.lines == screen._altbuf
+        False
+        >>> parser.parse('\x1b[?1049h')
+        >>> screen.getyx()
+        (3, 5)
+        >>> screen.lines == screen._altbuf
+        True
+        >>> parser.parse('\x1b[1;9H')
+        >>> screen.getyx()
+        (0, 8)
+        >>> parser.parse('\x1b[?1049l')
+        >>> screen.getyx()
+        (3, 5)
+        >>> screen.lines == screen._altbuf
+        False
+        """
+        self.clear_screen()
+        self.switch_mainbuf()
+        self.restore_pos()
+        return True
+
 
     def decset(self, params):
         for param in params:
@@ -714,6 +869,8 @@ class SupportsExtendedModeTrait():
                 return self._set_x10mouse()
             elif param == 40:
                 return self._set_allow_deccolm()
+            elif param == 47:
+                return self._set_xt_altscrn()
             elif param == 1000:
                 return self._set_normal_mouse()
             elif param == 1001:
@@ -729,11 +886,9 @@ class SupportsExtendedModeTrait():
             elif param == 1015:
                 return self._set_urxvt_mouse()
             elif param == 1047:
-                self.switch_altbuf()
-                return True
+                return self._set_xt_alts47()
             elif param == 1048:
-                self.save_pos()
-                return True
+                return self._set_xt_alts48()
             elif param == 1049:
                 self.save_pos()
                 self.switch_altbuf()
@@ -754,6 +909,8 @@ class SupportsExtendedModeTrait():
                 return self._reset_x10mouse()
             elif param == 40:
                 return self._reset_allow_deccolm()
+            elif param == 47:
+                return self._reset_xt_altscrn()
             elif param == 1000:
                 return self._reset_normal_mouse()
             elif param == 1001:
@@ -769,11 +926,9 @@ class SupportsExtendedModeTrait():
             elif param == 1015:
                 return self._reset_urxvt_mouse()
             elif param == 1047:
-                self.switch_mainbuf()
-                return True
+                return self._reset_xt_alts47()
             elif param == 1048:
-                self.restore_pos()
-                return True
+                return self._reset_xt_alts48()
             elif param == 1049:
                 self.switch_mainbuf()
                 self.restore_pos()
@@ -1354,6 +1509,11 @@ class Screen(IScreenImpl,
     def _setup_lines(self):
         width = self.width
         self.lines = [ Line(width) for line in xrange(0, self.height) ]
+
+    def clear_screen(self):
+        defaultvalue = self.cursor.attr.getdefaultvalue()
+        for line in self.lines:
+            line.clear(defaultvalue)
 
     def create_window(self, widget):
         window = Window(self)
