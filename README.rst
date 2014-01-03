@@ -16,7 +16,7 @@ or via pip ::
 
 
 License
------
+-------
 
 MIT license
 
