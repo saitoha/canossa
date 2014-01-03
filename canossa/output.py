@@ -341,14 +341,14 @@ class CSIHandlerTrait():
         >>> parser.parse('\x1b[1;5H')
         >>> parser.parse('\x1b[K')
         >>> print screen.lines[0]
-        <ESC>[0;39;49m1234<SP><SP><SP><SP><SP><SP>
+        <ESC>[0m1234<SP><SP><SP><SP><SP><SP>
         >>> parser.parse('\x1b[1;2H')
         >>> parser.parse('\x1b[1K')
         >>> print screen.lines[0]
-        <ESC>[0;39;49m<SP>234<SP><SP><SP><SP><SP><SP>
+        <ESC>[0m<SP>234<SP><SP><SP><SP><SP><SP>
         >>> parser.parse('\x1b[2K')
         >>> print screen.lines[0]
-        <ESC>[0;39;49m<SP><SP><SP><SP><SP><SP><SP><SP><SP><SP>
+        <ESC>[0m<SP><SP><SP><SP><SP><SP><SP><SP><SP><SP>
         """
         ps = _parse_params(parameter)[0]
         self.screen.el(ps)

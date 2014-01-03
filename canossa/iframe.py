@@ -873,6 +873,7 @@ class InnerFrame(tff.DefaultHandler,
         left = self.left + self.offset_left
         top = self.top + self.offset_top
 
+        #innerscreen.copyrect(window, 0, 0, innerscreen.width, innerscreen.height, left, top, lazy=True)
         # draw the inner content of frame
         for index in xrange(0, innerscreen.height):
             if top + index < outerscreen.height:

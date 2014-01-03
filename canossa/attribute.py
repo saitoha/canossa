@@ -30,9 +30,9 @@ _ATTR_UNDERLINED = 4  # 00000000 00000000 00000000 00010000
 _ATTR_BLINK = 5       # 00000000 00000000 00000000 00100000
 _ATTR_INVERSE = 7     # 00000000 00000000 00000000 10000000
 _ATTR_INVISIBLE = 8   # 00000000 00000000 00000001 00000000
-_ATTR_NRC = 9         # 00000000 00000000 00011110 00000000
-_ATTR_FG = 13         # 00000000 00111111 11100000 00000000
-_ATTR_BG = 22         # 01111111 11000000 00000000 00000000
+_ATTR_FG = 9          # 00000000 00000011 11111110 00000000
+_ATTR_BG = 18         # 00000111 11111100 00000000 00000000
+_ATTR_NRC = 27        # 01111000 00000000 00000000 00000000
 
 _ATTR_DEFAULT = 0x100 << _ATTR_FG | 0x100 << _ATTR_BG
 
@@ -51,25 +51,25 @@ class Attribute():
     """
     >>> attr = Attribute()
     >>> print attr
-    <ESC>[0;39;49m
+    <ESC>[0m
     >>> attr.set_sgr([0])
     >>> print attr.equals(Attribute())
     True
     >>> print attr
-    <ESC>[0;39;49m
+    <ESC>[0m
     >>> attr.set_charset(0x41)
     True
     >>> print attr
-    <ESC>[0;39;49m
+    <ESC>[0m
     >>> attr.set_sgr(x for x in (0, 5, 6))
     >>> print attr
-    <ESC>[0;5;39;49m
+    <ESC>[0;5m
     >>> attr.set_sgr(x for x in (7, 8))
     >>> print attr
-    <ESC>[0;5;7;8;39;49m
+    <ESC>[0;5;7;8m
     >>> attr.set_sgr(x for x in (17, 18))
     >>> print attr
-    <ESC>[0;5;7;8;39;49m
+    <ESC>[0;5;7;8m
     >>> attr.set_sgr(x for x in (38, 5, 200, 48, 5, 100))
     >>> print attr
     <ESC>[0;5;7;8;38;5;200;48;5;100m
@@ -99,7 +99,7 @@ class Attribute():
 
         fg = value >> _ATTR_FG & 0x1ff
         if fg == 0x100:
-            params.append(39)
+            pass
         elif fg < 8:
             params.append(30 + fg)
         elif fg < 16:
@@ -109,7 +109,7 @@ class Attribute():
 
         bg = value >> _ATTR_BG & 0x1ff
         if bg == 0x100:
-            params.append(49)
+            pass
         elif bg < 8:
             params.append(40 + bg)
         elif bg < 16:
@@ -187,7 +187,6 @@ class Attribute():
                     value &= ~(0x1ff << _ATTR_FG)
                     value |= 0x100 << _ATTR_FG
                 else:
-                    assert n != 0
                     value &= ~(0x1ff << _ATTR_FG)
                     value |= (n - 30) << _ATTR_FG
             elif n < 50:
@@ -199,7 +198,7 @@ class Attribute():
                     value &= ~(0x1ff << _ATTR_BG)
                     value |= 0x100 << _ATTR_BG
                 else:
-                    value &= value & ~(0x1ff << _ATTR_BG)
+                    value &= ~(0x1ff << _ATTR_BG)
                     value |= (n - 40) << _ATTR_BG
             elif 90 <= n and n < 98:
                 value &= ~(0x1ff << _ATTR_FG)
