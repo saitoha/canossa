@@ -30,7 +30,9 @@ try:
 except ImportError:
     from StringIO import StringIO
 import codecs
-from interface import IScreen
+
+from .interface import IScreen
+from .exception import CanossaRangeException
 from constant import *
 
 
