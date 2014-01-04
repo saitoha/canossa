@@ -30,16 +30,18 @@ try:
 except ImportError:
     from StringIO import StringIO
 import codecs
-from interface import IScreen
+
+from .interface import IScreen
+from .exception import CanossaRangeException
 from constant import *
 
 
 #
 # CSI ... ; ... R
 #
-from cursor import Cursor
-from line import Line
-from mouse import IFocusListener, IMouseListener, MouseDecoder
+from .cursor import Cursor
+from .line import Line
+from .mouse import IFocusListener, IMouseListener, MouseDecoder
 
 
 def _generate_mock_parser(screen):
@@ -248,6 +250,7 @@ class SuuportsAlternateScreenTrait():
         assert len(lines) == self.height
         for line in lines:
             assert self.width == line.length()
+        self._region = Region()
 
     def switch_altbuf(self):
         self.lines = self._altbuf
@@ -1006,26 +1009,6 @@ class SupportsTabStopTrait():
         self.cursor.dirty = True
 
 
-class CanossaRangeException(Exception):
-    ''' thrown when an invalid range is detected '''
-
-    def __init__(self, message):
-        """
-        >>> e = CanossaRangeException("test1")
-        >>> e.message
-        'test1'
-        """
-        self.message = message
-
-    def __str__(self):
-        """
-        >>> e = CanossaRangeException("test2")
-        >>> e.message
-        'test2'
-        """
-        return repr(self.message)
-
-
 class IScreenImpl(IScreen):
 
     _listener = None
@@ -1075,16 +1058,6 @@ class IScreenImpl(IScreen):
         if desty is None:
             desty = srcy
 
-        #if destx < 0:
-        #    destx = 0
-        #if desty < 0:
-        #    desty = 0
-        #height = min(height, (self.height - 1) - desty)
-        #width =  min(width, (self.width - 1) - destx)
-        #if srcx < 0:
-        #    srcx = 0
-        #if srcy < 0:
-        #    srcy = 0
         if srcx < 0 or srcy < 0 or height < 0 or width < 0:
             template = "invalid rect is detected. (%d, %d, %d, %d)"
             message = template % (srcx, srcy, width, height)
@@ -1135,6 +1108,10 @@ class IScreenImpl(IScreen):
                     width = window.width
                     if width > 0 and n > 0 and window.left > 0:
                         self.copyline(self, window._buffer, window.left, top, width)
+
+    def emumwindows(self):
+        for window in self._layouts:
+            yield window
 
     def drawwindows(self, context):
         trash = self._trash
@@ -1420,6 +1397,9 @@ class Window():
             context.puts(s)
             buffer.truncate(0)
 
+    def getlabel(self):
+        return self._screen.getlabel(self)
+
     def focus(self):
         self._screen.focus(self)
 
@@ -1548,6 +1528,10 @@ class Screen(IScreenImpl,
         self._widgets[window.id] = widget
         self._layouts.insert(0, window)
         return window
+
+    def getlabel(self, window):
+        widget = self._widgets[window.id]
+        return widget.getlabel()
 
     def focus(self, window):
         layouts = self._layouts

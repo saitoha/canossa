@@ -62,6 +62,7 @@ class IScreen:
     def setlistener(self, listener):
         raise NotImplementedError("IScreen::setlistener")
 
+
 class IScreenListener:
 
     def ontitlechanged(self, s):
@@ -72,6 +73,7 @@ class IScreenListener:
 
     def onmodedisabled(self, n):
         raise NotImplementedError("IScreenListener::onmodedisabled")
+
 
 class IModeListener():
 
@@ -111,6 +113,9 @@ class IWidget():
     def draw(self, output):
         raise NotImplementedError("IWidget::draw")
 
+    def getlabel(self):
+        raise NotImplementedError("IWidget::getlabel")
+
 
 class IListbox(IWidget):
 
@@ -134,6 +139,7 @@ class IListbox(IWidget):
 
     def isshown(self):
         raise NotImplementedError("IListbox::isshown")
+
 
 class IListboxListener():
 

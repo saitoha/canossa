@@ -24,22 +24,31 @@
 # 
 # ***** END LICENSE BLOCK *****
 
-__author__  = "Hayaki Saito (user@zuse.jp)"
-__version__ = "0.1.1"
-__license__ = "MIT"
 
-from tff import tff
-from termprop import termprop
+class CanossaRangeException(Exception):
+    ''' thrown when an invalid range is detected '''
 
-from interface import *
-from canossa import *
-from popup import *
-from mouse import *
-from iframe import *
-from screen import *
-from output import *
+    def __init__(self, message):
+        """
+        >>> e = CanossaRangeException("test1")
+        >>> e.message
+        'test1'
+        """
+        self.message = message
 
-''' main '''
-if __name__ == '__main__':
-    main()
+    def __str__(self):
+        """
+        >>> e = CanossaRangeException("test2")
+        >>> e.message
+        'test2'
+        """
+        return repr(self.message)
 
+
+def test():
+    import doctest
+    doctest.testmod()
+
+
+if __name__ == "__main__":
+    test()

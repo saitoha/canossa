@@ -188,6 +188,11 @@ class IListboxImpl(IListbox):
             raise Exception("range error col=%s" % col)
         self._window.write('\x1b[%d;%dH' % (row, col))
 
+    # IWidget
+    def getlabel(self):
+        return None 
+
+
     def draw(self, region):
         window = self._window
         if self._list:
