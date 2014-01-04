@@ -1109,6 +1109,10 @@ class IScreenImpl(IScreen):
                     if width > 0 and n > 0 and window.left > 0:
                         self.copyline(self, window._buffer, window.left, top, width)
 
+    def emumwindows(self):
+        for window in self._layouts:
+            yield window
+
     def drawwindows(self, context):
         trash = self._trash
         if trash:
