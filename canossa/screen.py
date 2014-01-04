@@ -1058,16 +1058,6 @@ class IScreenImpl(IScreen):
         if desty is None:
             desty = srcy
 
-        #if destx < 0:
-        #    destx = 0
-        #if desty < 0:
-        #    desty = 0
-        #height = min(height, (self.height - 1) - desty)
-        #width =  min(width, (self.width - 1) - destx)
-        #if srcx < 0:
-        #    srcx = 0
-        #if srcy < 0:
-        #    srcy = 0
         if srcx < 0 or srcy < 0 or height < 0 or width < 0:
             template = "invalid rect is detected. (%d, %d, %d, %d)"
             message = template % (srcx, srcy, width, height)
