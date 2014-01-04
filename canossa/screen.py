@@ -39,9 +39,9 @@ from constant import *
 #
 # CSI ... ; ... R
 #
-from cursor import Cursor
-from line import Line
-from mouse import IFocusListener, IMouseListener, MouseDecoder
+from .cursor import Cursor
+from .line import Line
+from .mouse import IFocusListener, IMouseListener, MouseDecoder
 
 
 def _generate_mock_parser(screen):
