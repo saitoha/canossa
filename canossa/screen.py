@@ -1397,6 +1397,9 @@ class Window():
             context.puts(s)
             buffer.truncate(0)
 
+    def getlabel(self):
+        return self._screen.getlabel(self)
+
     def focus(self):
         self._screen.focus(self)
 
@@ -1525,6 +1528,10 @@ class Screen(IScreenImpl,
         self._widgets[window.id] = widget
         self._layouts.insert(0, window)
         return window
+
+    def getlabel(self, window):
+        widget = self._widgets[window.id]
+        return widget.getlabel()
 
     def focus(self, window):
         layouts = self._layouts
