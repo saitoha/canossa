@@ -31,6 +31,7 @@ from mouse import IFocusListener, IMouseListener, MouseDecoder
 from interface import IInnerFrame, IInnerFrameListener
 from output import Canossa
 from screen import Screen
+from exception import CanossaRangeException
 
 _HITTEST_NONE              = 0
 _HITTEST_CLIENTAREA        = 1
@@ -672,13 +673,13 @@ class InnerFrame(tff.DefaultHandler,
     def moveto(self, row, col):
         outerscreen = self._outerscreen
         if col >= outerscreen.width + 1:
-            raise Exception("range error col=%s" % col)
+            raise CanossaRangeException("range error col=%s" % col)
         if row >= outerscreen.height + 1:
-            raise Exception("range error row=%s" % row)
+            raise CanossaRangeException("range error row=%s" % row)
         if row < 1:
-            raise Exception("range error row=%s" % row)
+            raise CanossaRangeException("range error row=%s" % row)
         if col < 1:
-            raise Exception("range error col=%s" % col)
+            raise CanossaRangeException("range error col=%s" % col)
         self._window.write('\x1b[%d;%dH' % (row, col))
 
     def _drawtitle(self, dirtyregion):
@@ -933,6 +934,13 @@ class InnerFrame(tff.DefaultHandler,
             window.write('\x1b[?25h')
 
     """ IWidget override """
+
+    def getlabel(self):
+        innertitle = self.innerscreen.gettitle()
+        if innertitle:
+            self._title = innertitle
+        return self._title 
+
     def draw(self, region):
         if self.enabled:
             window = self._window
