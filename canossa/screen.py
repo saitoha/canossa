@@ -1009,26 +1009,6 @@ class SupportsTabStopTrait():
         self.cursor.dirty = True
 
 
-class CanossaRangeException(Exception):
-    ''' thrown when an invalid range is detected '''
-
-    def __init__(self, message):
-        """
-        >>> e = CanossaRangeException("test1")
-        >>> e.message
-        'test1'
-        """
-        self.message = message
-
-    def __str__(self):
-        """
-        >>> e = CanossaRangeException("test2")
-        >>> e.message
-        'test2'
-        """
-        return repr(self.message)
-
-
 class IScreenImpl(IScreen):
 
     _listener = None
