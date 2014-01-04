@@ -250,6 +250,7 @@ class SuuportsAlternateScreenTrait():
         assert len(lines) == self.height
         for line in lines:
             assert self.width == line.length()
+        self._region = Region()
 
     def switch_altbuf(self):
         self.lines = self._altbuf
