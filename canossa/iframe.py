@@ -69,6 +69,15 @@ _HOVERTYPE_LEFT            = 5
 _HOVERTYPE_RIGHT           = 6
 _HOVERTYPE_BUTTON_CLOSE    = 7
 
+_MOUSEEVENTTYPE_DOWN        = 0
+_MOUSEEVENTTYPE_UP          = 3
+_MOUSEEVENTTYPE_MOVE        = 32
+_MOUSEEVENTTYPE_SCROLL      = 64
+_MOUSEEVENTTYPE_HOVER       = 0 | _MOUSEEVENTTYPE_MOVE
+_MOUSEEVENTTYPE_DRAGMOVE    = 0 | _MOUSEEVENTTYPE_MOVE
+_MOUSEEVENTTYPE_SCROLLDOWN  = 0 | _MOUSEEVENTTYPE_SCROLL
+_MOUSEEVENTTYPE_SCROLLUP    = 1 | _MOUSEEVENTTYPE_SCROLL
+
 
 class IFocusListenerImpl(IFocusListener):
 
@@ -78,9 +87,11 @@ class IFocusListenerImpl(IFocusListener):
     """ IFocusListener implementation """
     def onfocusin(self):
         self._titlestyle = _TITLESTYLE_ACTIVE
+        return True
 
     def onfocusout(self):
         self._titlestyle = _TITLESTYLE_INACTIVE
+        return True
 
 
 class IMouseListenerImpl(IMouseListener):
