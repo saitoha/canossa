@@ -79,6 +79,61 @@ _MOUSEEVENTTYPE_SCROLLDOWN  = 0 | _MOUSEEVENTTYPE_SCROLL
 _MOUSEEVENTTYPE_SCROLLUP    = 1 | _MOUSEEVENTTYPE_SCROLL
 
 
+class Desktop(IWidget, IMouseListener):
+
+    innerscreen = None
+
+    def __init__(self, session, screen):
+        self._session = session
+        self._screen = screen
+        self._window = screen.create_window(self)
+
+    """ IFocusListener implementation """
+    def onfocusin(self):
+        return True
+
+    def onfocusout(self):
+        return True
+
+    def onmousedown(self, context, x, y):
+        self._session.blur_process()
+        self._window.blur()
+        return True
+
+    def onmouseup(self, context, x, y):
+        self._session.blur_process()
+        return True
+
+    def onclick(self, context, x, y):
+        self._session.blur_process()
+        return True
+
+    def ondoubleclick(self, context, x, y):
+        self._session.blur_process()
+        return True
+
+    def onmousehover(self, context, x, y):
+        return True
+
+    def onscrolldown(self, context, x, y):
+        return False
+
+    def onscrollup(self, context, x, y):
+        return False
+
+    def ondragstart(self, s, x, y):
+        return False
+
+    def ondragend(self, s, x, y):
+        return False
+
+    def ondragmove(self, context, x, y):
+        return False
+
+    """ IWidget implementation """
+    def draw(self, region):
+        pass
+
 class IFocusListenerImpl(IFocusListener):
 
     def __init__(self):
