@@ -178,29 +178,25 @@ class IMouseListenerImpl(IMouseListener):
                 screen.mouse_protocol == MOUSE_PROTOCOL_BUTTON_EVENT or
                 screen.mouse_protocol == MOUSE_PROTOCOL_NORMAL or
                 screen.mouse_protocol == MOUSE_PROTOCOL_X10):
-                b = 0
+                b = _MOUSEEVENTTYPE_DOWN
                 x -= self.left + self.offset_left
                 y -= self.top + self.offset_top
                 if screen.mouse_encoding == MOUSE_ENCODING_NORMAL:
-                    x += 33
-                    y += 33
                     b += 32
+                    x += 32
+                    y += 32
                     if x < 0xff and y < 0xff:
-                        context.puts('\x1b[M%c%c%c' % (b, x, y))
+                        context.puts('\x1b[M%c%c%c' % (b, x + 1, y + 1))
                 elif screen.mouse_encoding == MOUSE_ENCODING_UTF8:
-                    x += 33
-                    y += 33
                     b += 32
-                    context.puts(u'\x1b[M%c%c%c' % (unichr(b), unichr(x), unichr(y)))
+                    x += 32
+                    y += 32
+                    context.puts(u'\x1b[M%c%c%c' % (unichr(b), unichr(x + 1), unichr(y + 1)))
                 elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
-                    x += 1
-                    y += 1
-                    context.puts('\x1b[<%d;%d;%dM' % (b, x, y))
+                    context.puts('\x1b[<%d;%d;%dM' % (b, x + 1, y + 1))
                 elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
-                    x += 1
-                    y += 1
                     b += 32
-                    context.puts('\x1b[%d;%d;%dM' % (b, x, y))
+                    context.puts('\x1b[%d;%d;%dM' % (b, x + 1, y + 1))
         return True
 
     def onmouseup(self, context, x, y):
@@ -216,7 +212,7 @@ class IMouseListenerImpl(IMouseListener):
                 screen.mouse_protocol == MOUSE_PROTOCOL_BUTTON_EVENT or
                 screen.mouse_protocol == MOUSE_PROTOCOL_NORMAL or
                 screen.mouse_protocol == MOUSE_PROTOCOL_X10):
-                b = 3
+                b = _MOUSEEVENTTYPE_UP
                 x -= self.left + self.offset_left
                 y -= self.top + self.offset_top
                 if screen.mouse_encoding == MOUSE_ENCODING_NORMAL:
@@ -267,7 +263,7 @@ class IMouseListenerImpl(IMouseListener):
             if self._window.is_active():
                 screen = self.innerscreen
                 if screen.mouse_protocol == MOUSE_PROTOCOL_ANY_EVENT:
-                    b = 32
+                    b = _MOUSEEVENTTYPE_HOVER
                     x -= self.left + self.offset_left
                     y -= self.top + self.offset_top
                     if screen.mouse_encoding == MOUSE_ENCODING_NORMAL:
@@ -331,7 +327,7 @@ class IMouseListenerImpl(IMouseListener):
             if (screen.mouse_protocol == MOUSE_PROTOCOL_ANY_EVENT or
                 screen.mouse_protocol == MOUSE_PROTOCOL_BUTTON_EVENT or
                 screen.mouse_protocol == MOUSE_PROTOCOL_NORMAL):
-                b = 64
+                b = _MOUSEEVENTTYPE_SCROLLDOWN
                 x -= self.left + self.offset_left
                 y -= self.top + self.offset_top
                 if screen.mouse_encoding == MOUSE_ENCODING_NORMAL:
@@ -368,7 +364,7 @@ class IMouseListenerImpl(IMouseListener):
             if (screen.mouse_protocol == MOUSE_PROTOCOL_ANY_EVENT or
                 screen.mouse_protocol == MOUSE_PROTOCOL_BUTTON_EVENT or
                 screen.mouse_protocol == MOUSE_PROTOCOL_NORMAL):
-                b = 65
+                b = _MOUSEEVENTTYPE_SCROLLUP
                 x -= self.left + self.offset_left
                 y -= self.top + self.offset_top
                 if screen.mouse_encoding == MOUSE_ENCODING_NORMAL:
@@ -595,7 +591,7 @@ class IMouseListenerImpl(IMouseListener):
             if hittest == _HITTEST_CLIENTAREA:
                 screen = self.innerscreen
                 if screen.mouse_protocol == MOUSE_PROTOCOL_ANY_EVENT or screen.mouse_protocol == MOUSE_PROTOCOL_BUTTON_EVENT:
-                    b = 32
+                    b = _MOUSEEVENTTYPE_DRAGMOVE
                     x -= self.left + self.offset_left
                     y -= self.top + self.offset_top
                     if screen.mouse_encoding == MOUSE_ENCODING_NORMAL:
