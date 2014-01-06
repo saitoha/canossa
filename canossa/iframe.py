@@ -99,11 +99,11 @@ class IMouseListenerImpl(IMouseListener):
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
             #self._window.blur()
-            self._session.blur_subprocess()
+            self._session.blur_process()
             return False
         if not self._window.is_active():
             self._window.focus()
-            self._session.focus_subprocess(self._tty)
+            self._session.focus_process(self._tty)
             self._titlestyle = _TITLESTYLE_ACTIVE
             return True
         if hittest == _HITTEST_CLIENTAREA:
@@ -969,7 +969,7 @@ class InnerFrame(tff.DefaultHandler,
         session = self._session
         outerscreen = self._outerscreen
         fd = self._tty.fileno()
-        session.destruct_subprocess(fd)
+        session.destruct_process(fd)
         outerscreen.setfocus()
         if not outerscreen.has_visible_windows():
             self._mousedecoder.uninitialize_mouse(self._window)
