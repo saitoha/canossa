@@ -968,8 +968,7 @@ class InnerFrame(tff.DefaultHandler,
     def close(self):
         session = self._session
         outerscreen = self._outerscreen
-        fd = self._tty.fileno()
-        session.destruct_process(fd)
+        session.destruct_process(self._tty)
         outerscreen.setfocus()
         if not outerscreen.has_visible_windows():
             self._mousedecoder.uninitialize_mouse(self._window)
