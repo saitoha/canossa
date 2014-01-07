@@ -28,7 +28,7 @@
 import tff
 from constant import *
 from mouse import IFocusListener, IMouseListener, MouseDecoder
-from interface import IInnerFrame, IInnerFrameListener
+from interface import IInnerFrame, IInnerFrameListener, IWidget
 from output import Canossa
 from screen import Screen
 from exception import CanossaRangeException
@@ -693,9 +693,7 @@ class InnerFrame(tff.DefaultHandler,
 
         self._window = window
 
-        mousedecoder.initialize_mouse(window)
-
-        self._mousedecoder = mousedecoder
+        listener.initialize_mouse(window)
 
         self.left = window.left + self._padding_left
         self.top = window.top + self._padding_top
@@ -706,11 +704,10 @@ class InnerFrame(tff.DefaultHandler,
         self.innerscreen = innerscreen
         self._outerscreen = outerscreen
         self._listener = listener
-        self._mousedecoder = mousedecoder
 
         self._tty = session.add_subtty('xterm', 'ja_JP.UTF-8',
                                        command, row, col, termenc,
-                                       self, canossa, self)
+                                       self, canossa)
         self._title = command
 
     """ tff.EventObserver override """
@@ -720,15 +717,15 @@ class InnerFrame(tff.DefaultHandler,
         self._listener.onclose(self, context)
         outerscreen.setfocus()
         if not outerscreen.has_visible_windows():
-            self._mousedecoder.uninitialize_mouse(self._window)
+            self._listener.uninitialize_mouse(self._window)
 
     def handle_csi(self, context, parameter, intermediate, final):
-        if self._mousedecoder.handle_csi(context, parameter, intermediate, final):
+        if self._listener.handle_csi(context, parameter, intermediate, final):
             return True
         return False
 
     def handle_char(self, context, c):
-        if self._mousedecoder.handle_char(context, c):
+        if self._listener.handle_char(context, c):
             return True
         return False
 
@@ -1033,7 +1030,7 @@ class InnerFrame(tff.DefaultHandler,
         session.destruct_process(self._tty)
         outerscreen.setfocus()
         if not outerscreen.has_visible_windows():
-            self._mousedecoder.uninitialize_mouse(self._window)
+            self._listener.uninitialize_mouse(self._window)
 
 
 def test():
