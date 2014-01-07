@@ -63,7 +63,10 @@ class IFocusListenerImpl(IFocusListener):
 
     """ IFocusListener implementation """
     def onfocusin(self):
-        pass
+        widgets = self._widgets
+        for window in self._layouts:
+            widget = widgets[window.id]
+            widget.onfocusin()
 
     def onfocusout(self):
         widgets = self._widgets
@@ -1526,6 +1529,11 @@ class Screen(IScreenImpl,
         self._trash = []
 
         self._region = Region()
+
+    def create_child(self, row=24, col=80, y=0, x=0, termenc="UTF-8", termprop=None):
+        child = Screen(row, col, y, x, termenc, termprop)
+        self.children.append(child)
+        return child
 
     def _setup_lines(self):
         width = self.width

@@ -689,11 +689,8 @@ class InnerFrame(tff.DefaultHandler,
                      top - self._padding_top,
                      col + self._padding_left + self._padding_right,
                      row + self._padding_top + self._padding_bottom)
-        window.focus()
 
         self._window = window
-
-        listener.initialize_mouse(window)
 
         self.left = window.left + self._padding_left
         self.top = window.top + self._padding_top
@@ -972,7 +969,6 @@ class InnerFrame(tff.DefaultHandler,
 
 
     def drawcursor(self):
-        window = self._window
         innerscreen = self.innerscreen
         outerscreen = self._outerscreen
         left = self.left + self.offset_left
@@ -1025,6 +1021,7 @@ class InnerFrame(tff.DefaultHandler,
             self._drawbottom(dirtyregion)
             self._drawsideframe(dirtyregion)
             self.drawcursor()
+            self._listener.initialize_mouse(window)
 
     def close(self):
         session = self._session

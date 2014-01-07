@@ -117,6 +117,10 @@ class IWidget():
         raise NotImplementedError("IWidget::getlabel")
 
 
+class IDesktop(IWidget):
+    pass
+
+
 class IListbox(IWidget):
 
     def assign(self, a_list):

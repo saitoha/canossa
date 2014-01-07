@@ -112,6 +112,7 @@ class IListboxImpl(IListbox):
         self._list = l
         self._index = index
         self.notifyselection()
+        self.focus()
 
     def isempty(self):
         return self._list is None
@@ -221,7 +222,6 @@ class IListboxImpl(IListbox):
                 window.alloc(left, top, width, height)
                 self._style = self._style_active
                 self._mouse_decoder.initialize_mouse(window)
-                #window.focus()
 
             dirtyregion = region.add(left, top, width, height)
 
@@ -432,7 +432,7 @@ class IMouseListenerImpl(IMouseListener):
         if hittest == _HITTEST_NONE:
             return False
         self._lasthittest = hittest
-        self._window.focus()
+        self.focus()
         self._style = self._style_scrollbar_drag
         return True
 

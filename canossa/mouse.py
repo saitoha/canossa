@@ -124,7 +124,6 @@ class IMouseModeImpl(IMouseMode):
     _focusmode = 0
 
     def setenabled(self, s, value):
-
         if value:
             s.write(u"\x1b[?1000h")
             s.write(u"\x1b[?1002h")
