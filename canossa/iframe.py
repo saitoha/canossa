@@ -167,7 +167,7 @@ class IMouseListenerImpl(IMouseListener):
             #self._window.blur()
             self._session.blur_process()
             return False
-        if not self._window.is_active():
+        if not self.is_active():
             self._window.focus()
             self._session.focus_process(self._tty)
             self._titlestyle = _TITLESTYLE_ACTIVE
@@ -204,7 +204,7 @@ class IMouseListenerImpl(IMouseListener):
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
             return False
-        if not self._window.is_active():
+        if not self.is_active():
             return True
         if hittest == _HITTEST_CLIENTAREA:
             screen = self.innerscreen
@@ -260,7 +260,7 @@ class IMouseListenerImpl(IMouseListener):
             self._hovertype = _HOVERTYPE_NONE
             return False
         if hittest == _HITTEST_CLIENTAREA:
-            if self._window.is_active():
+            if self.is_active():
                 screen = self.innerscreen
                 if screen.mouse_protocol == MOUSE_PROTOCOL_ANY_EVENT:
                     b = _MOUSEEVENTTYPE_HOVER
@@ -320,7 +320,7 @@ class IMouseListenerImpl(IMouseListener):
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
             return False
-        if not self._window.is_active():
+        if not self.is_active():
             return True
         if hittest == _HITTEST_CLIENTAREA:
             screen = self.innerscreen
@@ -357,7 +357,7 @@ class IMouseListenerImpl(IMouseListener):
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
             return False
-        if not self._window.is_active():
+        if not self.is_active():
             return True
         elif hittest == _HITTEST_CLIENTAREA:
             screen = self.innerscreen
@@ -394,7 +394,7 @@ class IMouseListenerImpl(IMouseListener):
         hittest = self._lasthittest
         if hittest == _HITTEST_NONE:
             return False
-        if not self._window.is_active():
+        if not self.is_active():
             return True
         if hittest == _HITTEST_CLIENTAREA:
             self._dragtype = _DRAGTYPE_CLIENTAREA
@@ -426,7 +426,7 @@ class IMouseListenerImpl(IMouseListener):
         #    return False
         if self._dragtype == _DRAGTYPE_NONE:
             return True
-        if not self._window.is_active():
+        if not self.is_active():
             return True
         self.left += self.offset_left
         self.top += self.offset_top
@@ -444,7 +444,7 @@ class IMouseListenerImpl(IMouseListener):
             return False
         if self._dragtype == _DRAGTYPE_NONE:
             return False
-        if not self._window.is_active():
+        if not self.is_active():
             return True
         if self._dragtype == _DRAGTYPE_TITLEBAR:
 
@@ -710,6 +710,10 @@ class InnerFrame(tff.DefaultHandler,
                                        self, canossa)
         self._title = command
 
+
+    def is_active(self):
+        return self._session.process_is_active(self._tty)
+
     """ tff.EventObserver override """
     def handle_end(self, context):
         outerscreen = self._outerscreen
@@ -967,13 +971,13 @@ class InnerFrame(tff.DefaultHandler,
                                              lazy=True)
 
 
-    def _drawcursor(self):
+    def drawcursor(self):
         window = self._window
         innerscreen = self.innerscreen
         outerscreen = self._outerscreen
         left = self.left + self.offset_left
         top = self.top + self.offset_top
-        if window.is_active():
+        if self.is_active():
             cursor = innerscreen.cursor
             row = cursor.row + top
             if row < 1:
@@ -990,7 +994,6 @@ class InnerFrame(tff.DefaultHandler,
             elif row >= outerscreen.height:
                 return
             self.moveto(row + 1, col + 1)
-            window.write('\x1b[?25h')
 
     """ IWidget override """
 
@@ -1015,14 +1018,13 @@ class InnerFrame(tff.DefaultHandler,
                                      width + self._padding_left + self._padding_right,
                                      height + self._padding_top + self._padding_bottom)
 
-            window.write('\x1b[?25l')
             window.write('\x1b[m')
 
             self._drawcontent(dirtyregion)
             self._drawtitle(dirtyregion)
             self._drawbottom(dirtyregion)
             self._drawsideframe(dirtyregion)
-            self._drawcursor()
+            self.drawcursor()
 
     def close(self):
         session = self._session

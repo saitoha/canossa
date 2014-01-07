@@ -102,6 +102,11 @@ class IListboxImpl(IListbox):
 
     _style = _style_active
 
+    innerscreen = None
+
+    def focus(self):
+        self._window.focus()
+
     """ IListbox implementation """
     def assign(self, l, index=0):
         self._list = l

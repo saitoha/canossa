@@ -1083,7 +1083,20 @@ class IScreenImpl(IScreen):
 
         self._region.sub(srcx, srcy, width, height)
 
+    def getactivewidget(self):
+        if self._layouts:
+            for window in self._layouts:
+                widget = self._widgets[window.id]
+                if widget.innerscreen and widget.is_active():
+                    return widget
+        return None
+
     def getyx(self):
+        widget = self.getactivewidget()
+        if widget:
+             left, top = widget.left, widget.top
+             cursor = widget.innerscreen.cursor
+             return cursor.row + top, cursor.col + left
         cursor = self.cursor
         return cursor.row, cursor.col
 
