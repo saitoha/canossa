@@ -736,13 +736,17 @@ class InnerFrame(tff.DefaultHandler,
     def moveto(self, row, col):
         outerscreen = self._outerscreen
         if col >= outerscreen.width + 1:
-            raise CanossaRangeException("range error col=%s" % col)
+            col = outerscreen.width
+            #raise CanossaRangeException("range error col=%s" % col)
         if row >= outerscreen.height + 1:
-            raise CanossaRangeException("range error row=%s" % row)
+            row = outerscreen.height
+            #raise CanossaRangeException("range error row=%s" % row)
         if row < 1:
-            raise CanossaRangeException("range error row=%s" % row)
+            row = 1
+            #raise CanossaRangeException("range error row=%s" % row)
         if col < 1:
-            raise CanossaRangeException("range error col=%s" % col)
+            col = 1
+            #raise CanossaRangeException("range error col=%s" % col)
         self._window.write('\x1b[%d;%dH' % (row, col))
 
     def _drawtitle(self, dirtyregion):

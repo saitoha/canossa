@@ -1031,7 +1031,7 @@ class IScreenImpl(IScreen):
 
                 assert self.height == len(self.lines)
                 assert y < self.height
-            except e:
+            except Exception, e:
                 import logging
                 logging.exception(e)
                 return
@@ -1126,9 +1126,29 @@ class IScreenImpl(IScreen):
                     if width > 0 and n > 0 and window.left > 0:
                         self.copyline(self, window._buffer, window.left, top, width)
 
-    def emumwindows(self):
+    def enumwindows(self):
         for window in self._layouts:
             yield window
+
+    def taskswitch(self, window_id):
+        self._widgets[window_id].focus()
+
+    def task_prev(self):
+        for window in reversed(self._layouts):
+            widget = self._widgets[window.id]
+            if widget.innerscreen:
+                widget.focus()
+                break
+
+    def task_next(self):
+        for window in self._layouts[1:]:
+            widget = self._widgets[window.id]
+            if widget.innerscreen:
+                widget.focus()
+                window = self._layouts[1]
+                self._layouts.pop(1)
+                self._layouts.append(window)
+                break
 
     def drawwindows(self, context):
         trash = self._trash

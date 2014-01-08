@@ -132,7 +132,7 @@ class IListboxImpl(IListbox):
             return
         value = self._list[self._index]
 
-        pos = value.find(u";")
+        pos = value.find(u';')
         if pos >= 0:
             text = value[:pos]
             remarks = value[pos:]
