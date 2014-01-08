@@ -703,6 +703,16 @@ class InnerFrame(tff.DefaultHandler,
         self._outerscreen = outerscreen
         self._listener = listener
 
+        if termprop.wcwidth(0x2500) == 1:
+            self._horizontal_bar = u'\u2500'
+        else:
+            self._horizontal_bar = u'-'
+
+        if termprop.wcwidth(0x2502) == 1:
+            self._vertical_bar = u'\u2502'
+        else:
+            self._vertical_bar = u'|'
+
         self._tty = session.add_subtty('xterm', 'ja_JP.UTF-8',
                                        command, row, col, termenc,
                                        self, canossa)
