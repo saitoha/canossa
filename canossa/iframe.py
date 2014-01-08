@@ -167,7 +167,7 @@ class IMouseListenerImpl(IMouseListener):
             #self._window.blur()
             self._session.blur_process()
             return False
-        if not self.is_active():
+        if not self._session.process_is_active(self._tty):
             self._window.focus()
             self._session.focus_process(self._tty)
             self._titlestyle = _TITLESTYLE_ACTIVE
@@ -709,7 +709,8 @@ class InnerFrame(tff.DefaultHandler,
 
 
     def is_active(self):
-        return self._session.process_is_active(self._tty)
+        return self._is_active(self._tty)
+#        return self._session.process_is_active(self._tty)
 
     """ tff.EventObserver override """
     def handle_end(self, context):
@@ -1022,6 +1023,7 @@ class InnerFrame(tff.DefaultHandler,
             self._drawsideframe(dirtyregion)
             self.drawcursor()
             self._listener.initialize_mouse(window)
+
 
     def close(self):
         session = self._session
