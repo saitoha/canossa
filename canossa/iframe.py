@@ -877,7 +877,7 @@ class InnerFrame(tff.DefaultHandler,
                         n += 1
                         if n < dirty_left + 1:
                             continue
-                        window.write('-')
+                        window.write(self._horizontal_bar)
 
     def _drawsideframe(self, dirtyregion):
         window = self._window
@@ -921,7 +921,7 @@ class InnerFrame(tff.DefaultHandler,
                                 window.write('\x1b[43m')
                             else:
                                 window.write('\x1b[m')
-                            window.write('|')
+                            window.write(self._vertical_bar)
                             window.write('\x1b[m')
 
                         # draw the right edge of frame
@@ -936,7 +936,7 @@ class InnerFrame(tff.DefaultHandler,
                                 window.write('\x1b[43m')
                             else:
                                 window.write('\x1b[m')
-                            window.write('|')
+                            window.write(self._vertical_bar)
                             window.write('\x1b[m')
 
     def _drawcontent(self, dirtyregion):
