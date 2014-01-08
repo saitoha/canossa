@@ -104,11 +104,10 @@ class IListboxImpl(IListbox):
 
     innerscreen = None
 
-    def focus(self):
-        self._window.focus()
-
     """ IListbox implementation """
     def assign(self, l, index=0):
+        y, x = self._screen.getyx()
+        self.setposition(x, y)
         self._list = l
         self._index = index
         self.notifyselection()
@@ -195,9 +194,14 @@ class IListboxImpl(IListbox):
         self._window.write('\x1b[%d;%dH' % (row, col))
 
     # IWidget
+    def focus(self):
+        self._window.focus()
+
+    def blur(self):
+        self._window.blur()
+
     def getlabel(self):
         return None 
-
 
     def draw(self, region):
         window = self._window

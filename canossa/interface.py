@@ -107,6 +107,12 @@ class IModeListener():
 
 class IWidget():
 
+    def focus(self):
+        raise NotImplementedError("IWidget::focus")
+
+    def blur(self):
+        raise NotImplementedError("IWidget::blur")
+
     def close(self):
         raise NotImplementedError("IWidget::close")
 

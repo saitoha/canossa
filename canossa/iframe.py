@@ -164,15 +164,10 @@ class IMouseListenerImpl(IMouseListener):
         hittest = self._hittest(x, y)
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
-            if self._session.process_is_active(self._tty):
-                self._session.blur_process()
-                self._window.blur()
             return False
-        if not self._session.process_is_active(self._tty):
-            self._window.focus()
-            self._session.focus_process(self._tty)
-            self._titlestyle = _TITLESTYLE_ACTIVE
-            return True
+        if hittest == _HITTEST_BUTTON_CLOSE:
+            self.close()
+            return False
         if hittest == _HITTEST_CLIENTAREA:
             screen = self.innerscreen
             if (screen.mouse_protocol == MOUSE_PROTOCOL_ANY_EVENT or
@@ -243,9 +238,6 @@ class IMouseListenerImpl(IMouseListener):
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
             return False
-        if hittest == _HITTEST_BUTTON_CLOSE:
-            self.close()
-            return True
         return True
 
     def ondoubleclick(self, context, x, y):
@@ -720,8 +712,7 @@ class InnerFrame(tff.DefaultHandler,
 
 
     def is_active(self):
-        return self._window.is_active()
-#        return self._session.process_is_active(self._tty)
+        return self._session.process_is_active(self._tty)
 
     """ tff.EventObserver override """
     def handle_end(self, context):
@@ -1004,6 +995,17 @@ class InnerFrame(tff.DefaultHandler,
             self.moveto(row + 1, col + 1)
 
     """ IWidget override """
+    def focus(self):
+        if not self._session.process_is_active(self._tty):
+            self._window.focus()
+            self._session.focus_process(self._tty)
+            self._titlestyle = _TITLESTYLE_ACTIVE
+
+    def blur(self):
+        if self._session.process_is_active(self._tty):
+            self._session.blur_process()
+            self._window.blur()
+            self._titlestyle = _TITLESTYLE_INACTIVE
 
     def getlabel(self):
         innertitle = self.innerscreen.gettitle()

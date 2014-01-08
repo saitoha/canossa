@@ -83,11 +83,15 @@ class IMouseListenerImpl(IMouseListener):
     """ IMouseListener implementation """
     def onmousedown(self, context, x, y):
         widgets = self._widgets
+        self._active = True
         for window in self._layouts:
             widget = widgets[window.id]
             if widget.onmousedown(context, x, y):
-                return True
-        return False
+                widget.focus()
+                self._active = False
+            else:
+                widget.blur()
+        return not self._active
 
     def onmouseup(self, context, x, y):
         widgets = self._widgets
@@ -99,14 +103,11 @@ class IMouseListenerImpl(IMouseListener):
 
     def onclick(self, context, x, y):
         widgets = self._widgets
-        self._active = True
         for window in self._layouts:
             widget = widgets[window.id]
             if widget.onclick(context, x, y):
-                self._active = False
-            else:
-                window.blur()
-        return not self._active
+                return True
+        return False
 
     def ondoubleclick(self, context, x, y):
         widgets = self._widgets
