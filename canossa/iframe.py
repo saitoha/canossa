@@ -164,8 +164,9 @@ class IMouseListenerImpl(IMouseListener):
         hittest = self._hittest(x, y)
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
-            #self._window.blur()
-            self._session.blur_process()
+            if self._session.process_is_active(self._tty):
+                self._session.blur_process()
+                self._window.blur()
             return False
         if not self._session.process_is_active(self._tty):
             self._window.focus()
