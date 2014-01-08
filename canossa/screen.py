@@ -99,15 +99,14 @@ class IMouseListenerImpl(IMouseListener):
 
     def onclick(self, context, x, y):
         widgets = self._widgets
-        self._active = False
+        self._active = True
         for window in self._layouts:
             widget = widgets[window.id]
             if widget.onclick(context, x, y):
-                return True
-        for window in self._layouts:
-            window.blur()
-        self._active = True
-        return False
+                self._active = False
+            else:
+                window.blur()
+        return not self._active
 
     def ondoubleclick(self, context, x, y):
         widgets = self._widgets
