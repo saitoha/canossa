@@ -1893,6 +1893,10 @@ class MockScreenWithCursor(Screen):
         self._setup_tab()
         self._setup_charset()
 
+        self._widgets = {}
+        self._layouts = []
+        self._trash = []
+
 
 def test():
     import doctest
