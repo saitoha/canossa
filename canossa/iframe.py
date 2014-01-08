@@ -720,7 +720,7 @@ class InnerFrame(tff.DefaultHandler,
 
 
     def is_active(self):
-        return self._is_active(self._tty)
+        return self._window.is_active()
 #        return self._session.process_is_active(self._tty)
 
     """ tff.EventObserver override """
