@@ -666,7 +666,7 @@ class InnerFrame(tff.DefaultHandler,
                  IMouseListenerImpl,
                  IFocusListenerImpl): # aggregate mouse and focus listener
 
-    def __init__(self, session, listener, mousedecoder, outerscreen,
+    def __init__(self, session, listener, outerscreen,
                  top, left, row, col,
                  command, termenc, termprop):
 
