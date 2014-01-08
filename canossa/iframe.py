@@ -1026,8 +1026,6 @@ class InnerFrame(tff.DefaultHandler,
                                      width + self._padding_left + self._padding_right,
                                      height + self._padding_top + self._padding_bottom)
 
-            window.write('\x1b[m')
-
             self._drawcontent(dirtyregion)
             self._drawtitle(dirtyregion)
             self._drawbottom(dirtyregion)
