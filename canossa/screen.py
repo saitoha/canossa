@@ -89,6 +89,7 @@ class IMouseListenerImpl(IMouseListener):
             if widget.onmousedown(context, x, y):
                 widget.focus()
                 self._active = False
+                return True
             else:
                 widget.blur()
         return not self._active
