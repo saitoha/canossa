@@ -31,17 +31,17 @@ except ImportError:
     from StringIO import StringIO
 import codecs
 
-from .interface import IScreen
-from .exception import CanossaRangeException
+from interface import IScreen
+from exception import CanossaRangeException
 from constant import *
 
 
 #
 # CSI ... ; ... R
 #
-from .cursor import Cursor
-from .line import Line
-from .mouse import IFocusListener, IMouseListener, MouseDecoder
+from cursor import Cursor
+from line import Line
+from mouse import IFocusListener, IMouseListener, MouseDecoder
 
 
 def _generate_mock_parser(screen):

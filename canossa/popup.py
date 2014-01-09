@@ -27,7 +27,8 @@
 import tff
 import logging
 
-from interface import IModeListener, IListbox, IListboxListener
+from interface import IModeListener
+from interface import IListbox, IListboxListener
 from mouse import IFocusListener, IMouseListener
 
 _POPUP_DIR_NORMAL = True
@@ -194,6 +195,9 @@ class IListboxImpl(IListbox):
         self._window.write('\x1b[%d;%dH' % (row, col))
 
     # IWidget
+    def setdirty(self):
+        pass
+
     def focus(self):
         self._window.focus()
 
@@ -311,7 +315,6 @@ class IListboxImpl(IListbox):
             if not self._mousemode is None:
                 if not self._screen.has_visible_windows():
                     self._mouse_decoder.uninitialize_mouse(window)
-
         self.reset()
 
     def isshown(self):
