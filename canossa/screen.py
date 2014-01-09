@@ -1908,6 +1908,7 @@ class MockScreenWithCursor(Screen):
     scroll_bottom = 24
 
     def __init__(self, row=24, col=80, y=0, x=0):
+        self.init_modemap()
         self.height = row
         self.width = col
         self.cursor = Cursor(y, x)
