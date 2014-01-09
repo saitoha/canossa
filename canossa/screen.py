@@ -1663,6 +1663,31 @@ class Screen(IScreenImpl,
         cursor.col = 0
 
     def dch(self, n):
+        ''' delete character(s) '''
+        cursor = self.cursor
+        if cursor.row >= self.height:
+            cursor.row = self.height - 1
+        if cursor.col >= self.width:
+            cursor.col = self.width - 1
+        row = cursor.row
+        col = cursor.col
+        if row >= self.scroll_bottom:
+            self.cursor.row = self.scroll_bottom - 1
+        elif row < self.scroll_top:
+            self.cursor.row = self.scroll_top
+        if col >= self.width:
+            self.cursor.col = self.width - 1
+        cells = self.lines[row].cells
+
+        if col > 0 and cells[col - 1].get() == '\x00':
+            col -= 1
+
+        bcevalue = cursor.attr.getbcevalue()
+        for i in xrange(0, n):
+            cell = cells.pop(col)
+            cell.clear(bcevalue)
+            cells.append(cell)
+
         self.cursor.dirty = True
 
     def cha(self, col):
