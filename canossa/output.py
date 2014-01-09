@@ -991,6 +991,7 @@ class Canossa(tff.DefaultHandler,
               ESCHandlerTrait):
 
     __cpr = False
+    dirty = True
 
     def __init__(self,
                  screen=None,
@@ -1115,6 +1116,7 @@ class Canossa(tff.DefaultHandler,
         if self._resized:
             self._resized = False
             self.screen.adjust_cursor()
+        self.dirty = True
         screen = self.screen
         if c <= 0x20:
             if c == 0x20: # SP
@@ -1150,7 +1152,7 @@ class Canossa(tff.DefaultHandler,
 
 
     def handle_draw(self, context):
-        if self._visibility:
+        if self._visibility and self.dirty:
             self.screen.drawall(context)
         #if self.__cpr != _CPR_NONE:
         #    if self.__cpr == _CPR_ANSI:
