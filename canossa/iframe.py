@@ -159,7 +159,6 @@ class IMouseListenerImpl(IMouseListener):
         self._titlestyle = _TITLESTYLE_INACTIVE
 
     """ IMouseListener implementation """
-
     def onmousedown(self, context, x, y):
         hittest = self._hittest(x, y)
         self._lasthittest = hittest
@@ -212,25 +211,21 @@ class IMouseListenerImpl(IMouseListener):
                 x -= self.left + self.offset_left
                 y -= self.top + self.offset_top
                 if screen.mouse_encoding == MOUSE_ENCODING_NORMAL:
-                    x += 33
-                    y += 33
+                    x += 32
+                    y += 32
                     b += 32
                     if x < 0xff and y < 0xff:
-                        context.puts('\x1b[M%c%c%c' % (b, x, y))
+                        context.puts('\x1b[M%c%c%c' % (b, x + 1, y + 1))
                 elif screen.mouse_encoding == MOUSE_ENCODING_UTF8:
-                    x += 33
-                    y += 33
+                    x += 32
+                    y += 32
                     b += 32
-                    context.puts(u'\x1b[M%c%c%c' % (unichr(b), unichr(x), unichr(y)))
+                    context.puts(u'\x1b[M%c%c%c' % (unichr(b), unichr(x + 1), unichr(y + 1)))
                 elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
-                    x += 1
-                    y += 1
-                    context.puts('\x1b[<%d;%d;%dm' % (b, x, y))
+                    context.puts('\x1b[<%d;%d;%dm' % (b, x + 1, y + 1))
                 elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
-                    x += 1
-                    y += 1
                     b += 32
-                    context.puts('\x1b[%d;%d;%dM' % (b, x, y))
+                    context.puts('\x1b[%d;%d;%dM' % (b, x + 1, y + 1))
         return True
 
     def onclick(self, context, x, y):
@@ -260,25 +255,21 @@ class IMouseListenerImpl(IMouseListener):
                     x -= self.left + self.offset_left
                     y -= self.top + self.offset_top
                     if screen.mouse_encoding == MOUSE_ENCODING_NORMAL:
-                        x += 33
-                        y += 33
+                        x += 32
+                        y += 32
                         b += 32
                         if x < 0xff and y < 0xff:
-                            context.puts('\x1b[M%c%c%c' % (b, x, y))
+                            context.puts('\x1b[M%c%c%c' % (b, x + 1, y + 1))
                     elif screen.mouse_encoding == MOUSE_ENCODING_UTF8:
-                        x += 33
-                        y += 33
+                        x += 32
+                        y += 32
                         b += 32
-                        context.puts(u'\x1b[M%c%c%c' % (unichr(b), unichr(x), unichr(y)))
+                        context.puts(u'\x1b[M%c%c%c' % (unichr(b), unichr(x + 1), unichr(y + 1)))
                     elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
-                        x += 1
-                        y += 1
-                        context.puts('\x1b[<%d;%d;%dM' % (b, x, y))
+                        context.puts('\x1b[<%d;%d;%dM' % (b, x + 1, y + 1))
                     elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
-                        x += 1
-                        y += 1
                         b += 32
-                        context.puts('\x1b[%d;%d;%dM' % (b, x, y))
+                        context.puts('\x1b[%d;%d;%dM' % (b, x + 1, y + 1))
                     self._titlestyle = _TITLESTYLE_ACTIVE
             self._hovertype = _HOVERTYPE_NONE
         elif hittest == _HITTEST_TITLEBAR:
@@ -324,25 +315,21 @@ class IMouseListenerImpl(IMouseListener):
                 x -= self.left + self.offset_left
                 y -= self.top + self.offset_top
                 if screen.mouse_encoding == MOUSE_ENCODING_NORMAL:
-                    x += 33
-                    y += 33
+                    x += 32
+                    y += 32
                     b += 32
                     if x < 0xff and y < 0xff:
-                        context.puts('\x1b[M%c%c%c' % (b, x, y))
+                        context.puts('\x1b[M%c%c%c' % (b, x + 1, y + 1))
                 elif screen.mouse_encoding == MOUSE_ENCODING_UTF8:
-                    x += 33
-                    y += 33
+                    x += 32
+                    y += 32
                     b += 32
-                    context.puts(u'\x1b[M%c%c%c' % (unichr(b), unichr(x), unichr(y)))
+                    context.puts(u'\x1b[M%c%c%c' % (unichr(b), unichr(x + 1), unichr(y + 1)))
                 elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
-                    x += 1
-                    y += 1
-                    context.puts('\x1b[<%d;%d;%dM' % (b, x, y))
+                    context.puts('\x1b[<%d;%d;%dM' % (b, x + 1, y + 1))
                 elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
-                    x += 1
-                    y += 1
                     b += 32
-                    context.puts('\x1b[%d;%d;%dM' % (b, x, y))
+                    context.puts('\x1b[%d;%d;%dM' % (b, x + 1, y + 1))
         return True
 
     def onscrollup(self, context, x, y):
@@ -361,25 +348,21 @@ class IMouseListenerImpl(IMouseListener):
                 x -= self.left + self.offset_left
                 y -= self.top + self.offset_top
                 if screen.mouse_encoding == MOUSE_ENCODING_NORMAL:
-                    x += 33
-                    y += 33
+                    x += 32
+                    y += 32
                     b += 32
                     if x < 0xff and y < 0xff:
-                        context.puts('\x1b[M%c%c%c' % (b, x, y))
+                        context.puts('\x1b[M%c%c%c' % (b, x + 1, y + 1))
                 elif screen.mouse_encoding == MOUSE_ENCODING_UTF8:
-                    x += 33
-                    y += 33
+                    x += 32
+                    y += 32
                     b += 32
-                    context.puts(u'\x1b[M%c%c%c' % (unichr(b), unichr(x), unichr(y)))
+                    context.puts(u'\x1b[M%c%c%c' % (unichr(b), unichr(x + 1), unichr(y + 1)))
                 elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
-                    x += 1
-                    y += 1
-                    context.puts('\x1b[<%d;%d;%dM' % (b, x, y))
+                    context.puts('\x1b[<%d;%d;%dM' % (b, x + 1, y + 1))
                 elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
-                    x += 1
-                    y += 1
                     b += 32
-                    context.puts('\x1b[%d;%d;%dM' % (b, x, y))
+                    context.puts('\x1b[%d;%d;%dM' % (b, x + 1, y + 1))
         return True
 
     """ drag and drop """
@@ -588,25 +571,21 @@ class IMouseListenerImpl(IMouseListener):
                     x -= self.left + self.offset_left
                     y -= self.top + self.offset_top
                     if screen.mouse_encoding == MOUSE_ENCODING_NORMAL:
-                        x += 33
-                        y += 33
+                        x += 32
+                        y += 32
                         b += 32
                         if x < 0xff and y < 0xff:
-                            context.puts('\x1b[M%c%c%c' % (b, x, y))
+                            context.puts('\x1b[M%c%c%c' % (b, x + 1, y + 1))
                     elif screen.mouse_encoding == MOUSE_ENCODING_UTF8:
-                        x += 33
-                        y += 33
+                        x += 32
+                        y += 32
                         b += 32
-                        context.puts(u'\x1b[M%c%c%c' % (unichr(b), unichr(x), unichr(y)))
+                        context.puts(u'\x1b[M%c%c%c' % (unichr(b), unichr(x + 1), unichr(y + 1)))
                     elif screen.mouse_encoding == MOUSE_ENCODING_SGR:
-                        x += 1
-                        y += 1
-                        context.puts('\x1b[<%d;%d;%dM' % (b, x, y))
+                        context.puts('\x1b[<%d;%d;%dM' % (b, x + 1, y + 1))
                     elif screen.mouse_encoding == MOUSE_ENCODING_URXVT:
-                        x += 1
-                        y += 1
                         b += 32
-                        context.puts('\x1b[%d;%d;%dM' % (b, x, y))
+                        context.puts('\x1b[%d;%d;%dM' % (b, x + 1, y + 1))
         return True
 
     def _get_left(self):
@@ -657,7 +636,6 @@ class InnerFrame(tff.DefaultHandler,
                  IInnerFrame,
                  IMouseListenerImpl,
                  IFocusListenerImpl): # aggregate mouse and focus listener
-
     def __init__(self, session, listener, outerscreen,
                  top, left, row, col,
                  command, termenc, termprop):
@@ -669,6 +647,7 @@ class InnerFrame(tff.DefaultHandler,
 
         innerscreen = Screen(row, col, 0, 0, termenc, termprop)
         canossa = Canossa(innerscreen, visibility=False)
+        self._canossa = canossa
 
         self._session = session
 
