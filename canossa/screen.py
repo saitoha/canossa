@@ -235,8 +235,6 @@ class SuuportsAlternateScreenTrait():
     def switch_mainbuf(self):
         self.lines = self._mainbuf
         defaultvalue = self.cursor.attr.getdefaultvalue()
-        for line in self.lines:
-            line.clear(defaultvalue)
         lines = self.lines
         if len(lines) > self.height:
             while len(lines) != self.height:
@@ -253,6 +251,7 @@ class SuuportsAlternateScreenTrait():
                 line.resize(self.width)
         assert len(lines) == self.height
         for line in lines:
+            line.dirty = True
             assert self.width == line.length()
         self._region = Region()
 
