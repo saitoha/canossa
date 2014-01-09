@@ -290,6 +290,47 @@ class SupportsExtendedModeTrait():
     mouse_protocol = MOUSE_PROTOCOL_NONE 
     mouse_encoding = MOUSE_ENCODING_NORMAL 
 
+    def init_modemap(self):
+        self._decset_map = {
+            3:    self._set_deccolm,
+            6:    self._set_decom,
+            7:    self._set_decawm,
+            9:    self._set_x10mouse,
+            25:   self._set_dectcem,
+            40:   self._set_allow_deccolm,
+            47:   self._set_xt_altscrn,
+            1000: self._set_normal_mouse,
+            1001: self._set_highlight_mouse,
+            1002: self._set_buttonevent_mouse,
+            1003: self._set_anyevent_mouse,
+            1004: self._set_utf8_mouse,
+            1006: self._set_sgr_mouse,
+            1015: self._set_urxvt_mouse,
+            1047: self._set_xt_alts47,
+            1048: self._set_xt_alts48,
+            1049: self._set_xt_extscrn,
+        }
+        self._decrst_map = {
+            3:    self._reset_deccolm,
+            6:    self._reset_decom,
+            7:    self._reset_decawm,
+            9:    self._reset_x10mouse,
+            25:   self._reset_dectcem,
+            40:   self._reset_allow_deccolm,
+            47:   self._reset_xt_altscrn,
+            1000: self._reset_normal_mouse,
+            1001: self._reset_highlight_mouse,
+            1002: self._reset_buttonevent_mouse,
+            1003: self._reset_anyevent_mouse,
+            1004: self._reset_utf8_mouse,
+            1006: self._reset_sgr_mouse,
+            1015: self._reset_urxvt_mouse,
+            1047: self._reset_xt_alts47,
+            1048: self._reset_xt_alts48,
+            1049: self._reset_xt_extscrn,
+        }
+
+
     def _set_dectcem(self):
         """
         >>> from screen import MockScreenWithCursor
@@ -866,85 +907,20 @@ class SupportsExtendedModeTrait():
         self.restore_pos()
         return True
 
-
     def decset(self, params):
-        for param in params:
-            if param == 25:
-                return self._set_dectcem()
-            elif param == 3:
-                return self._set_deccolm()
-            elif param == 6:
-                return self._set_decom()
-            elif param == 7:
-                return self._set_decawm()
-            elif param == 9:
-                return self._set_x10mouse()
-            elif param == 40:
-                return self._set_allow_deccolm()
-            elif param == 47:
-                return self._set_xt_altscrn()
-            elif param == 1000:
-                return self._set_normal_mouse()
-            elif param == 1001:
-                return self._set_highlight_mouse()
-            elif param == 1002:
-                return self._set_buttonevent_mouse()
-            elif param == 1003:
-                return self._set_anyevent_mouse()
-            elif param == 1005:
-                return self._set_utf8_mouse()
-            elif param == 1006:
-                return self._set_sgr_mouse()
-            elif param == 1015:
-                return self._set_urxvt_mouse()
-            elif param == 1047:
-                return self._set_xt_alts47()
-            elif param == 1048:
-                return self._set_xt_alts48()
-            elif param == 1049:
-                self.save_pos()
-                self.switch_altbuf()
-                return True
+        for p in params:
+            decset_map = self._decset_map
+            if p in decset_map.keys():
+                f = decset_map[p]
+                f()
         return False
 
     def decrst(self, params):
-        for param in params:
-            if param == 25:
-                return self._reset_dectcem()
-            elif param == 3:
-                return self._reset_deccolm()
-            elif param == 6:
-                return self._reset_decom()
-            elif param == 7:
-                return self._reset_decawm()
-            elif param == 9:
-                return self._reset_x10mouse()
-            elif param == 40:
-                return self._reset_allow_deccolm()
-            elif param == 47:
-                return self._reset_xt_altscrn()
-            elif param == 1000:
-                return self._reset_normal_mouse()
-            elif param == 1001:
-                return self._reset_highlight_mouse()
-            elif param == 1002:
-                return self._reset_buttonevent_mouse()
-            elif param == 1003:
-                return self._reset_anyevent_mouse()
-            elif param == 1005:
-                return self._reset_utf8_mouse()
-            elif param == 1006:
-                return self._reset_sgr_mouse()
-            elif param == 1015:
-                return self._reset_urxvt_mouse()
-            elif param == 1047:
-                return self._reset_xt_alts47()
-            elif param == 1048:
-                return self._reset_xt_alts48()
-            elif param == 1049:
-                self.switch_mainbuf()
-                self.restore_pos()
-                return True
+        for p in params:
+            decrst_map = self._decrst_map
+            if p in decrst_map:
+                f = decrst_map[p]
+                f()
         return False
 
     def xt_save(self, params):
@@ -1519,6 +1495,8 @@ class Screen(IScreenImpl,
         >>> screen.getyx()
         (0, 0)
         """
+
+        self.init_modemap()
         self._saved_pos = None
         self._title = u""
         self._widgets = None
