@@ -684,6 +684,16 @@ class InnerFrame(tff.DefaultHandler,
         else:
             self._vertical_bar = u'|'
 
+        if termprop.wcwidth(0x2514) == 1:
+            self._bottom_left_corner = u'\u2514'
+        else:
+            self._bottom_left_corner = u'+'
+
+        if termprop.wcwidth(0x2518) == 1:
+            self._bottom_right_corner = u'\u2518'
+        else:
+            self._bottom_right_corner = u'+'
+
         self._tty = session.add_subtty('xterm', 'ja_JP.UTF-8',
                                        command, row, col, termenc,
                                        self, canossa)
@@ -826,7 +836,7 @@ class InnerFrame(tff.DefaultHandler,
                             window.write('\x1b[43m')
                         else:
                             window.write('\x1b[m')
-                        window.write('+')
+                        window.write(self._bottom_left_corner)
                         n += 1
 
                     if self._dragtype == _DRAGTYPE_BOTTOM:
@@ -844,7 +854,7 @@ class InnerFrame(tff.DefaultHandler,
                                     window.write('\x1b[43m')
                                 else:
                                     window.write('\x1b[m')
-                                window.write('+')
+                                window.write(self._bottom_right_corner)
                             break
                         if n >= outerscreen.width:
                             break
