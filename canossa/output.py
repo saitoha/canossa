@@ -1067,9 +1067,9 @@ class Canossa(tff.DefaultHandler,
             return self.dispatch_csi(context, parameter, intermediate, final)
 
         except Exception, e:
-            mnemonic = '[%s, %s, %s]' % (repr(parameter), repr(intermediate), chr(final)) 
+            mnemonic = 'CSI %s %s %s' % (' '.join(map(chr, parameter)), ' '.join(map(chr, intermediate)), chr(final)) 
             logging.error("handle_csi: %s" % mnemonic)
-            logging.error("handle_csi: %s" % e)
+            logging.error("handle_csi: %s" % repr(e))
         return True
 
 
@@ -1079,17 +1079,15 @@ class Canossa(tff.DefaultHandler,
         >>> screen = MockScreenWithCursor()
         >>> parser = _generate_mock_parser(screen)
         """
-
-
         if self._resized:
             self._resized = False
             self.screen.adjust_cursor()
         try:
             self.dispatch_esc(context, intermediate, final)
         except Exception, e:
-            mnemonic = '[%s, %s]' % (repr(intermediate), chr(final)) 
+            mnemonic = 'ESC %s %s' % (' '.join(map(chr, intermediate)), chr(final)) 
             logging.error("handle_esc: %s" % mnemonic)
-            logging.error("handle_esc: %s" % e)
+            logging.error("handle_esc: %s" % repr(e))
         return True
 
 
