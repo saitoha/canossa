@@ -286,7 +286,7 @@ class SupportsExtendedModeTrait():
     decawm = True
     decom = False
     allow_deccolm = False
-
+    bracketed_paste = False
     mouse_protocol = MOUSE_PROTOCOL_NONE 
     mouse_encoding = MOUSE_ENCODING_NORMAL 
 
@@ -309,6 +309,7 @@ class SupportsExtendedModeTrait():
             1047: self._set_xt_alts47,
             1048: self._set_xt_alts48,
             1049: self._set_xt_extscrn,
+            2004: self._set_bracketed_paste,
         }
         self._decrst_map = {
             3:    self._reset_deccolm,
@@ -328,8 +329,8 @@ class SupportsExtendedModeTrait():
             1047: self._reset_xt_alts47,
             1048: self._reset_xt_alts48,
             1049: self._reset_xt_extscrn,
+            2004: self._reset_bracketed_paste,
         }
-
 
     def _set_dectcem(self):
         """
@@ -906,6 +907,38 @@ class SupportsExtendedModeTrait():
         self.switch_mainbuf()
         self.restore_pos()
         return True
+
+
+    def _set_bracketed_paste(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> screen.bracketed_paste
+        False
+        >>> parser.parse('\x1b[?2004h')
+        >>> screen.bracketed_paste
+        True
+        """
+        self.bracketed_paste = True
+        return True
+
+
+    def _reset_bracketed_paste(self):
+        """
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b[?2004h')
+        >>> screen.bracketed_paste
+        True
+        >>> parser.parse('\x1b[?2004l')
+        >>> screen.bracketed_paste
+        False
+        """
+        self.bracketed_paste = False
+        return True
+
 
     def decset(self, params):
         for p in params:
