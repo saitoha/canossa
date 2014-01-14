@@ -794,6 +794,8 @@ class ESCHandlerTrait():
             _pack('H'): self._esc_hts,
             _pack('M'): self._esc_ri,
             _pack('c'): self._esc_ris,
+            _pack('='): self._esc_decpam,
+            _pack('>'): self._esc_decpnm,
             _pack('#3'): self._esc_decdhlt,
             _pack('#4'): self._esc_decdhlb,
             _pack('#5'): self._esc_decswl,
@@ -898,6 +900,30 @@ class ESCHandlerTrait():
 
         self.screen.ris()
         return not self._visibility # pass through
+
+
+    def _esc_decpam(self):
+        """
+        DECPAM - Application Keypad
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b=')
+        """
+        raise NotImplementedError('DECPAM')
+
+
+    def _esc_decpnm(self):
+        """
+        RIS - Hard Terminal Reset
+
+        >>> from screen import MockScreenWithCursor
+        >>> screen = MockScreenWithCursor()
+        >>> parser = _generate_mock_parser(screen)
+        >>> parser.parse('\x1b>')
+        """
+        raise NotImplementedError('DECPNM')
 
 
     def _esc_decdhlt(self):
