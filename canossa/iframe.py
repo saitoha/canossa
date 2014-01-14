@@ -216,6 +216,7 @@ class IMouseListenerImpl(IMouseListener):
         self._lasthittest = hittest
         if hittest == _HITTEST_NONE:
             self._hovertype = _HOVERTYPE_NONE
+            self._titlestyle = _TITLESTYLE_INACTIVE
             return False
         if hittest == _HITTEST_CLIENTAREA:
             if self.is_active():
