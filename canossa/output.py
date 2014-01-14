@@ -541,8 +541,8 @@ class CSIHandlerTrait():
         >>> parser.parse('\x1b[7P')
         """
 
-        #ps = _parse_params(parameter, minimum=1)[0]
-        #self.screen.dch(ps)
+        ps = _parse_params(parameter, minimum=1)[0]
+        self.screen.dch(ps)
         return True
 
 
