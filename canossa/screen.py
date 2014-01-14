@@ -290,6 +290,16 @@ class SupportsExtendedModeTrait():
     mouse_protocol = MOUSE_PROTOCOL_NONE 
     mouse_encoding = MOUSE_ENCODING_NORMAL 
 
+    def reset_modes(self):
+        cls = self.__class__
+        self.dectcem = cls.dectcem
+        self.decawm = cls.decawm
+        self.decom = clas.decom
+        self.allow_deccolm = cls.allow_deccolm
+        self.bracketed_paste = cls.bracketed_paste
+        self.mouse_protocol = cls.mouse_protocol 
+        self.mouse_encoding = cls.mouse_encoding 
+
     def init_modemap(self):
         self._decset_map = {
             3:    self._set_deccolm,
@@ -1814,7 +1824,7 @@ class Screen(IScreenImpl,
         defaultvalue = cursor.attr.getdefaultvalue()
         for line in self.lines:
             line.clear(defaultvalue)
-        self.dectcem = True
+        self.reset_modes()
         cursor.clear()
         self._setup_tab()
 
