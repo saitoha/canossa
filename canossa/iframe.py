@@ -406,15 +406,15 @@ class IMouseListenerImpl(IMouseListener):
             screen = self.innerscreen
             window = self._window
 
-            left = min(max(x, 0), self.left + screen.width - 10)
+            left = min(max(x + 1, 0), self.left + screen.width - 10)
             top = self.top
             row = max(y - top, 5)
-            col = self.left + screen.width - left + 1
+            col = self.left + screen.width - left
 
             screen.resize(row, col)
             self._tty.resize(row, col)
 
-            left -= 2
+            left -= 1
             top -= 1
             width = col + 2
             height = row + 2
@@ -449,12 +449,12 @@ class IMouseListenerImpl(IMouseListener):
             outerscreen = self._outerscreen
             window = self._window
 
-            left = min(max(x, 0), self.left + screen.width - 10)
+            left = min(max(x + 1, 0), self.left + screen.width - 10)
             top = self.top
             row = screen.height
-            col = self.left + screen.width - left + 1
+            col = self.left + screen.width - left
 
-            left -= 2
+            left -= 1
             top -= 1
             width = col + 2
             height = row + 2
