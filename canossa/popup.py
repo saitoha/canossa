@@ -214,6 +214,14 @@ class IListboxImpl(IListbox):
     def getlabel(self):
         return None 
 
+    def checkdirty(self, region):
+        if self._dirty:
+            region.sub(self._left + self._offset_left, self._top + self._offset_top, self._width, self._height)
+            self._dirty = False
+
+    def drawcursor(self):
+        pass
+
     def draw(self, region):
         window = self._window
         if self._list:
@@ -561,6 +569,7 @@ class IMouseListenerImpl(IMouseListener):
     def ondragmove(self, context, x, y):
         if not self._dragpos:
             return False
+        self._dirty = True
         if self._dragmode == _DRAGMODE_MOVE:
             origin_x, origin_y = self._dragpos
             offset_x = x - origin_x
