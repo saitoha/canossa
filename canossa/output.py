@@ -1136,7 +1136,6 @@ class Canossa(tff.DefaultHandler,
         >>> parser = _generate_mock_parser(screen)
         >>> parser.parse('abc\\x07def\\x0a\\x0d\\x0c\\x0e\\x0f')
         """
-
         if self._resized:
             self._resized = False
             self.screen.adjust_cursor()

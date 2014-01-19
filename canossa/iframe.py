@@ -1059,7 +1059,7 @@ class InnerFrame(tff.DefaultHandler,
             self._drawtitle(dirtyregion)
             self._drawbottom(dirtyregion)
             self._drawsideframe(dirtyregion)
-            self.drawcursor()
+#            self.drawcursor()
             self._listener.initialize_mouse(window)
 
 
