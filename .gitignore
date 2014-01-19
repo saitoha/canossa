@@ -1,5 +1,9 @@
 *.un~
 *.pyc
+*.orig
+*.rej
 dist/
 build/
+cover
+.coverage
 *.egg-info/
