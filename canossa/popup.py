@@ -104,6 +104,7 @@ class IListboxImpl(IListbox):
     _style = _style_active
 
     innerscreen = None
+    _dirty = True
 
     """ IListbox implementation """
     def assign(self, l, index=0):
@@ -113,6 +114,7 @@ class IListboxImpl(IListbox):
         self._index = index
         self.notifyselection()
         self.focus()
+        self._dirty = True
 
     def isempty(self):
         return self._list is None
@@ -120,13 +122,14 @@ class IListboxImpl(IListbox):
     def reset(self):
         self._width = 8
         self._height = 0
-        self._left = None
-        self._top = None
+        self._left = 0
+        self._top = 0
         self._offset_left = 0
         self._offset_top = 0
         self._list = None
         self._index = 0
         self._scrollpos = 0
+        self._dirty = True
 
     def notifyselection(self):
         if self._index == -1:
@@ -150,6 +153,7 @@ class IListboxImpl(IListbox):
                 self._listener.onrepeat(self)
                 self._scrollpos = self._index - self._height + 1
             self.notifyselection()
+            self._dirty = True
             return True
         return False
 
@@ -159,6 +163,7 @@ class IListboxImpl(IListbox):
             if self._index < self._scrollpos:
                 self._scrollpos = self._index
             self.notifyselection()
+            self._dirty = True
             return True
         return False
 
@@ -166,6 +171,7 @@ class IListboxImpl(IListbox):
         for i in xrange(0, self._height):
             if self._index >= len(self._list):
                 return False
+            self._dirty = True
             self.movenext()
         return True
 
@@ -200,6 +206,7 @@ class IListboxImpl(IListbox):
 
     def focus(self):
         self._window.focus()
+        self._dirty = True
 
     def blur(self):
         self._window.blur()
