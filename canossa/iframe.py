@@ -1022,11 +1022,29 @@ class InnerFrame(tff.DefaultHandler,
             self._title = innertitle
         return self._title 
 
+    def checkdirty(self, region):
+        self._dirty = True
+        if self._dirty:
+            innerscreen = self.innerscreen
+
+            left = self.left + self.offset_left
+            top = self.top + self.offset_top
+            width = innerscreen.width
+            height = innerscreen.height
+
+            dirtyregion = region.sub(left - self._padding_left,
+                                     top - self._padding_top,
+                                     width + self._padding_left + self._padding_right,
+                                     height + self._padding_top + self._padding_bottom)
+            self._dirty = False
+
     def draw(self, region):
         if self.enabled:
             window = self._window
             innerscreen = self.innerscreen
             outerscreen = self._outerscreen
+
+
             left = self.left + self.offset_left
             top = self.top + self.offset_top
             width = innerscreen.width
