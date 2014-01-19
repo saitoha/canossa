@@ -1192,7 +1192,7 @@ class Canossa(tff.DefaultHandler,
         screen = self.screen
         try:
             screen.resize(row, col)
-            screen.adjust_cursor()
+            #screen.adjust_cursor()
         finally:
             lock.release()
 
