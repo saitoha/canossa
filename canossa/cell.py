@@ -80,9 +80,16 @@ class Cell():
             self._combine = unichr(value)
 
     def get(self):
-        if self._value is None:
+        c = self._value
+        if c is None:
             return None
-        result = unichr(self._value)
+        if c < 0x10000:
+            result = unichr(c)
+        else:  # c > 0x10000
+            c -= 0x10000
+            c1 = (c >> 10) + 0xd800
+            c2 = (c & 0x3ff) + 0xdc00
+            result = unichr(c1) + unichr(c2)
         if self._combine is None:
             return result
         return result + self._combine
