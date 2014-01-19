@@ -8,20 +8,23 @@ PYTHON27=python2.7
 SETUP_SCRIPT=setup.py
 RM=rm -rf
 PIP=pip
+CYTHON=cython
 
 .PHONY: smoketest nosetest build setuptools install uninstall clean update
+
+build: update_license_block smoketest
+	ln -f tff.py /tmp/ctff.pyx
+	$(CYTHON) /tmp/ctff.pyx -o ctff.c
+	$(PYTHON) $(SETUP_SCRIPT) sdist
+	$(PYTHON25) $(SETUP_SCRIPT) bdist_egg
+	$(PYTHON26) $(SETUP_SCRIPT) bdist_egg
+	$(PYTHON27) $(SETUP_SCRIPT) bdist_egg
 
 setup_environment:
 	if test -d tools; do \
 		ln -f tools/gitignore .gitignore \
 		ln -f tools/vimprojects .vimprojects \
     fi
-
-build: update_license_block smoketest
-	$(PYTHON) $(SETUP_SCRIPT) sdist
-	$(PYTHON25) $(SETUP_SCRIPT) bdist_egg
-	$(PYTHON26) $(SETUP_SCRIPT) bdist_egg
-	$(PYTHON27) $(SETUP_SCRIPT) bdist_egg
 
 update_license_block:
 	chmod +x update_license
@@ -41,8 +44,11 @@ uninstall:
 	done
 
 clean:
-	for name in dist build *.egg-info htmlcov *.pyc *.o; \
+	for name in dist cover build *.egg-info htmlcov; \
 		do find . -type d -name $$name || true; \
+	done | xargs $(RM)
+	for name in *.pyc *.o; \
+		do find . -type f -name $$name || true; \
 	done | xargs $(RM)
 
 test: smoketest nosetest
