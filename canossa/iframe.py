@@ -608,23 +608,39 @@ class InnerFrame(tff.DefaultHandler,
 
         if termprop.wcwidth(0x2500) == 1:
             self._horizontal_bar = u'\u2500'
+            self._horizontal_bar2 = u'\u2550'
         else:
             self._horizontal_bar = u'-'
+            self._horizontal_bar2 = u'-'
 
         if termprop.wcwidth(0x2502) == 1:
             self._vertical_bar = u'\u2502'
+            self._vertical_bar2 = u'\u2551'
         else:
             self._vertical_bar = u'|'
+            self._vertical_bar2 = u'|'
 
         if termprop.wcwidth(0x2514) == 1:
             self._bottom_left_corner = u'\u2514'
+            self._bottom_left_corner2 = u'\u255a'
+            self._bottom_left_corner3 = u'\u2558'
+            self._bottom_left_corner4 = u'\u2559'
         else:
             self._bottom_left_corner = u'+'
+            self._bottom_left_corner2 = u'+'
+            self._bottom_left_corner3 = u'+'
+            self._bottom_left_corner4 = u'+'
 
         if termprop.wcwidth(0x2518) == 1:
             self._bottom_right_corner = u'\u2518'
+            self._bottom_right_corner2 = u'\u255d'
+            self._bottom_right_corner3 = u'\u255b'
+            self._bottom_right_corner4 = u'\u255c'
         else:
             self._bottom_right_corner = u'+'
+            self._bottom_right_corner2 = u'+'
+            self._bottom_right_corner3 = u'+'
+            self._bottom_right_corner4 = u'+'
 
         self._tty = session.add_subtty('xterm', 'ja_JP.UTF-8',
                                        command, row, col, termenc,
@@ -757,43 +773,93 @@ class InnerFrame(tff.DefaultHandler,
                     if dirty_right > outerscreen.width:
                         dirty_right = outerscreen.width
 
-                    window.write('\x1b[m')
+                    window.write('\x1b[0m')
                     self.moveto(bottom + 1, dirty_left + 1)
 
                     n = left - 1
                     if n >= 0 and n >= dirty_left:
-                        if self._dragtype == _DRAGTYPE_BOTTOMLEFT:
-                            window.write('\x1b[41m')
-                        elif self._hovertype == _HOVERTYPE_BOTTOMLEFT:
-                            window.write('\x1b[43m')
+                        if self._bottom_left_corner == self._bottom_left_corner2:
+                            if self._dragtype == _DRAGTYPE_BOTTOMLEFT:
+                                window.write('\x1b[0;41m')
+                            elif self._hovertype == _HOVERTYPE_BOTTOMLEFT:
+                                window.write('\x1b[0;43m')
+                            else:
+                                window.write('\x1b[0m')
+                            window.write(self._bottom_left_corner)
                         else:
-                            window.write('\x1b[m')
-                        window.write(self._bottom_left_corner)
+                            if self._dragtype == _DRAGTYPE_BOTTOMLEFT:
+                                window.write('\x1b[0;41m')
+                                window.write(self._bottom_left_corner2)
+                            elif self._dragtype == _DRAGTYPE_BOTTOM:
+                                window.write('\x1b[0;41m')
+                                window.write(self._bottom_left_corner3)
+                            elif self._dragtype == _DRAGTYPE_LEFT:
+                                window.write('\x1b[0;41m')
+                                window.write(self._bottom_left_corner4)
+                            elif self._hovertype == _HOVERTYPE_BOTTOMLEFT:
+                                window.write(self._bottom_left_corner2)
+                            elif self._hovertype == _HOVERTYPE_BOTTOM:
+                                window.write(self._bottom_left_corner3)
+                            elif self._hovertype == _HOVERTYPE_LEFT:
+                                window.write(self._bottom_left_corner4)
+                            else:
+                                window.write(self._bottom_left_corner)
                         n += 1
 
-                    if self._dragtype == _DRAGTYPE_BOTTOM:
-                        window.write('\x1b[41m')
-                    elif self._hovertype == _HOVERTYPE_BOTTOM:
-                        window.write('\x1b[43m')
-                    else:
-                        window.write('\x1b[m')
+                    #if self._dragtype == _DRAGTYPE_BOTTOM:
+                    #    window.write('\x1b[0;41m')
+                    #elif self._hovertype == _HOVERTYPE_BOTTOM:
+                    #    window.write('\x1b[0;43m')
+                    #else:
+                    #    window.write('\x1b[0m')
                     while True:
                         if n >= dirty_right - 1:
                             if n == left + innerscreen.width:
-                                if self._dragtype == _DRAGTYPE_BOTTOMRIGHT:
-                                    window.write('\x1b[41m')
-                                elif self._hovertype == _HOVERTYPE_BOTTOMRIGHT:
-                                    window.write('\x1b[43m')
+                                if self._bottom_left_corner == self._bottom_left_corner2:
+                                    if self._dragtype == _DRAGTYPE_BOTTOMRIGHT:
+                                        window.write('\x1b[0;41m')
+                                    elif self._hovertype == _HOVERTYPE_BOTTOMRIGHT:
+                                        window.write('\x1b[0;43m')
+                                    else:
+                                        window.write('\x1b[0m')
+                                    window.write(self._bottom_right_corner)
                                 else:
-                                    window.write('\x1b[m')
-                                window.write(self._bottom_right_corner)
+                                    if self._dragtype == _DRAGTYPE_BOTTOMRIGHT:
+                                        window.write('\x1b[0;41m')
+                                        window.write(self._bottom_right_corner2)
+                                    elif self._dragtype == _DRAGTYPE_BOTTOM:
+                                        window.write('\x1b[0;41m')
+                                        window.write(self._bottom_right_corner3)
+                                    elif self._dragtype == _DRAGTYPE_RIGHT:
+                                        window.write('\x1b[0;41m')
+                                        window.write(self._bottom_right_corner4)
+                                    elif self._hovertype == _HOVERTYPE_BOTTOMRIGHT:
+                                        window.write(self._bottom_right_corner2)
+                                    elif self._hovertype == _HOVERTYPE_BOTTOM:
+                                        window.write(self._bottom_right_corner3)
+                                    elif self._hovertype == _HOVERTYPE_RIGHT:
+                                        window.write(self._bottom_right_corner4)
+                                    else:
+                                        window.write(self._bottom_right_corner)
                             break
                         if n >= outerscreen.width:
                             break
                         n += 1
                         if n < dirty_left + 1:
                             continue
-                        window.write(self._horizontal_bar)
+                        if self._bottom_left_corner == self._bottom_left_corner2:
+                            if self._dragtype == _DRAGTYPE_BOTTOM:
+                                window.write('\x1b[0;41m')
+                            elif self._hovertype == _HOVERTYPE_BOTTOM:
+                                window.write('\x1b[0;43m')
+                            else:
+                                window.write('\x1b[0m')
+                            window.write(self._horizontal_bar)
+                        else:
+                            if self._hovertype == _HOVERTYPE_BOTTOM:
+                                window.write(self._horizontal_bar2)
+                            else:
+                                window.write(self._horizontal_bar)
 
     def _drawsideframe(self, dirtyregion):
         window = self._window
@@ -831,14 +897,23 @@ class InnerFrame(tff.DefaultHandler,
                             col = left - 1
                             self.moveto(row + 1, col + 1)
 
-                            if self._dragtype == _DRAGTYPE_LEFT:
-                                window.write('\x1b[41m')
-                            elif self._hovertype == _HOVERTYPE_LEFT:
-                                window.write('\x1b[43m')
+                            if self._bottom_left_corner == self._bottom_left_corner2:
+                                if self._dragtype == _DRAGTYPE_LEFT:
+                                    window.write('\x1b[0;41m')
+                                elif self._hovertype == _HOVERTYPE_LEFT:
+                                    window.write('\x1b[0;43m')
+                                else:
+                                    window.write('\x1b[0m')
+                                window.write(self._vertical_bar)
                             else:
-                                window.write('\x1b[m')
-                            window.write(self._vertical_bar)
-                            window.write('\x1b[m')
+                                if self._dragtype == _DRAGTYPE_LEFT:
+                                    window.write('\x1b[0;41m')
+                                    window.write(self._vertical_bar2)
+                                elif self._hovertype == _HOVERTYPE_LEFT:
+                                    window.write(self._vertical_bar2)
+                                else:
+                                    window.write(self._vertical_bar)
+                                window.write('\x1b[0m')
 
                         # draw the right edge of frame
                         col = left + innerscreen.width
@@ -846,14 +921,23 @@ class InnerFrame(tff.DefaultHandler,
                             row = top + index
                             self.moveto(row + 1, col + 1)
 
-                            if self._dragtype == _DRAGTYPE_RIGHT:
-                                window.write('\x1b[41m')
-                            elif self._hovertype == _HOVERTYPE_RIGHT:
-                                window.write('\x1b[43m')
+                            if self._bottom_left_corner == self._bottom_left_corner2:
+                                if self._dragtype == _DRAGTYPE_RIGHT:
+                                    window.write('\x1b[0;41m')
+                                elif self._hovertype == _HOVERTYPE_RIGHT:
+                                    window.write('\x1b[0;43m')
+                                else:
+                                    window.write('\x1b[0m')
+                                window.write(self._vertical_bar)
                             else:
-                                window.write('\x1b[m')
-                            window.write(self._vertical_bar)
-                            window.write('\x1b[m')
+                                if self._dragtype == _DRAGTYPE_RIGHT:
+                                    window.write('\x1b[0;41m')
+                                    window.write(self._vertical_bar2)
+                                elif self._hovertype == _HOVERTYPE_RIGHT:
+                                    window.write(self._vertical_bar2)
+                                else:
+                                    window.write(self._vertical_bar)
+                                window.write('\x1b[0m')
 
     def _drawcontent(self, dirtyregion):
         window = self._window
