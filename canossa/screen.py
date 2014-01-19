@@ -1180,7 +1180,16 @@ class IScreenImpl(IScreen):
         region.reset()
         for window in self._layouts:
             widget = widgets[window.id]
+            widget.checkdirty(region)
+        for window in self._layouts:
+            widget = widgets[window.id]
             widget.draw(region)
+        widget = self.getactivewidget()
+        if widget:
+            widget.drawcursor()
+        else:
+            if self.dectcem:
+                context.puts('\x1b[?25h')
         for window in reversed(self._layouts):
             window.draw(context)
 
