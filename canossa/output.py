@@ -24,7 +24,7 @@
 # 
 # ***** END LICENSE BLOCK *****
 
-import tff
+from stub import *
 import thread
 import logging
 lock = thread.allocate_lock()

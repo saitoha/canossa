@@ -24,7 +24,7 @@
 # 
 # ***** END LICENSE BLOCK *****
 
-import tff
+from stub import *
 import logging
 
 from interface import IModeListener

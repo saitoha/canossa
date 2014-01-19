@@ -25,7 +25,7 @@
 # ***** END LICENSE BLOCK *****
 
 
-import tff
+from stub import * 
 from constant import *
 from mouse import IFocusListener, IMouseListener, MouseDecoder
 from interface import IInnerFrame, IInnerFrameListener, IWidget

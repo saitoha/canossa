@@ -24,7 +24,7 @@
 # 
 # ***** END LICENSE BLOCK *****
 
-import tff
+from stub import *
 import time
 
 from constant import *

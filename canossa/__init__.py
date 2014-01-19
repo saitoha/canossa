@@ -28,7 +28,7 @@ __author__  = "Hayaki Saito (user@zuse.jp)"
 __version__ = "0.2.0"
 __license__ = "MIT"
 
-from tff import tff
+from stub import tff
 from termprop import termprop
 
 from interface import *

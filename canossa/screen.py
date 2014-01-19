@@ -46,7 +46,7 @@ from mouse import IFocusListener, IMouseListener, MouseDecoder
 
 def _generate_mock_parser(screen):
     import StringIO
-    import tff
+    from stub import tff
     import output
 
     canossa = output.Canossa(screen=screen, resized=False)

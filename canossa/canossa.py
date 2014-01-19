@@ -24,6 +24,8 @@
 # 
 # ***** END LICENSE BLOCK *****
 
+from stub import *
+
 def _printver():
         import __init__
         print '''
@@ -98,7 +100,7 @@ def main():
     language, encoding = locale.getdefaultlocale()
     termenc = encoding
 
-    import tff, output
+    import output
 
     # create pty
     tty = tff.DefaultPTY(term, lang, command, sys.stdin)
