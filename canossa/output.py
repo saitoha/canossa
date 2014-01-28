@@ -1113,10 +1113,10 @@ class Canossa(tff.DefaultHandler,
             else:
                 try:
                     num = value[:pos]
-                except:
+                except ValueError:
                     num = None
             if num:
-                if num[0] == 0x30 or num[0] == 0x32:
+                if num[0] == 0x30 or num[0] == 0x32:  # 0 or 2
                     arg = value[pos + 1:]
                     self.screen.settitle(u''.join([unichr(x) for x in arg]))
                     s = self.screen.gettitle()

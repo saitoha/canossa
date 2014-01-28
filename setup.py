@@ -13,7 +13,7 @@ canossa.line.test()
 try:
     import canossa.tff
     import canossa.termprop
-except:
+except ImportError:
     print "Please do:\n git submodule update --init"
     import sys
     sys.exit(1)
@@ -29,7 +29,8 @@ import canossa.output as output
 
 import doctest
 dirty = False
-for m in (attribute, cell, line, cursor, attribute, popup, iframe, output, screen):
+for m in (attribute, cell, line, cursor,
+          attribute, popup, iframe, output, screen):
     failure_count, test_count = doctest.testmod(m)
     if failure_count > 0:
         dirty = True
@@ -39,7 +40,9 @@ if dirty:
 
 setup(name                  = 'canossa',
       version               = __version__,
-      description           = 'Provides basic, transparent, off-screen(invisible) terminal emulation service, for terminal apps.',
+      description           = 'Provides basic, transparent, off-screen'
+                              '(invisible) terminal emulation service, '
+                              'for terminal apps.',
       long_description      = open(dirpath + "/README.rst").read(),
       py_modules            = ['canossa'],
       eager_resources       = [],
