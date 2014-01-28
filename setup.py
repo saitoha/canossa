@@ -59,7 +59,7 @@ setup(name                  = 'canossa',
       zip_safe              = True,
       include_package_data  = False,
 #      install_requires      = ['tff >=0.0.14, <0.1.0', 'termprop==0.0.1'],
-      install_requires      = [],
+      install_requires      = ['tff'],
       entry_points          = """
                               [console_scripts]
                               canossa = canossa:main
