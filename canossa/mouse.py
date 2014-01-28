@@ -308,10 +308,10 @@ class ModeHandler(tff.DefaultHandler, IMouseModeImpl):
                 elif param == MOUSE_ENCODING_SGR:
                     self.setencoding(0)
                 elif param == 8840:
-                    self._termprop.set_amb_as_single()
+                    self._termprop.set_noncjk()
                     modes.append(str(param))
                 elif param == 8428:
-                    self._termprop.set_amb_as_double()
+                    self._termprop.set_cjk()
                     modes.append(str(param))
                 elif param == 8441:
                     self._listener.notifyimeoff()
