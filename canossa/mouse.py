@@ -437,7 +437,7 @@ class MouseDecoder(tff.DefaultHandler):
             if final == 0x4d: # M
                 return MOUSE_PROTOCOL_NORMAL, None, None, None, None
             return None
-        elif parameter[0] == 0x3c:
+        elif parameter[0] == 0x3c:  # <
             if final == 0x4d: # M
                 p = ''.join([chr(c) for c in parameter[1:]])
                 try:
