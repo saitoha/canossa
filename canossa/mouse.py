@@ -450,7 +450,7 @@ class MouseDecoder(tff.DefaultHandler):
                 except ValueError:
                     return False
                 return MOUSE_ENCODING_SGR, False, code, x, y
-            elif final == 0x6d: # m
+            elif final == 0x6d:  # m
                 p = ''.join([chr(c) for c in parameter[1:]])
                 try:
                     params = [int(c) for c in p.split(";")]
