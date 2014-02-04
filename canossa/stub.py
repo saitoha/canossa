@@ -27,7 +27,7 @@
 
 import logging
 
-expected_hash = "febb6c52a3e1d52fe530f887fbdd975f"
+expected_hash = "2aaf89c556a5779adf2d6749de196cad"
 
 try:
     import ctff as tff
