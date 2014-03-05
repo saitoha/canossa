@@ -693,6 +693,9 @@ class InnerFrame(tff.DefaultHandler,
         left = self.left + self.offset_left
         top = self.top + self.offset_top
 
+        if top < 1:
+            return;
+
         # draw the title bar
         termprop = self._termprop
         innertitle = innerscreen.gettitle()
@@ -745,6 +748,7 @@ class InnerFrame(tff.DefaultHandler,
                 else:
                     window.write("\x1b[%dC" % length)
             n += length
+        window.write('\x1b[0m')
 
     def _drawbottom(self, dirtyregion):
         window = self._window
