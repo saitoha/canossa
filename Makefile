@@ -13,7 +13,7 @@ CYTHON=cython
 .PHONY: smoketest nosetest build setuptools install uninstall clean update
 
 build: update_license_block smoketest
-	ln -f tff.py /tmp/ctff.pyx
+	ln -f $(PWD)/canossa/tff/tff.py /tmp/ctff.pyx
 	$(CYTHON) /tmp/ctff.pyx -o ctff.c
 	$(PYTHON) $(SETUP_SCRIPT) sdist
 	$(PYTHON25) $(SETUP_SCRIPT) bdist_egg
